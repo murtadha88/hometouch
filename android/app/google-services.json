@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1071005211039",
+    "project_id": "hometouch-bb163",
+    "storage_bucket": "hometouch-bb163.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071005211039:android:0dcf19af0d5d90ba6445aa",
+        "android_client_info": {
+          "package_name": "com.example.hometouch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvzkoLCmzVWEso47KB3Hfnzq0TxAnJH0I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
