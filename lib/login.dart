@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:hometouch/reset_password_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -16,6 +17,8 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool rememberMe = false;
   bool _obscureText = true;
+  bool emailError = false;
+  bool passwordError = false;
 
   void toggleRememberMe() {
     setState(() {
@@ -35,12 +38,84 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login successful!')),
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+            title: Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Color(0xFFBF0000),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check,
+                color: Colors.white,
+                size: 50,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Login Success',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Please wait. You will be directed to the home page',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w300,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(height: 15),
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
+                ),
+              ],
+            ),
+          );
+        },
       );
+
+      Future.delayed(Duration(seconds: 3), () {
+        Navigator.of(context).pop();
+      });
     } on FirebaseAuthException catch (e) {
+      setState(() {
+        print(e.code);
+        if (e.code == 'channel-error') {
+          emailError = true;
+          passwordError = true;
+        }
+        if (e.code == 'user-not-found') {
+          emailError = true;
+          passwordError = false;
+        } else if (e.code == 'wrong-password') {
+          emailError = false;
+          passwordError = true;
+        } else if (e.code == 'invalid-email') {
+          emailError = true;
+          passwordError = false;
+        }
+      });
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'An error occurred')),
+        SnackBar(
+            content: Text('An unexpected error occurred. Please try again.')),
       );
     }
   }
@@ -72,6 +147,14 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<UserCredential> signInWithFacebook() async {
+    final LoginResult loginResult = await FacebookAuth.instance.login();
+    final OAuthCredential facebookAuthCredential =
+        FacebookAuthProvider.credential(loginResult.accessToken!.tokenString);
+
+    return FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
+  }
+
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -97,9 +180,10 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               SizedBox(height: screenHeight * 0.05),
-              _buildInputField('Email', _emailController, false),
+              _buildInputField('Email', _emailController, false, emailError),
               SizedBox(height: screenHeight * 0.02),
-              _buildInputField('Password', _passwordController, true),
+              _buildInputField(
+                  'Password', _passwordController, true, passwordError),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -145,10 +229,11 @@ class _LoginPageState extends State<LoginPage> {
               ),
               SizedBox(height: screenHeight * 0.02),
               Stack(
+                alignment: Alignment.center,
                 children: [
                   Container(
                     width: double.infinity,
-                    height: 56,
+                    height: 35,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(30),
                       color: Colors.black,
@@ -165,11 +250,11 @@ class _LoginPageState extends State<LoginPage> {
                   ElevatedButton(
                     onPressed: loginUserWithEmailAndPassword,
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
-                      minimumSize: Size.fromHeight(45),
+                      minimumSize: Size(double.infinity, 40),
                       backgroundColor: Color(0xFFBF0000),
                     ),
                     child: const Text(
@@ -177,7 +262,7 @@ class _LoginPageState extends State<LoginPage> {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -247,7 +332,6 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   _buildSocialIcon('https://i.imgur.com/tOB1B2j.png'),
                   _buildSocialIcon('https://i.imgur.com/oY1eSza.png'),
-                  _buildSocialIcon('https://i.imgur.com/yfeZ8Km.png'),
                 ],
               ),
             ],
@@ -257,8 +341,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildInputField(
-      String label, TextEditingController controller, bool isPassword) {
+  Widget _buildInputField(String label, TextEditingController controller,
+      bool isPassword, bool hasError) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -276,11 +360,15 @@ class _LoginPageState extends State<LoginPage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
             color: Colors.grey[200],
+            border: Border.all(
+              color: hasError ? Color(0xFFBF0000) : Colors.transparent,
+              width: 2,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
                 blurRadius: 3,
-                offset: Offset(2, 2),
+                offset: const Offset(2, 2),
               ),
             ],
           ),
@@ -299,10 +387,10 @@ class _LoginPageState extends State<LoginPage> {
               border: InputBorder.none,
               suffixIcon: isPassword
                   ? IconButton(
-                      icon: Icon(
-                        _obscureText ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
-                      ),
+                      icon: Icon(_obscureText
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      color: Colors.grey,
                       onPressed: _togglePasswordVisibility,
                     )
                   : null,
@@ -315,15 +403,17 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildSocialIcon(String imageUrl) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (imageUrl == 'https://i.imgur.com/tOB1B2j.png') {
           signInWithGoogle();
+        } else if (imageUrl == 'https://i.imgur.com/oY1eSza.png') {
+          signInWithFacebook();
         }
       },
       child: Container(
         width: 50,
         height: 50,
-        margin: EdgeInsets.all(5),
+        margin: EdgeInsets.all(2),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.grey[200],
