@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                 'Login',
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: screenWidth * 0.09,
+                  fontSize: screenWidth * 0.11,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
