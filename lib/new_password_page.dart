@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'Login.dart'; // Import the Login Page
+import 'login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class NewPasswordPage extends StatefulWidget {
@@ -16,6 +16,9 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
 
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
+
+  String? _newPasswordError;
+  String? _confirmPasswordError;
 
   @override
   void dispose() {
@@ -44,6 +47,75 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
       return 'Password must contain at least one special character.';
     }
     return null;
+  }
+
+  void _showFailureDialog() {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+            vertical: screenHeight * 0.02,
+            horizontal: screenWidth * 0.05,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.03),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFBF0000),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: screenWidth * 0.15,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              Text(
+                'Reset Password Failed',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.045,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              Text(
+                'Please communicate with us to reset your password.',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.035,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              Text(
+                '38389003',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.045,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFBF0000),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _showSuccessDialog() {
@@ -109,6 +181,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
               const Text(
@@ -131,7 +204,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
     );
 
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pop(context); // Close the dialog
+      Navigator.pop(context);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -140,111 +213,150 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
   }
 
   void _resetPassword() async {
-    if (_formKey.currentState!.validate()) {
-      if (_newPasswordController.text != _confirmPasswordController.text) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Passwords do not match.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+    setState(() {
+      _newPasswordError = _validatePassword(_newPasswordController.text);
+      _confirmPasswordError =
+          _confirmPasswordController.text != _newPasswordController.text
+              ? 'Passwords do not match.'
+              : null;
+    });
 
+    if (_newPasswordError == null && _confirmPasswordError == null) {
       try {
         User? user = FirebaseAuth.instance.currentUser;
+
         if (user != null) {
           await user.updatePassword(_newPasswordController.text);
+
           _showSuccessDialog();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Error: No user found. Please log in again to reset the password.',
-              ),
+            SnackBar(
+              content: Text('Error: No user found. Please log in again.'),
               backgroundColor: Colors.red,
             ),
           );
-        }
-      } catch (error) {
-        if (error.toString().contains('requires-recent-login')) {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                backgroundColor: Colors.white,
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 25, horizontal: 20),
-                title: Container(
-                  padding: EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFBF0000),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 50,
-                  ),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Reset Password Success',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Please wait. You will be directed to login page',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w300,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(height: 15),
-                    CircularProgressIndicator(
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-
-          await Future.delayed(const Duration(seconds: 3));
 
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LoginPage()),
           );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to reset password: ${error.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
         }
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error: ${error.toString()}',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+
+        _showFailureDialog();
       }
     }
   }
 
+  Widget _buildPasswordField(
+    String label,
+    TextEditingController controller,
+    bool isNewPassword,
+    String? errorMessage,
+  ) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        SizedBox(height: screenHeight * 0.005),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(screenWidth * 0.04),
+            color: Colors.grey[200],
+            border: Border.all(
+              color: errorMessage != null
+                  ? const Color(0xFFBF0000)
+                  : Colors.transparent,
+              width: screenWidth * 0.005,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: screenWidth * 0.02,
+                offset: Offset(screenWidth * 0.01, screenWidth * 0.01),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: controller,
+            obscureText:
+                isNewPassword ? _obscureNewPassword : _obscureConfirmPassword,
+            decoration: InputDecoration(
+              hintText: 'Enter $label'.toLowerCase(),
+              hintStyle: TextStyle(
+                color: Colors.grey,
+                fontSize: screenWidth * 0.03,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.02,
+                horizontal: screenWidth * 0.03,
+              ),
+              border: InputBorder.none,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  isNewPassword
+                      ? (_obscureNewPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility)
+                      : (_obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                  color: Colors.grey,
+                ),
+                onPressed: () {
+                  setState(() {
+                    if (isNewPassword) {
+                      _obscureNewPassword = !_obscureNewPassword;
+                    } else {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+        ),
+        if (errorMessage != null)
+          Padding(
+            padding: EdgeInsets.only(top: screenHeight * 0.005),
+            child: Text(
+              errorMessage,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: screenWidth * 0.03,
+                color: const Color(0xFFBF0000),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -263,56 +375,61 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: screenHeight - keyboardHeight,
+              minHeight: screenHeight,
             ),
             child: IntrinsicHeight(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 20),
-                      const Center(
+                      SizedBox(height: screenHeight * 0.05),
+                      Center(
                         child: Text(
                           'Reset Password',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: screenWidth * 0.09,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
                             fontFamily: 'Poppins',
+                            color: Colors.black,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: screenHeight * 0.04),
+                      _buildPasswordField('New Password',
+                          _newPasswordController, true, _newPasswordError),
+                      SizedBox(height: screenHeight * 0.03),
                       _buildPasswordField(
-                          'New Password', _newPasswordController, true),
-                      const SizedBox(height: 20),
-                      _buildPasswordField('Confirm Password',
-                          _confirmPasswordController, false),
-                      const SizedBox(height: 30),
+                          'Confirm Password',
+                          _confirmPasswordController,
+                          false,
+                          _confirmPasswordError),
+                      SizedBox(height: screenHeight * 0.05),
                       ElevatedButton(
                         onPressed: _resetPassword,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFBF0000),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          padding: EdgeInsets.symmetric(
+                              vertical: screenHeight * 0.02),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius:
+                                BorderRadius.circular(screenWidth * 0.03),
                           ),
-                          minimumSize: const Size.fromHeight(50),
+                          minimumSize: Size.fromHeight(screenHeight * 0.07),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Reset',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: screenWidth * 0.045,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'Poppins',
                           ),
                         ),
                       ),
-                      const Spacer(),
+                      SizedBox(height: screenHeight * 0.02),
                     ],
                   ),
                 ),
@@ -321,79 +438,6 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildPasswordField(
-      String label, TextEditingController controller, bool isNewPassword) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            text: '$label ',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-              fontFamily: 'Poppins',
-            ),
-            children: const [
-              TextSpan(
-                text: '*',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText:
-              isNewPassword ? _obscureNewPassword : _obscureConfirmPassword,
-          decoration: InputDecoration(
-            hintText: 'Enter $label'.toLowerCase(),
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: Colors.grey[200],
-            contentPadding:
-                const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide.none,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                isNewPassword
-                    ? (_obscureNewPassword
-                        ? Icons.visibility_off
-                        : Icons.visibility)
-                    : (_obscureConfirmPassword
-                        ? Icons.visibility_off
-                        : Icons.visibility),
-                color: Colors.grey,
-              ),
-              onPressed: () {
-                setState(() {
-                  if (isNewPassword) {
-                    _obscureNewPassword = !_obscureNewPassword;
-                  } else {
-                    _obscureConfirmPassword = !_obscureConfirmPassword;
-                  }
-                });
-              },
-            ),
-          ),
-          validator: isNewPassword
-              ? _validatePassword
-              : (value) {
-                  if (value != _newPasswordController.text) {
-                    return 'Passwords do not match.';
-                  }
-                  return null;
-                },
-        ),
-      ],
     );
   }
 }

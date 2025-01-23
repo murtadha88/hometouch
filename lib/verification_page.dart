@@ -5,9 +5,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class VerificationPage extends StatefulWidget {
-  final String email; // Pass the user's email from ResetPasswordPage
-  final String
-      verificationCode; // Pass the verification code from ResetPasswordPage
+  final String email;
+  final String verificationCode;
 
   const VerificationPage({
     super.key,
@@ -136,6 +135,9 @@ class _VerificationPageState extends State<VerificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
@@ -150,90 +152,76 @@ class _VerificationPageState extends State<VerificationPage> {
         backgroundColor: Colors.white,
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: screenHeight * 0.03),
+              Center(
+                child: Text(
+                  'Enter Verification Number',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.06,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 20),
-                        const Center(
-                          child: Text(
-                            'Enter Verification Number',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
+              ),
+              SizedBox(height: screenHeight * 0.05),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(6, (index) {
+                  return SizedBox(
+                    width: screenWidth * 0.12,
+                    child: TextField(
+                      controller: _controllers[index],
+                      focusNode: focusNodes[index],
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      maxLength: 1,
+                      decoration: InputDecoration(
+                        counterText: '',
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
                         ),
-                        const SizedBox(height: 40),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: List.generate(6, (index) {
-                            return SizedBox(
-                              width: 40,
-                              child: TextField(
-                                controller: _controllers[index],
-                                focusNode: focusNodes[index],
-                                textAlign: TextAlign.center,
-                                keyboardType: TextInputType.number,
-                                maxLength: 1,
-                                decoration: InputDecoration(
-                                  counterText: '',
-                                  filled: true,
-                                  fillColor: Colors.grey[200],
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  errorText: _isCodeValid ? null : '',
-                                ),
-                                onChanged: (value) {
-                                  if (value.isNotEmpty && index < 5) {
-                                    focusNodes[index + 1].requestFocus();
-                                  } else if (value.isEmpty && index > 0) {
-                                    focusNodes[index - 1].requestFocus();
-                                  }
-                                  if (index == 5 && value.isNotEmpty) {
-                                    _verifyCode();
-                                  }
-                                },
-                              ),
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: GestureDetector(
-                            onTap: _resendCode,
-                            child: const Text(
-                              'Send Again?',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFFBF0000),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        const SizedBox(height: 20),
-                      ],
+                        errorText: _isCodeValid ? null : '',
+                      ),
+                      onChanged: (value) {
+                        if (value.isNotEmpty && index < 5) {
+                          focusNodes[index + 1].requestFocus();
+                        } else if (value.isEmpty && index > 0) {
+                          focusNodes[index - 1].requestFocus();
+                        }
+                        if (index == 5 && value.isNotEmpty) {
+                          _verifyCode();
+                        }
+                      },
+                    ),
+                  );
+                }),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: _resendCode,
+                  child: Text(
+                    'Send Again?',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: const Color(0xFFBF0000),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-            );
-          },
+              Spacer(),
+            ],
+          ),
         ),
       ),
     );

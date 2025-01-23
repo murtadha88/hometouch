@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'verification_page.dart';
 
 class ResetPasswordPage extends StatefulWidget {
@@ -14,8 +15,10 @@ class ResetPasswordPage extends StatefulWidget {
 class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final TextEditingController _emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isButtonDisabled = true;
   String? _errorMessage;
+  bool _isEmailValid = true;
 
   @override
   void dispose() {
@@ -34,10 +37,32 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     return null;
   }
 
+  Future<void> _checkEmailExists(String email) async {
+    try {
+      final signInMethods =
+          await _auth.fetchSignInMethodsForEmail(email.trim());
+      setState(() {
+        _isEmailValid = signInMethods.isNotEmpty; // Check if email exists
+      });
+
+      if (_isEmailValid) {
+        _errorMessage = null; // Clear any previous error messages
+      } else {
+        _errorMessage = "This email is not registered.";
+      }
+    } catch (e) {
+      setState(() {
+        _isEmailValid = false;
+        _errorMessage = "Error checking email: ${e.toString()}";
+      });
+    }
+  }
+
   void _onEmailChanged(String value) {
     setState(() {
       _isButtonDisabled = _validateEmail(value) != null;
       _errorMessage = _validateEmail(value);
+      _isEmailValid = true; // Reset email validation on every change
     });
   }
 
@@ -85,31 +110,23 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     }
   }
 
-  Future<void> _sendVerificationCode(String email, String code) async {
-    try {
-      await sendEmailWithMailjet(email, code);
+  Future<void> _sendCode() async {
+    if (_formKey.currentState!.validate()) {
+      await _checkEmailExists(
+          _emailController.text.trim()); // Check email exists
+      if (!_isEmailValid) return;
 
+      final code = _generateVerificationCode();
+      await sendEmailWithMailjet(_emailController.text.trim(), code);
+
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Verification code sent to $email.'),
+          content: Text(
+              'Verification code sent to ${_emailController.text.trim()}.'),
           backgroundColor: Colors.green,
         ),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to send verification code.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _sendCode() async {
-    if (_formKey.currentState!.validate()) {
-      final code = _generateVerificationCode();
-
-      await _sendVerificationCode(_emailController.text.trim(), code);
 
       Navigator.push(
         context,
@@ -123,11 +140,74 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     }
   }
 
+  Widget _buildEmailInputField(double screenWidth, double screenHeight) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Email',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: screenWidth * 0.04,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        SizedBox(height: screenHeight * 0.005),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(screenWidth * 0.04),
+            color: Colors.grey[200],
+            border: Border.all(
+              color:
+                  !_isEmailValid ? const Color(0xFFBF0000) : Colors.transparent,
+              width: screenWidth * 0.005,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: screenWidth * 0.02,
+                offset: Offset(screenWidth * 0.01, screenWidth * 0.01),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              hintText: 'example@gmail.com',
+              hintStyle: TextStyle(
+                color: Colors.grey,
+                fontSize: screenWidth * 0.04,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.02,
+                horizontal: screenWidth * 0.03,
+              ),
+              border: InputBorder.none,
+            ),
+            onChanged: _onEmailChanged,
+            validator: _validateEmail,
+          ),
+        ),
+        SizedBox(height: screenHeight * 0.01),
+        if (!_isEmailValid && _errorMessage != null)
+          Text(
+            _errorMessage!,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: screenWidth * 0.03,
+              color: const Color(0xFFBF0000),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -146,94 +226,54 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         child: SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: screenHeight - keyboardHeight,
+              minHeight: screenHeight,
             ),
-            child: IntrinsicHeight(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      const Center(
-                        child: Text(
-                          'Reset Password',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: screenHeight * 0.05),
+                    Center(
+                      child: Text(
+                        'Reset Password',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.09,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                      const SizedBox(height: 40),
-                      RichText(
-                        text: TextSpan(
-                          text: 'Email ',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                          children: const [
-                            TextSpan(
-                              text: '*',
-                              style: TextStyle(
-                                color: Color(0xFFBF0000),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                    ),
+                    SizedBox(height: screenHeight * 0.04),
+                    _buildEmailInputField(screenWidth, screenHeight),
+                    SizedBox(height: screenHeight * 0.03),
+                    ElevatedButton(
+                      onPressed: _isButtonDisabled ? null : _sendCode,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isButtonDisabled
+                            ? Colors.grey
+                            : const Color(0xFFBF0000),
+                        padding:
+                            EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.03),
+                        ),
+                        minimumSize: Size.fromHeight(screenHeight * 0.07),
+                      ),
+                      child: Text(
+                        'Send Code',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          hintText: 'example@gmail.com',
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          filled: true,
-                          fillColor: Colors.grey[200],
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 15,
-                            horizontal: 20,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                          errorText: _errorMessage,
-                        ),
-                        onChanged: _onEmailChanged,
-                        validator: _validateEmail,
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _isButtonDisabled ? null : _sendCode,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isButtonDisabled
-                              ? Colors.grey
-                              : Color(0xFFBF0000),
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          minimumSize: const Size.fromHeight(50),
-                        ),
-                        child: const Text(
-                          'Send Code',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
-                  ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                  ],
                 ),
               ),
             ),

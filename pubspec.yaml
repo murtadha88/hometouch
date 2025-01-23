@@ -40,6 +40,7 @@ dependencies:
   flutter_facebook_auth: ^7.1.1
   http: ^1.1.0
   flutter_keyboard_visibility: ^6.0.0
+  cloud_firestore: ^5.6.2
 
 dev_dependencies:
   flutter_test:
