@@ -126,7 +126,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => PrivactPolicy()),
+                  MaterialPageRoute(builder: (context) => PrivacyPolicy()),
                 );
               },
             ),
@@ -136,7 +136,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => PrivactPolicy()),
+                  MaterialPageRoute(builder: (context) => PrivacyPolicy()),
                 );
               },
             ),

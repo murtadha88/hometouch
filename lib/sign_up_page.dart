@@ -292,7 +292,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              PrivactPolicy()),
+                                              PrivacyPolicy()),
                                     );
                                   },
                               ),
