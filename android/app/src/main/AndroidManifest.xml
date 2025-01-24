@@ -6,7 +6,7 @@
     </queries>
 
     <application
-        android:label="hometouch"
+        android:label="HomeTouch"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

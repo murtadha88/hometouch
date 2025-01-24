@@ -55,13 +55,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
           _statusText = "Starting...";
         } else if (_progress < 0.6) {
           _statusText = "In Progress...";
-          _checkNetwork();
         } else if (_progress < 1.0) {
           _statusText = "Almost Done...";
         } else {
           _statusText = "Completed!";
           _progress = 1.0;
           _isNavigating = false;
+          _checkNetwork();
           _timer?.cancel();
         }
       });
@@ -177,8 +177,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 40.0),
-                  child: Image.network(
-                    "https://i.imgur.com/OEBcKJP.png",
+                  child: Image.asset(
+                    "assets/logo.png",
                     width: 350,
                     height: 350,
                     fit: BoxFit.contain,

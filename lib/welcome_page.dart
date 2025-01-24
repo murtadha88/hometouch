@@ -14,8 +14,8 @@ class WelcomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.network(
-                  "https://i.imgur.com/YAdipxY.png",
+                Image.asset(
+                  "assets/YAdipxY.png",
                   height: 300,
                   width: 300,
                   fit: BoxFit.contain,

@@ -14,8 +14,8 @@ class ThirdWelcomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.network(
-                  "https://i.imgur.com/nsBfMGm.jpeg",
+                Image.asset(
+                  "assets/nsBfMGm.jpeg",
                   height: 300,
                   width: 300,
                   fit: BoxFit.contain,

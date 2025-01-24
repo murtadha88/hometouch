@@ -341,10 +341,8 @@ class _LoginPageState extends State<LoginPage> {
                 alignment: WrapAlignment.center,
                 spacing: screenWidth * 0.05,
                 children: [
-                  _buildSocialIcon(
-                      'https://i.imgur.com/tOB1B2j.png', screenWidth),
-                  _buildSocialIcon(
-                      'https://i.imgur.com/oY1eSza.png', screenWidth),
+                  _buildSocialIcon('assets/google.png', screenWidth),
+                  _buildSocialIcon('assets/facebock.png', screenWidth),
                 ],
               ),
             ],
@@ -420,9 +418,9 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildSocialIcon(String imageUrl, double screenWidth) {
     return GestureDetector(
       onTap: () async {
-        if (imageUrl == 'https://i.imgur.com/tOB1B2j.png') {
+        if (imageUrl == 'assets/google.png') {
           signInWithGoogle();
-        } else if (imageUrl == 'https://i.imgur.com/oY1eSza.png') {
+        } else if (imageUrl == 'assets/facebock.png') {
           signInWithFacebook();
         }
       },
@@ -434,7 +432,7 @@ class _LoginPageState extends State<LoginPage> {
           shape: BoxShape.circle,
           color: Colors.grey[200],
           image: DecorationImage(
-            image: NetworkImage(imageUrl),
+            image: AssetImage(imageUrl),
             fit: BoxFit.cover,
           ),
         ),
