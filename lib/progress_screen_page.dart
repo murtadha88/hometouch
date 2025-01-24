@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:hometouch/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome_page.dart';
-// import 'home_page.dart';
+import 'login_page.dart';
+import 'network_error_page.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -15,22 +16,38 @@ class ProgressScreen extends StatefulWidget {
 class _ProgressScreenState extends State<ProgressScreen> {
   double _progress = 0.0;
   String _statusText = "Starting...";
-  late Timer _timer;
+  Timer? _timer;
+  late StreamSubscription<dynamic> _connectivitySubscription;
+  bool _isNavigating = false;
+  bool _hasConnection = true;
+  bool _isOnNetworkErrorPage = false;
 
   @override
   void initState() {
     super.initState();
     _startProgress();
+
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((dynamic result) {
+      if (result is ConnectivityResult) {
+        _handleConnectivityChange(result);
+      } else if (result is List<ConnectivityResult>) {
+        if (result.isNotEmpty) {
+          _handleConnectivityChange(result.first);
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
+    _connectivitySubscription.cancel();
     super.dispose();
   }
 
   void _startProgress() {
-    _timer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 300), (timer) async {
       setState(() {
         _progress += 0.06;
 
@@ -38,37 +55,113 @@ class _ProgressScreenState extends State<ProgressScreen> {
           _statusText = "Starting...";
         } else if (_progress < 0.6) {
           _statusText = "In Progress...";
+          _checkNetwork();
         } else if (_progress < 1.0) {
           _statusText = "Almost Done...";
         } else {
           _statusText = "Completed!";
           _progress = 1.0;
-          _timer.cancel();
-
-          if (mounted) {
-            _checkFirstTime();
-          }
+          _isNavigating = false;
+          _timer?.cancel();
         }
       });
     });
   }
 
-  Future<void> _checkFirstTime() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _checkNetwork() async {
+    if (_isNavigating) return;
 
+    var connectivityResult = await Connectivity().checkConnectivity();
+    _hasConnection = connectivityResult != ConnectivityResult.none;
+
+    if (!_hasConnection) {
+      _navigateToNetworkErrorPage();
+    } else {
+      await _checkFirstTime();
+    }
+  }
+
+  Future<void> _checkFirstTime() async {
+    if (_isNavigating) return;
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
+
+    setState(() {
+      _isNavigating = true;
+      _isOnNetworkErrorPage = false;
+    });
 
     if (isFirstTime) {
       await prefs.setBool('isFirstTime', false);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WelcomePage()),
-      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const WelcomePage()),
+        );
+      }
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
+    }
+
+    setState(() {
+      _isNavigating = false;
+    });
+  }
+
+  void _handleConnectivityChange(ConnectivityResult result) {
+    bool hasConnectivity = result != ConnectivityResult.none;
+
+    if (!hasConnectivity && !_isOnNetworkErrorPage) {
+      _navigateToNetworkErrorPage();
+    } else if (hasConnectivity && _isOnNetworkErrorPage) {
+      setState(() {
+        _isOnNetworkErrorPage = false;
+      });
+      _checkNetwork();
+    }
+  }
+
+  void _navigateToNetworkErrorPage() async {
+    if (_isNavigating || !mounted || _isOnNetworkErrorPage) return;
+
+    setState(() {
+      _isNavigating = true;
+      _isOnNetworkErrorPage = true;
+    });
+
+    bool? isNetworkRestored = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NetworkErrorPage(
+          onConnectionRestored: () {
+            setState(() {
+              _progress = 0.0;
+              _statusText = "Starting...";
+            });
+            _startProgress();
+            setState(() {
+              _isNavigating = false;
+              _isOnNetworkErrorPage = false;
+            });
+            _checkNetwork();
+          },
+        ),
+      ),
+    );
+
+    if (isNetworkRestored == true) {
+      setState(() {
+        _progress = 0.0;
+        _statusText = "Starting...";
+      });
+      _startProgress();
+      _checkNetwork();
     }
   }
 
@@ -119,10 +212,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     Text(
                       '${(_progress * 100).toInt()}% $_statusText',
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFBF0000),
-                      ),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFBF0000)),
                     ),
                   ],
                 ),
