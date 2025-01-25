@@ -111,17 +111,32 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       }
 
       try {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        // Create a user with FirebaseAuth
+        final UserCredential userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text,
           password: _passwordController.text,
         );
 
-        await FirebaseFirestore.instance.collection('customer').add({
-          'Name': _nameController.text,
-          'Phone': _phoneController.text,
-          'Email': _emailController.text,
-        });
+        // Get the user ID (uid)
+        final String userId = userCredential.user!.uid;
 
+        // Add user data to Firestore with the userId as the document ID
+        try {
+          await FirebaseFirestore.instance
+              .collection('Customer')
+              .doc(userId)
+              .set({
+            'Name': _nameController.text,
+            'Phone': _phoneController.text,
+            'Email': _emailController.text,
+          });
+          print("User successfully added to Firestore.");
+        } catch (e) {
+          print("Error adding user to Firestore: $e");
+        }
+
+        // Show success dialog
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -166,6 +181,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           },
         );
 
+        // Redirect to the login page after a delay
         Future.delayed(const Duration(seconds: 3), () {
           Navigator.pop(context);
           Navigator.pop(context);

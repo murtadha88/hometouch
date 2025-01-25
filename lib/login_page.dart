@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:hometouch/reset_password_page.dart';
 import 'sign_up_page.dart';
+import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -97,7 +98,10 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       Future.delayed(const Duration(seconds: 3), () {
-        Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomeTouchScreen()),
+        );
       });
     } on FirebaseAuthException catch (e) {
       setState(() {
