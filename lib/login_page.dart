@@ -146,6 +146,11 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Google Sign-in successful!')),
       );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomeTouchScreen()),
+      );
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

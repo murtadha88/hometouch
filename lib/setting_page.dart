@@ -3,6 +3,8 @@ import 'pravicy_policy_page.dart';
 import 'term_of_services_page.dart';
 
 class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }

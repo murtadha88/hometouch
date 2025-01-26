@@ -4,8 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 class NetworkErrorPage extends StatefulWidget {
   final VoidCallback onConnectionRestored;
 
-  const NetworkErrorPage({Key? key, required this.onConnectionRestored})
-      : super(key: key);
+  const NetworkErrorPage({super.key, required this.onConnectionRestored});
 
   @override
   State<NetworkErrorPage> createState() => _NetworkErrorPageState();

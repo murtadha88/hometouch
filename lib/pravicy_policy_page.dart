@@ -8,6 +8,8 @@ void main() {
 }
 
 class PrivacyPolicy extends StatelessWidget {
+  const PrivacyPolicy({super.key});
+
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;

@@ -168,6 +168,108 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     }
   }
 
+  Future<void> applyCombinedFilters() async {
+    setState(() {
+      isFetching = true;
+    });
+
+    try {
+      Query query = FirebaseFirestore.instance.collection('vendor');
+
+      // Apply vendor type filter
+      if (isHomeVendorSelected) {
+        query = query.where('Vendor_Type', isEqualTo: 'Homemade');
+      } else if (isFoodTruckSelected) {
+        query = query.where('Vendor_Type', isEqualTo: 'Food Truck');
+      }
+
+      // Apply category filter
+      if (selectedCategory != null) {
+        if (selectedCategory == "Trending") {
+          final ordersSnapshot =
+              await FirebaseFirestore.instance.collection('order').get();
+
+          final Map<String, int> vendorOrderCount = {};
+          for (var orderDoc in ordersSnapshot.docs) {
+            final vendorRef = orderDoc['Vendor_ID'] as DocumentReference?;
+            if (vendorRef != null) {
+              final vendorId = vendorRef.id;
+              vendorOrderCount[vendorId] =
+                  (vendorOrderCount[vendorId] ?? 0) + 1;
+            }
+          }
+
+          final sortedVendors = vendorOrderCount.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+          final topVendorIds =
+              sortedVendors.take(10).map((entry) => entry.key).toList();
+
+          if (topVendorIds.isNotEmpty) {
+            query = query.where(FieldPath.documentId, whereIn: topVendorIds);
+          } else {
+            print("No vendors found for the trending category.");
+            setState(() {
+              filteredVendors = [];
+            });
+            return;
+          }
+        } else {
+          double minRating = 0.0;
+          double maxRating = 5.0;
+
+          if (selectedCategory == "5 ★") {
+            minRating = 5.0;
+            maxRating = 5.0;
+          } else if (selectedCategory == "4 ★") {
+            minRating = 4.0;
+            maxRating = 4.9;
+          } else if (selectedCategory == "3 ★") {
+            minRating = 3.0;
+            maxRating = 3.9;
+          } else if (selectedCategory == "2 ★") {
+            minRating = 2.0;
+            maxRating = 2.9;
+          } else if (selectedCategory == "1 ★") {
+            minRating = 1.0;
+            maxRating = 1.9;
+          }
+
+          query = query
+              .where('Rating', isGreaterThanOrEqualTo: minRating)
+              .where('Rating', isLessThanOrEqualTo: maxRating);
+        }
+      }
+
+      // Fetch filtered vendors
+      final querySnapshot = await query.get();
+      setState(() {
+        filteredVendors = querySnapshot.docs.map((doc) {
+          final data = Map<String, dynamic>.from(doc.data() as Map);
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+      });
+
+      // Scroll to "All Vendors" section
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = allVendorsKey.currentContext;
+        if (context != null) {
+          Scrollable.ensureVisible(
+            context,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    } catch (e) {
+      print("Error applying combined filters: $e");
+    } finally {
+      setState(() {
+        isFetching = false;
+      });
+    }
+  }
+
   Future<void> fetchVendorsByFilter(String category) async {
     setState(() {
       isFetching = true;
@@ -252,6 +354,22 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     }
   }
 
+  Future<void> filterVendorsByType(String type) async {
+    setState(() {
+      // Toggle the filter state based on the current selection
+      if (type == "Homemade") {
+        isHomeVendorSelected = !isHomeVendorSelected;
+        isFoodTruckSelected = false; // Deselect the other filter
+      } else if (type == "Food Truck") {
+        isFoodTruckSelected = !isFoodTruckSelected;
+        isHomeVendorSelected = false; // Deselect the other filter
+      }
+    });
+
+    // Apply combined filters
+    await applyCombinedFilters();
+  }
+
   Future<void> scrollToCategory(String category) async {
     setState(() {
       // Select or deselect the category
@@ -275,21 +393,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     }
 
     // Fetch vendors by filter
-    if (selectedCategory != null) {
-      await fetchVendorsByFilter(category);
-    }
-
-    // Scroll to the "All Vendors" section
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final context = allVendorsKey.currentContext;
-      if (context != null) {
-        Scrollable.ensureVisible(
-          context,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
+    await applyCombinedFilters();
   }
 
   @override
@@ -487,10 +591,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                   children: [
                     // Home Vendor Filter
                     GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          isHomeVendorSelected = !isHomeVendorSelected;
-                        });
+                      onTap: () async {
+                        await filterVendorsByType("Homemade");
                       },
                       child: Container(
                         width: screenWidth * 0.4,
@@ -544,10 +646,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
                     // Food Truck Filter
                     GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          isFoodTruckSelected = !isFoodTruckSelected;
-                        });
+                      onTap: () async {
+                        await filterVendorsByType("Food Truck");
                       },
                       child: Container(
                         width: screenWidth * 0.4,

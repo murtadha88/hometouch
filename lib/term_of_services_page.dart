@@ -9,6 +9,8 @@ void main() {
 }
 
 class TermsOfServicePage extends StatelessWidget {
+  const TermsOfServicePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
