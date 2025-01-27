@@ -13,6 +13,8 @@ class HomeTouchScreen extends StatefulWidget {
 
 //----------------------- Variables-----------------------
 class _HomeTouchScreenState extends State<HomeTouchScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   // final List<bool> _isFavorite = [false, false, false];
   bool isHomeVendorSelected = false;
   bool isFoodTruckSelected = false;
@@ -22,12 +24,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   int trackNavBarIcons = 0;
 
   final GlobalKey allVendorsKey = GlobalKey();
-
-  final List<String> images = [
-    'https://i.imgur.com/rAr9H3z.jpeg',
-    'https://i.imgur.com/PdD9UDt.jpeg',
-    'https://i.imgur.com/1XXOKNE.jpeg'
-  ];
 
   final List<String> categories = [
     "Trending",
@@ -39,11 +35,13 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   ];
 
   String? selectedCategory;
+  String? selectedCategoryFilter;
   final ScrollController _categoriesScrollController = ScrollController();
   final ScrollController _allVendorsScrollController = ScrollController();
 
   List<Map<String, dynamic>> allVendors = [];
   List<Map<String, dynamic>> filteredVendors = [];
+  List<String> images = [];
   bool isFetching = false;
   Timer? _timer;
 
@@ -51,6 +49,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   void initState() {
     super.initState();
     fetchAllVendors();
+    fetchPromotions();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
@@ -78,6 +77,39 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     _categoriesScrollController.dispose();
     _allVendorsScrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> fetchPromotions() async {
+    setState(() {
+      isFetching = true;
+    });
+
+    try {
+      final now = DateTime.now();
+      final promotionsQuery = await _firestore
+          .collection('promotion')
+          .where('Start_Date', isLessThanOrEqualTo: now)
+          .where('End_Date', isGreaterThanOrEqualTo: now)
+          .get();
+
+      print(
+          'Promotions Query Snapshot: ${promotionsQuery.docs.length}'); // Debug log
+
+      setState(() {
+        images = promotionsQuery.docs.map((doc) {
+          final data = doc.data();
+          return data['Image'] as String? ?? ''; // Safe cast to String
+        }).toList();
+      });
+
+      print('Fetched Images: $images'); // Debug log
+    } catch (e) {
+      print("Error fetching promotions: $e");
+    } finally {
+      setState(() {
+        isFetching = false;
+      });
+    }
   }
 
   Stream<List<Map<String, dynamic>>> fetchVendors() {
@@ -161,7 +193,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
           data['id'] = doc.id;
           return data;
         }).toList();
-        filteredVendors = allVendors;
+        filteredVendors =
+            allVendors; // Initialize filteredVendors with all vendors
       });
     } catch (e) {
       print("Error fetching vendors: $e");
@@ -174,18 +207,30 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     });
 
     try {
-      Query query = FirebaseFirestore.instance.collection('vendor');
+      List<Map<String, dynamic>> filtered = allVendors;
 
       // Apply vendor type filter
       if (isHomeVendorSelected) {
-        query = query.where('Vendor_Type', isEqualTo: 'Homemade');
+        filtered = filtered
+            .where((vendor) => vendor['Vendor_Type'] == 'Homemade')
+            .toList();
       } else if (isFoodTruckSelected) {
-        query = query.where('Vendor_Type', isEqualTo: 'Food Truck');
+        filtered = filtered
+            .where((vendor) => vendor['Vendor_Type'] == 'Food Truck')
+            .toList();
       }
 
       // Apply category filter
+      if (selectedCategoryFilter != null) {
+        filtered = filtered
+            .where((vendor) => vendor['Category'] == selectedCategoryFilter)
+            .toList();
+      }
+
+      // Apply rating filter
       if (selectedCategory != null) {
         if (selectedCategory == "Trending") {
+          // Fetch trending vendors (you can implement this logic separately)
           final ordersSnapshot =
               await FirebaseFirestore.instance.collection('order').get();
 
@@ -204,15 +249,9 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
           final topVendorIds =
               sortedVendors.take(10).map((entry) => entry.key).toList();
 
-          if (topVendorIds.isNotEmpty) {
-            query = query.where(FieldPath.documentId, whereIn: topVendorIds);
-          } else {
-            print("No vendors found for the trending category.");
-            setState(() {
-              filteredVendors = [];
-            });
-            return;
-          }
+          filtered = filtered
+              .where((vendor) => topVendorIds.contains(vendor['id']))
+              .toList();
         } else {
           double minRating = 0.0;
           double maxRating = 5.0;
@@ -234,20 +273,17 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
             maxRating = 1.9;
           }
 
-          query = query
-              .where('Rating', isGreaterThanOrEqualTo: minRating)
-              .where('Rating', isLessThanOrEqualTo: maxRating);
+          filtered = filtered
+              .where((vendor) =>
+                  vendor['Rating'] >= minRating &&
+                  vendor['Rating'] <= maxRating)
+              .toList();
         }
       }
 
-      // Fetch filtered vendors
-      final querySnapshot = await query.get();
+      // Update filteredVendors
       setState(() {
-        filteredVendors = querySnapshot.docs.map((doc) {
-          final data = Map<String, dynamic>.from(doc.data() as Map);
-          data['id'] = doc.id;
-          return data;
-        }).toList();
+        filteredVendors = filtered;
       });
 
       // Scroll to "All Vendors" section
@@ -363,6 +399,20 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
       } else if (type == "Food Truck") {
         isFoodTruckSelected = !isFoodTruckSelected;
         isHomeVendorSelected = false; // Deselect the other filter
+      }
+    });
+
+    // Apply combined filters
+    await applyCombinedFilters();
+  }
+
+  Future<void> filterVendorsByCategory(String category) async {
+    setState(() {
+      // Toggle the category filter
+      if (selectedCategoryFilter == category) {
+        selectedCategoryFilter = null; // Deselect if already selected
+      } else {
+        selectedCategoryFilter = category;
       }
     });
 
@@ -555,19 +605,22 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                       width: 1,
                     ),
                   ),
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: images.length,
-                    itemBuilder: (context, index) {
-                      return ClipRRect(
-                        borderRadius: BorderRadius.all(Radius.circular(4)),
-                        child: Image.network(
-                          images[index],
-                          fit: BoxFit.cover,
+                  child: isFetching || images.isEmpty
+                      ? Center(child: CircularProgressIndicator())
+                      : PageView.builder(
+                          controller: _pageController,
+                          itemCount: images.length,
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(4)),
+                              child: Image.network(
+                                images[index],
+                                fit: BoxFit.cover,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ),
             ),
@@ -599,8 +652,10 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                         height: screenHeight * 0.21,
                         decoration: BoxDecoration(
                           color: isHomeVendorSelected
-                              ? Colors.grey[300]
-                              : Colors.grey[100],
+                              ? Colors
+                                  .grey[300] // grey background when selected
+                              : Colors.grey[
+                                  100], // light grey background when unselected
                           borderRadius: BorderRadius.circular(7.0),
                           image: const DecorationImage(
                             image:
@@ -608,9 +663,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                             fit: BoxFit.contain,
                           ),
                           border: Border.all(
-                            color: isHomeVendorSelected
-                                ? const Color(0xFFBF0000)
-                                : Colors.transparent,
+                            color: Colors.transparent, // Remove border
                             width: 2.0,
                           ),
                           boxShadow: [
@@ -632,7 +685,9 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                                 child: Text(
                                   "Home Vendor",
                                   style: TextStyle(
-                                    color: Colors.black,
+                                    color: isHomeVendorSelected
+                                        ? Color(0xFFBF0000)
+                                        : Colors.black,
                                     fontWeight: FontWeight.bold,
                                     fontSize: screenWidth * 0.05,
                                   ),
@@ -663,9 +718,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                             fit: BoxFit.contain,
                           ),
                           border: Border.all(
-                            color: isFoodTruckSelected
-                                ? const Color(0xFFBF0000)
-                                : Colors.transparent,
+                            color: Colors.transparent, // Remove border
                             width: 2.0,
                           ),
                           boxShadow: [
@@ -686,7 +739,9 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                                 child: Text(
                                   "Food Truck",
                                   style: TextStyle(
-                                    color: Colors.black,
+                                    color: isFoodTruckSelected
+                                        ? Color(0xFFBF0000)
+                                        : Colors.black,
                                     fontWeight: FontWeight.bold,
                                     fontSize: screenWidth * 0.05,
                                   ),
@@ -716,7 +771,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                 child: Text(
                   "Categories",
                   style: TextStyle(
-                    fontSize: screenWidth * 0.045,
+                    fontSize: screenWidth * 0.06,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -730,21 +785,53 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   children: [
                     _buildCategoryCard(
-                        "Burger", "https://i.imgur.com/ZV72h1n.png"),
+                      category: "Burger",
+                      imageUrl: "https://i.imgur.com/ZV72h1n.png",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                     _buildCategoryCard(
-                        "Pizza", "https://i.imgur.com/GfF6ETR.jpeg"),
+                      category: "Pizza",
+                      imageUrl: "https://i.imgur.com/h5FfoBJ.png",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                     _buildCategoryCard(
-                        "Pasta", "https://i.imgur.com/9fcibiI.png"),
+                      category: "Pasta",
+                      imageUrl: "https://i.imgur.com/9fcibiI.png",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                     _buildCategoryCard(
-                        "Arab", "https://i.imgur.com/V9w7Rn5.jpeg"),
+                      category: "Arab",
+                      imageUrl: "https://i.imgur.com/GeFNHwg.png",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                     _buildCategoryCard(
-                        "Seafood", "https://i.imgur.com/9RDFums.png"),
+                      category: "Seafood",
+                      imageUrl: "https://i.imgur.com/9RDFums.png",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                     _buildCategoryCard(
-                        "Dessert", "https://i.imgur.com/Yblx4m1.jpeg"),
+                      category: "Dessert",
+                      imageUrl: "https://i.imgur.com/balQfIA.png",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                     _buildCategoryCard(
-                        "Drinks", "https://i.imgur.com/MZ1ADk7.jpeg"),
+                      category: "Drinks",
+                      imageUrl: "https://i.imgur.com/MZ1ADk7.jpeg",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                     _buildCategoryCard(
-                        "Breakfast", "https://i.imgur.com/ICe9P88.jpeg"),
+                      category: "Breakfast",
+                      imageUrl: "https://i.imgur.com/pyWuh4o.png",
+                      selectedCategoryFilter: selectedCategoryFilter,
+                      onCategoryTap: filterVendorsByCategory,
+                    ),
                   ],
                 ),
               ),
@@ -945,16 +1032,20 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 }
 
 //-----------------------Category Widget-----------------------
-Widget _buildCategoryCard(String category, String imageUrl) {
+Widget _buildCategoryCard({
+  required String category,
+  required String imageUrl,
+  required String? selectedCategoryFilter,
+  required Function(String) onCategoryTap,
+}) {
   return GestureDetector(
-    onTap: () {
-      // Placeholder for future functionality
-      // Navigate to category-specific page or perform action
+    onTap: () async {
+      await onCategoryTap(category);
     },
     child: Padding(
       padding: const EdgeInsets.only(right: 16.0),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Prevent overflow by adjusting size
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 80,
@@ -965,16 +1056,35 @@ Widget _buildCategoryCard(String category, String imageUrl) {
                 image: NetworkImage(imageUrl),
                 fit: BoxFit.cover,
               ),
+              color: selectedCategoryFilter == category
+                  ? Colors.grey[300] // grey background when selected
+                  : Colors.grey[100],
+              border: Border.all(
+                color: Colors.transparent, // Removed red border
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 2.0,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8.0),
           Flexible(
             child: Text(
               category,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis, // Prevent overflow by truncating
-              maxLines: 1, // Limit the number of lines to avoid overflow
-              textAlign: TextAlign.center, // Center-align the category name
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: selectedCategoryFilter == category
+                    ? const Color(0xFFBF0000)
+                    : Colors.black,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.center,
             ),
           ),
         ],
