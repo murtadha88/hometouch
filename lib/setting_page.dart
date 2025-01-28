@@ -15,12 +15,19 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(70),
+        preferredSize: Size.fromHeight(screenHeight * 0.1),
         child: AppBar(
           leading: Padding(
-            padding: const EdgeInsets.only(top: 20.0, left: 8.0, right: 8.0),
+            padding: EdgeInsets.only(
+              top: screenHeight * 0.03,
+              left: screenWidth * 0.02,
+              right: screenWidth * 0.02,
+            ),
             child: GestureDetector(
               onTap: () {
                 Navigator.pop(context);
@@ -28,27 +35,29 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFFBF0000),
+                  color: const Color(0xFFBF0000),
                 ),
                 alignment: Alignment.center,
-                padding: const EdgeInsets.only(
-                    top: 8.0, left: 12.0, right: 4.0, bottom: 8.0),
-                child: Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.white,
-                  size: 18,
+                padding: EdgeInsets.all(screenHeight * 0.01),
+                child: Padding(
+                  padding: EdgeInsets.only(left: screenWidth * 0.02),
+                  child: Icon(
+                    Icons.arrow_back_ios,
+                    color: Colors.white,
+                    size: screenWidth * 0.055,
+                  ),
                 ),
               ),
             ),
           ),
           title: Padding(
-            padding: const EdgeInsets.only(top: 20.0),
+            padding: EdgeInsets.only(top: screenHeight * 0.02),
             child: Text(
               'Setting',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
-                fontSize: 20,
+                fontSize: screenWidth * 0.06,
               ),
             ),
           ),
@@ -56,35 +65,37 @@ class _SettingsPageState extends State<SettingsPage> {
           backgroundColor: Colors.white,
           elevation: 0,
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(1),
+            preferredSize: Size.fromHeight(screenHeight * 0.002),
             child: Divider(
-              thickness: 1,
+              thickness: screenHeight * 0.001,
               color: Colors.grey[300],
-              height: 1,
-              indent: 0,
-              endIndent: 0,
+              height: screenHeight * 0.002,
             ),
           ),
         ),
       ),
       backgroundColor: Colors.white,
       body: Padding(
-        padding: const EdgeInsets.only(top: 20.0),
+        padding:
+            EdgeInsets.only(top: screenHeight * 0.03), // Adjust top padding
         child: ListView(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(screenWidth * 0.04), // Adjust padding
               child: Text(
                 'GENERAL',
                 style: TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
+                  fontSize: screenWidth * 0.05, // Adjust font size
                 ),
               ),
             ),
             ListTile(
-              title: Text('Push Notification'),
+              title: Text('Push Notification',
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.045)), // Adjust text size
               trailing: Switch(
                 value: isPushNotificationEnabled,
                 activeColor: Colors.white,
@@ -99,7 +110,9 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             ListTile(
-              title: Text('Location'),
+              title: Text('Location',
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.045)), // Adjust text size
               trailing: Switch(
                 value: isLocationEnabled,
                 activeColor: Colors.white,
@@ -112,19 +125,23 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(screenWidth * 0.04), // Adjust padding
               child: Text(
                 'OTHER',
                 style: TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
+                  fontSize: screenWidth * 0.05, // Adjust font size
                 ),
               ),
             ),
             ListTile(
-              title: Text('About Us'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              title: Text('About Us',
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.045)), // Adjust text size
+              trailing: Icon(Icons.arrow_forward_ios,
+                  size: screenWidth * 0.04), // Adjust icon size
               onTap: () {
                 Navigator.push(
                   context,
@@ -133,8 +150,11 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             ListTile(
-              title: Text('Privacy Policy'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              title: Text('Privacy Policy',
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.045)), // Adjust text size
+              trailing: Icon(Icons.arrow_forward_ios,
+                  size: screenWidth * 0.04), // Adjust icon size
               onTap: () {
                 Navigator.push(
                   context,
@@ -143,8 +163,11 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             ListTile(
-              title: Text('Terms of Service'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              title: Text('Terms of Service',
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.045)), // Adjust text size
+              trailing: Icon(Icons.arrow_forward_ios,
+                  size: screenWidth * 0.04), // Adjust icon size
               onTap: () {
                 Navigator.push(
                   context,
@@ -157,11 +180,4 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: SettingsPage(),
-  ));
 }

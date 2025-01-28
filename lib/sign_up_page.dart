@@ -56,7 +56,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       return 'Email is required.';
     }
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
-      return 'Enter a valid email address.';
+      return 'Please enter a valid email.';
     }
     return null;
   }
@@ -98,6 +98,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       _showErrors = true;
     });
 
+    // First, validate the form using the synchronous validators
     if (_formKey.currentState!.validate()) {
       if (!_termsAccepted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -111,10 +112,26 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       }
 
       try {
+        // Check if the email already exists
+        final email = _emailController.text.trim();
+        final signInMethods =
+            await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+
+        if (signInMethods.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text('Email already exists. Please use a different email.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return; // Stop the process if the email already exists
+        }
+
         // Create a user with FirebaseAuth
         final UserCredential userCredential =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text,
+          email: email,
           password: _passwordController.text,
         );
 
@@ -129,7 +146,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               .set({
             'Name': _nameController.text,
             'Phone': _phoneController.text,
-            'Email': _emailController.text,
+            'Email': _emailController.text.trim(),
+            'Customer_ID': userId, // Save UID in Firestore
           });
           print("User successfully added to Firestore.");
         } catch (e) {

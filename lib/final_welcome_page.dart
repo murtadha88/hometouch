@@ -15,7 +15,7 @@ class FinalPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset(
-                  "assets/snTOtoK.png",
+                  "assets/snTOtoK.jpeg",
                   height: 300,
                   width: 300,
                   fit: BoxFit.contain,

@@ -54,7 +54,7 @@ class TermsOfServicePage extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
-                fontSize: screenWidth * 0.05,
+                fontSize: screenWidth * 0.06,
               ),
             ),
           ),

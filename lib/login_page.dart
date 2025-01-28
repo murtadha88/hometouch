@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/reset_password_page.dart';
 import 'sign_up_page.dart';
 import 'home_page.dart';
@@ -41,61 +42,7 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text.trim(),
       );
 
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          final screenHeight = MediaQuery.of(context).size.height;
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            contentPadding: EdgeInsets.symmetric(
-                vertical: screenHeight * 0.03, horizontal: screenWidth * 0.05),
-            title: Container(
-              padding: EdgeInsets.all(screenWidth * 0.05),
-              decoration: const BoxDecoration(
-                color: Color(0xFFBF0000),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check,
-                color: Colors.white,
-                size: screenWidth * 0.12,
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Login Success',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: screenWidth * 0.05,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.01),
-                Container(
-                  alignment: Alignment.center,
-                  child: Text(
-                    'Please wait. You will be directed to the home page',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: screenWidth * 0.035,
-                      fontWeight: FontWeight.w300,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                CircularProgressIndicator(
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
-                ),
-              ],
-            ),
-          );
-        },
-      );
+      _showSuccessDialog();
 
       Future.delayed(const Duration(seconds: 3), () {
         Navigator.push(
@@ -141,16 +88,22 @@ class _LoginPageState extends State<LoginPage> {
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential);
+      UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google Sign-in successful!')),
-      );
+      // Save user details to Firestore
+      await _saveUserToFirestore(userCredential.user);
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => HomeTouchScreen()),
-      );
+      // Show dialog after successful login
+      _showSuccessDialog();
+
+      // Navigate to Home page after a brief delay
+      Future.delayed(const Duration(seconds: 3), () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomeTouchScreen()),
+        );
+      });
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -160,12 +113,109 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<UserCredential> signInWithFacebook() async {
-    final LoginResult loginResult = await FacebookAuth.instance.login();
-    final OAuthCredential facebookAuthCredential =
-        FacebookAuthProvider.credential(loginResult.accessToken!.tokenString);
+  Future<void> signInWithFacebook() async {
+    try {
+      final LoginResult loginResult = await FacebookAuth.instance.login();
+      if (loginResult.status != LoginStatus.success) return;
 
-    return FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
+      final OAuthCredential facebookAuthCredential =
+          FacebookAuthProvider.credential(loginResult.accessToken!.tokenString);
+
+      UserCredential userCredential =
+          await _auth.signInWithCredential(facebookAuthCredential);
+
+      // Save user details to Firestore
+      await _saveUserToFirestore(userCredential.user);
+
+      // Show dialog after successful login
+      _showSuccessDialog();
+
+      // Navigate to Home page after a brief delay
+      Future.delayed(const Duration(seconds: 3), () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomeTouchScreen()),
+        );
+      });
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text(e.message ?? 'An error occurred during Facebook Sign-in')),
+      );
+    }
+  }
+
+// Function to save user details to Firestore
+  Future<void> _saveUserToFirestore(User? user) async {
+    if (user == null) return;
+
+    final userRef =
+        FirebaseFirestore.instance.collection('Customer').doc(user.uid);
+    await userRef.set({
+      'Customer_ID': user.uid,
+      'Name': user.displayName ?? 'No Name',
+      'Email': user.email ?? 'No Email',
+    });
+  }
+
+// Show Success Dialog
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+              vertical: screenHeight * 0.03, horizontal: screenWidth * 0.05),
+          title: Container(
+            padding: EdgeInsets.all(screenWidth * 0.05),
+            decoration: const BoxDecoration(
+              color: Color(0xFFBF0000),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check,
+              color: Colors.white,
+              size: screenWidth * 0.12,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Login Success',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              Container(
+                alignment: Alignment.center,
+                child: Text(
+                  'Please wait. You will be directed to the home page',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: screenWidth * 0.035,
+                    fontWeight: FontWeight.w300,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              CircularProgressIndicator(
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
