@@ -37,18 +37,20 @@ class _DrawerScreenState extends State<DrawerScreen> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // Drawer header with a fixed height
-                  DrawerHeader(
+                  // Drawer header with a container instead of DrawerHeader
+                  Container(
+                    height: screenHeight * 0.181, // Custom height for header
                     decoration: BoxDecoration(
                       color: const Color(
-                          0xFFBF0000), // Background color for DrawerHeader
+                          0xFFBF0000), // Background color for the header
                     ),
                     child: Padding(
                       padding: EdgeInsets.only(
-                          bottom:
-                              screenHeight * 0.17, // Adjusted bottom padding
-                          right:
-                              screenWidth * 0.03), // Adjust padding dynamically
+                        bottom: screenHeight *
+                            0.05, // Adjust bottom padding to reduce height
+                        right: screenWidth * 0.03, // Adjust padding dynamically
+                        left: screenWidth * 0.05,
+                      ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -62,7 +64,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             ),
                           ),
                           SizedBox(
-                            width: screenWidth * 0.05,
+                            width: screenWidth * 0.07,
                           ),
                           Text(
                             'HomeTouch', // Title text
@@ -80,7 +82,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
 
                   // The main list of items below the header
                   Padding(
-                    padding: EdgeInsets.only(bottom: screenHeight * 0.04),
+                    padding: EdgeInsets.only(top: screenHeight * 0.1),
                     child: Column(
                       children: [
                         _buildDrawerItem(
@@ -115,7 +117,6 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
                           onTap: () {
-                            // Navigator.pop(context); // Close the drawer
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -145,7 +146,6 @@ class _DrawerScreenState extends State<DrawerScreen> {
                               isHelpExpanded =
                                   !isHelpExpanded; // Toggle expansion
                               if (selectedSubItemIndex == null) {
-                                // If no sub-item is selected, keep Help selected
                                 widget.onItemTapped(5); // Highlight Help item
                               }
                             });
@@ -235,15 +235,16 @@ class _DrawerScreenState extends State<DrawerScreen> {
   }) {
     return Padding(
       padding: EdgeInsets.only(
-          left: screenWidth * 0.06, // Reduced left padding
-          right: screenWidth * 0.06), // Adjusted right padding
+        left: screenWidth * 0.06, // Reduced left padding
+        right: screenWidth * 0.06,
+      ), // Adjusted right padding
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white, // Ensure background is white
         ),
         child: Column(
           children: [
-            const Divider(color: Colors.grey),
+            const Divider(color: Colors.grey, height: 4),
             ListTile(
               leading: Icon(icon, color: const Color(0xFFBF0000)),
               title: Text(
@@ -267,9 +268,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                 }
               },
             ),
-            if (isExpandable && isExpanded) ...[
-              ...subItems!,
-            ],
+            if (isExpandable && isExpanded) ...[...subItems!],
           ],
         ),
       ),
@@ -287,10 +286,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
   }) {
     return Padding(
       padding: EdgeInsets.only(
-          left: screenWidth * 0.08, // Adjusted left padding
-          right: screenWidth * 0.04,
-          top: screenHeight * 0.008, // Adjusted dynamic padding
-          bottom: screenHeight * 0.008), // Adjusted dynamic padding
+        left: screenWidth * 0.08, // Adjusted left padding for sub-items
+        right: screenWidth * 0.04,
+      ),
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFFBF0000)),
         title: Text(

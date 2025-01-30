@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'side_bar.dart';
+import 'address_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -649,7 +650,25 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                 child: IconButton(
                   icon: const Icon(Icons.location_on_outlined,
                       color: Colors.white),
-                  onPressed: () {},
+                  onPressed: () {
+                    // Show the Address Dialog as a BottomSheet
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true, // Allow it to expand as needed
+                      backgroundColor:
+                          Colors.transparent, // Transparent background
+                      builder: (BuildContext context) {
+                        return AddressDialog(
+                          screenWidth: screenWidth,
+                          screenHeight: screenHeight,
+                          onClose: () {
+                            Navigator.pop(
+                                context); // Close the bottom sheet when the close button is pressed
+                          },
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],
