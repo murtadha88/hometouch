@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 
 class AddAddressPage extends StatefulWidget {
   const AddAddressPage({super.key});
@@ -47,7 +48,7 @@ class _AddAddressPageState extends State<AddAddressPage> {
   void initState() {
     super.initState();
     _initialCameraPosition =
-        CameraPosition(target: _currentLocation, zoom: 14.0);
+        CameraPosition(target: _currentLocation, zoom: 16.0);
     _getCurrentLocation(); // Get initial location when the page loads
   }
 
@@ -104,9 +105,13 @@ class _AddAddressPageState extends State<AddAddressPage> {
       _currentLocation = LatLng(position.latitude, position.longitude);
       _initialCameraPosition =
           CameraPosition(target: _currentLocation, zoom: 14.0);
+
+      // Move the camera to the user's current location after getting the position
+      _mapController.animateCamera(CameraUpdate.newLatLng(_currentLocation));
     });
   }
 
+  // Save Address to Firestore
   // Save Address to Firestore
   Future<void> _saveAddress() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -124,8 +129,8 @@ class _AddAddressPageState extends State<AddAddressPage> {
         'Building': int.tryParse(_buildingController.text) ?? 0,
         'Road': int.tryParse(_roadController.text) ?? 0,
         'Block': int.tryParse(_blockController.text) ?? 0,
-        'Latitude': _currentLocation.latitude,
-        'Longitude': _currentLocation.longitude,
+        'Location': GeoPoint(_currentLocation.latitude,
+            _currentLocation.longitude), // Using GeoPoint
       });
 
       ScaffoldMessenger.of(context)
@@ -138,85 +143,124 @@ class _AddAddressPageState extends State<AddAddressPage> {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
+    double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: Padding(
+          padding: EdgeInsets.only(
+            top: screenHeight * 0.03,
+            left: screenWidth * 0.02,
+            right: screenWidth * 0.02,
+          ),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFBF0000),
+              ),
+              alignment: Alignment.center,
+              padding: EdgeInsets.all(screenHeight * 0.01),
+              child: Padding(
+                padding: EdgeInsets.only(left: screenWidth * 0.02),
+                child: Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                  size: screenWidth * 0.055,
+                ),
+              ),
+            ),
+          ),
+        ),
+        title: Padding(
+          padding: EdgeInsets.only(top: screenHeight * 0.02),
+          child: Text(
+            'Add Address',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+              fontSize: screenWidth * 0.06,
+            ),
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
-      body: Column(
-        children: [
-          // Google Map for location selection
-          Container(
-            height: screenHeight * 0.4,
-            width: double.infinity,
-            child: GoogleMap(
-              initialCameraPosition: _initialCameraPosition,
-              onMapCreated: (GoogleMapController controller) {
-                _mapController = controller;
-              },
-              markers: {
-                Marker(
-                  markerId: MarkerId("current_location"),
-                  position: _currentLocation,
-                ),
-              },
-              onCameraMove: (CameraPosition position) {
-                setState(() {
-                  _currentLocation = position.target;
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: ['Building', 'Apartment', 'Office'].map((type) {
-                return GestureDetector(
-                  onTap: () {
+      body: SingleChildScrollView(
+        // Wrap the entire body with SingleChildScrollView
+        child: Padding(
+          padding: EdgeInsets.only(
+              bottom: keyboardHeight), // Add padding for the keyboard
+          child: Column(
+            children: [
+              // Google Map for location selection
+              Container(
+                height: screenHeight * 0.4,
+                width: double.infinity,
+                child: GoogleMap(
+                  initialCameraPosition: _initialCameraPosition,
+                  onMapCreated: (GoogleMapController controller) {
+                    _mapController = controller;
+                    _mapController.animateCamera(CameraUpdate.newLatLng(
+                        _currentLocation)); // Move to current location
+                  },
+                  markers: {
+                    Marker(
+                        markerId: MarkerId("current_location"),
+                        position: _currentLocation),
+                  },
+                  onCameraMove: (CameraPosition position) {
                     setState(() {
-                      selectedType = type;
+                      _currentLocation = position.target;
                     });
                   },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.05,
-                      vertical: screenHeight * 0.015,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selectedType == type
-                          ? const Color(0xFFBF0000)
-                          : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      type,
-                      style: TextStyle(
-                        color:
-                            selectedType == type ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: ['Building', 'Apartment', 'Office'].map((type) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedType = type;
+                        });
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                          vertical: screenHeight * 0.015,
+                        ),
+                        decoration: BoxDecoration(
+                          color: selectedType == type
+                              ? const Color(0xFFBF0000)
+                              : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          type,
+                          style: TextStyle(
+                            color: selectedType == type
+                                ? Colors.white
+                                : Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Forms Section with Scrollbar
-          Expanded(
-            child: Scrollbar(
-              thumbVisibility: true,
-              thickness: 6,
-              radius: const Radius.circular(10),
-              child: SingleChildScrollView(
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Forms Section with Scrollable Inputs
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,10 +277,10 @@ class _AddAddressPageState extends State<AddAddressPage> {
                   ],
                 ),
               ),
-            ),
+              const SizedBox(height: 10), // Space below forms for aesthetic
+            ],
           ),
-          const SizedBox(height: 10), // Space below forms for aesthetic
-        ],
+        ),
       ),
     );
   }

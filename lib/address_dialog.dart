@@ -157,7 +157,16 @@ class _AddressDialogState extends State<AddressDialog> {
                           .getFullAddress(), // Get the full address dynamically
                     ))
                 : [
-                    Center(child: CircularProgressIndicator())
+                    Center(
+                      child: Text(
+                        'No saved address', // Message to show when there are no addresses
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
                   ], // Show a loader if no addresses are available
             Padding(
               padding: EdgeInsets.symmetric(
@@ -179,11 +188,13 @@ class _AddressDialogState extends State<AddressDialog> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => AddAddressPage()),
-                          );
+                          if (mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => AddAddressPage()),
+                            );
+                          }
                         },
                         child: Icon(Icons.add,
                             color: Color.fromARGB(255, 226, 62, 62),
