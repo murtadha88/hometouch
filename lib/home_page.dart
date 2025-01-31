@@ -4,6 +4,7 @@ import 'side_bar.dart';
 import 'address_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'menu_page.dart';
 
 class HomeTouchScreen extends StatefulWidget {
   const HomeTouchScreen({super.key});
@@ -765,26 +766,27 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
                     return Padding(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      child: GestureDetector(
-                        onTap: () {
-                          print("Tapped on ${vendor['Name']}");
+                      child: _buildAllVendorCard(
+                        screenWidth: screenWidth,
+                        screenHeight: screenHeight,
+                        title: vendor['Name'] ?? "Unknown",
+                        rating: vendor['Rating']?.toString() ?? "0.0",
+                        price: "BHD 0.600",
+                        imageUrl: vendor['Logo']?.isNotEmpty == true
+                            ? vendor['Logo']
+                            : 'https://via.placeholder.com/150',
+                        isFavorite: isFavorite,
+                        onCardTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  FoodMenuPage(vendorId: vendor['id']),
+                            ),
+                          );
                         },
-                        child: _buildAllVendorCard(
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          title: vendor['Name'] ?? "Unknown",
-                          rating: vendor['Rating']?.toString() ?? "0.0",
-                          price: "BHD 0.600",
-                          imageUrl: vendor['Logo']?.isNotEmpty == true
-                              ? vendor['Logo']
-                              : 'https://via.placeholder.com/150',
-                          isFavorite: isFavorite,
-                          onCardTap: () {
-                            print("Tapped on ${vendor['Name']}");
-                          },
-                          vendorId: vendorId, // Pass the validated vendor ID
-                          userId: userId,
-                        ),
+                        vendorId: vendorId, // Pass the validated vendor ID
+                        userId: userId,
                       ),
                     );
                   },
@@ -1170,7 +1172,13 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                           : 'https://via.placeholder.com/150',
                       isFavorite: isFavorite,
                       onCardTap: () {
-                        print("Tapped on ${vendor['Name']}");
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                FoodMenuPage(vendorId: vendor['id']),
+                          ),
+                        );
                       },
                       vendorId: vendor['id'],
                       userId: userId,
@@ -1225,7 +1233,13 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                             : 'https://via.placeholder.com/150',
                         isFavorite: isFavorite,
                         onCardTap: () {
-                          print("Tapped on ${vendor['Name']}");
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  FoodMenuPage(vendorId: vendor['id']),
+                            ),
+                          );
                         },
                         vendorId: vendor['id'],
                         userId: userId,
