@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'pravicy_policy_page.dart';
 import 'term_of_services_page.dart';
+import 'about_us_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -145,7 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => PrivacyPolicy()),
+                  MaterialPageRoute(builder: (context) => AboutUs()),
                 );
               },
             ),

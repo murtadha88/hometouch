@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'home_page.dart';
 
 class FoodMenuPage extends StatefulWidget {
   final String vendorId;
+  final bool isFromHomePage;
 
-  const FoodMenuPage({super.key, required this.vendorId});
+  const FoodMenuPage(
+      {super.key, required this.vendorId, required this.isFromHomePage});
 
   @override
   State<FoodMenuPage> createState() => _FoodMenuPageState();
@@ -33,12 +36,11 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     _checkIfFavorite(); // Check if vendor is already favorited
   }
 
-  // Check if the vendor is already favorited
   void _getCurrentUserId() {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       setState(() {
-        customerId = user.uid; // Set the current user ID
+        customerId = user.uid;
       });
     } else {
       print("No user is currently signed in.");
@@ -267,7 +269,16 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
             ),
           ),
           onPressed: () {
-            Navigator.pop(context, true);
+            if (widget.isFromHomePage) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HomeTouchScreen(),
+                ),
+              );
+            } else {
+              Navigator.pop(context);
+            }
           },
         ),
         actions: [
@@ -303,7 +314,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Divider between AppBar and Vendor Details
-                const Divider(thickness: 1, height: 10, color: Colors.black12),
+                const Divider(thickness: 1, height: 1, color: Colors.black12),
                 // Vendor Info Section
                 Padding(
                   padding: EdgeInsets.symmetric(
@@ -369,7 +380,12 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                       size: 16,
                                     ),
                                     SizedBox(width: screenWidth * 0.01),
-                                    Text("BHD 0.600"),
+                                    Text(
+                                      "BHD 0.600",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 )
                               ],
@@ -507,10 +523,12 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                             ),
                                             Padding(
                                               padding: EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      screenWidth * 0.02,
-                                                  vertical:
-                                                      screenHeight * 0.01),
+                                                horizontal: screenWidth * 0.02,
+                                                vertical:
+                                                    item['name'].length > 18
+                                                        ? screenHeight * 0.01
+                                                        : screenHeight * 0.0235,
+                                              ),
                                               child: Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment

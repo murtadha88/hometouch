@@ -555,6 +555,30 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     return true;
   }
 
+  Future<void> _navigateToFoodMenu(String vendorId) async {
+    bool isFromHomePage = true;
+    bool refresh = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            FoodMenuPage(vendorId: vendorId, isFromHomePage: isFromHomePage),
+      ),
+    );
+
+    // If 'true' is returned (i.e., a favorite was added), refresh the page
+    if (refresh) {
+      setState(() {
+        // Refresh the page
+        fetchAllVendors();
+        fetchPromotions();
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId != null) {
+          fetchFavoriteVendors(userId); // Refresh favorite vendors
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -777,13 +801,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                             : 'https://via.placeholder.com/150',
                         isFavorite: isFavorite,
                         onCardTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FoodMenuPage(vendorId: vendor['id']),
-                            ),
-                          );
+                          _navigateToFoodMenu(vendor['id']);
                         },
                         vendorId: vendorId, // Pass the validated vendor ID
                         userId: userId,
@@ -1175,8 +1193,10 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                FoodMenuPage(vendorId: vendor['id']),
+                            builder: (context) => FoodMenuPage(
+                              vendorId: vendor['id'],
+                              isFromHomePage: true,
+                            ),
                           ),
                         );
                       },
@@ -1236,8 +1256,10 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  FoodMenuPage(vendorId: vendor['id']),
+                              builder: (context) => FoodMenuPage(
+                                vendorId: vendor['id'],
+                                isFromHomePage: true,
+                              ),
                             ),
                           );
                         },

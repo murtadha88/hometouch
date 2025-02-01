@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hometouch/about_us_page.dart';
+import 'package:hometouch/notification_page.dart';
 // import './setting_page.dart';
 import 'package:hometouch/setting_page.dart';
 
@@ -108,6 +110,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Notification',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      NotificationPage()), // Navigate to SettingsPage
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -132,6 +142,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'About Us',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      AboutUs()), // Navigate to SettingsPage
+                            );
+                          },
                         ),
                         // Help item with expandable content inside the same design
                         _buildDrawerItem(
@@ -300,17 +318,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
         selectedTileColor:
             const Color(0xFFBF0000), // Red background when selected
         onTap: () {
-          onTap(); // Trigger onTap callback to close drawer or perform action
-
-          // Handle navigation for sub-items
-          if (index == 6) {
-            // Navigate to FAQ page
-            // Navigator.push(context, MaterialPageRoute(builder: (context) => FAQPage()));
-          } else if (index == 7) {
-            // Navigate to Chat Bot page
-            // Navigator.push(context, MaterialPageRoute(builder: (context) => ChatBotPage()));
-          }
-
+          onTap();
           Navigator.pop(context); // Close the drawer after navigation
         },
       ),
