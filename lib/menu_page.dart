@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'home_page.dart';
+// import 'home_page.dart';
 
 class FoodMenuPage extends StatefulWidget {
   final String vendorId;
-  final bool isFromHomePage;
 
-  const FoodMenuPage(
-      {super.key, required this.vendorId, required this.isFromHomePage});
+  const FoodMenuPage({required this.vendorId, Key? key}) : super(key: key);
 
   @override
   State<FoodMenuPage> createState() => _FoodMenuPageState();
@@ -70,9 +68,9 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  // Toggle favorite status
+  // Remove any navigation from the favorite toggle function
   Future<void> _toggleFavorite() async {
-    if (customerId == null) return; // Skip if no user is signed in
+    if (customerId == null) return;
 
     try {
       final favoriteRef = FirebaseFirestore.instance
@@ -82,12 +80,9 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
           .doc(widget.vendorId);
 
       if (isFavorite) {
-        await favoriteRef.delete(); // Remove from favorites
+        await favoriteRef.delete();
       } else {
-        await favoriteRef.set({
-          'Vendor_ID': widget.vendorId,
-          'Type': 'vendor',
-        }); // Add to favorites
+        await favoriteRef.set({'Vendor_ID': widget.vendorId, 'Type': 'vendor'});
       }
 
       setState(() {
@@ -269,16 +264,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
             ),
           ),
           onPressed: () {
-            if (widget.isFromHomePage) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HomeTouchScreen(),
-                ),
-              );
-            } else {
-              Navigator.pop(context);
-            }
+            Navigator.pop(context);
           },
         ),
         actions: [

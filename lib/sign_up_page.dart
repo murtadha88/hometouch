@@ -144,12 +144,13 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               .collection('Customer')
               .doc(userId)
               .set({
+            'Customer_ID': userId, // Save UID in Firestore
             'Name': _nameController.text,
             'Phone': _phoneController.text,
             'Email': _emailController.text.trim(),
-            'Customer_ID': userId, // Save UID in Firestore
+            'Loyalty_Points': 0,
+            'Photo': null,
           });
-          print("User successfully added to Firestore.");
         } catch (e) {
           print("Error adding user to Firestore: $e");
         }

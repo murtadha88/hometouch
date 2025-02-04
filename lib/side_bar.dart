@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hometouch/about_us_page.dart';
+import 'package:hometouch/acoount_page.dart';
+import 'package:hometouch/faq_page.dart';
 import 'package:hometouch/notification_page.dart';
-// import './setting_page.dart';
 import 'package:hometouch/setting_page.dart';
 
 class DrawerScreen extends StatefulWidget {
@@ -21,6 +25,28 @@ class DrawerScreen extends StatefulWidget {
 class _DrawerScreenState extends State<DrawerScreen> {
   bool isHelpExpanded = false; // Track if "Help" menu is expanded
   int? selectedSubItemIndex; // Track selected sub-item index
+  String? userPhotoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserInfo();
+  }
+
+  Future<void> _getUserInfo() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(user.uid)
+          .get();
+
+      setState(() {
+        userPhotoUrl = docSnapshot['Photo'] ?? null;
+        userPhotoUrl == "" ? userPhotoUrl = null : userPhotoUrl = userPhotoUrl;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,9 +117,17 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           context,
                           index: 0,
                           icon: Icons.person,
-                          label: 'Profile',
+                          label: 'Account',
                           screenWidth: screenWidth, // Pass screenWidth
                           screenHeight: screenHeight, // Pass screenHeight
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      AccountPage()), // Navigate to SettingsPage
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -181,9 +215,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
                                   selectedSubItemIndex =
                                       6; // Mark FAQ as selected
                                 });
-                                widget.onItemTapped(
-                                    6); // Close drawer and select sub-item
-                                Navigator.pop(context); // Close the drawer
+                                widget.onItemTapped(6);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => FAQ()),
+                                );
                               },
                               screenWidth: screenWidth, // Pass screenWidth
                               screenHeight: screenHeight, // Pass screenHeight
@@ -227,9 +264,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
                 ),
                 child: CircleAvatar(
                   radius: screenWidth * 0.125, // Slightly smaller radius
-                  backgroundImage: NetworkImage(
-                    'https://i.imgur.com/OtAn7hT.jpeg',
-                  ),
+                  backgroundImage: userPhotoUrl != null
+                      ? MemoryImage(
+                          base64Decode(userPhotoUrl!)) // Show base64 image
+                      : NetworkImage(
+                          'https://i.imgur.com/OtAn7hT.jpeg',
+                        ),
                 ),
               ),
             ),
@@ -298,7 +338,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
     required int index,
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    void Function()? onTap,
     required double screenWidth, // Pass screenWidth here
     required double screenHeight, // Pass screenHeight here
   }) {
@@ -318,8 +358,12 @@ class _DrawerScreenState extends State<DrawerScreen> {
         selectedTileColor:
             const Color(0xFFBF0000), // Red background when selected
         onTap: () {
-          onTap();
-          Navigator.pop(context); // Close the drawer after navigation
+          if (onTap != null) {
+            onTap();
+            widget.onItemTapped(index);
+          } else {
+            Navigator.pop(context);
+          }
         },
       ),
     );

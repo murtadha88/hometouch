@@ -249,29 +249,8 @@ class _LoginPageState extends State<LoginPage> {
               _buildInputField('Password', _passwordController, true,
                   passwordError, screenWidth, screenHeight),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: rememberMe,
-                        onChanged: (value) {
-                          toggleRememberMe();
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      Text(
-                        'Remember me',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: screenWidth * 0.035,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
                   TextButton(
                     onPressed: () {
                       Navigator.push(
@@ -292,7 +271,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ],
               ),
-              SizedBox(height: screenHeight * 0.01),
               Stack(
                 alignment: Alignment.center,
                 children: [

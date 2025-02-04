@@ -22,7 +22,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   TextEditingController _searchController = TextEditingController();
   FocusNode _searchFocusNode = FocusNode();
 
-  bool isFavorite = false;
+  // bool isFavorite2 = false;
   final Set<String> favoriteVendors = {};
 
   bool isHomeVendorSelected = false;
@@ -120,7 +120,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
         List<Map<String, dynamic>> vendorList = snapshot.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id;
-          print("Vendor fetched: ${data['id']}"); // Debug log
           return data;
         }).toList();
         return vendorList;
@@ -141,17 +140,12 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
           .where('End_Date', isGreaterThanOrEqualTo: now)
           .get();
 
-      print(
-          'Promotions Query Snapshot: ${promotionsQuery.docs.length}'); // Debug log
-
       setState(() {
         images = promotionsQuery.docs.map((doc) {
           final data = doc.data();
           return data['Image'] as String? ?? ''; // Safe cast to String
         }).toList();
       });
-
-      print('Fetched Images: $images'); // Debug log
     } catch (e) {
       print("Error fetching promotions: $e");
     } finally {
@@ -497,32 +491,23 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
   Future<void> _toggleFavorite(String vendorId, String userId) async {
     if (vendorId.isEmpty) {
-      print("Error: Vendor ID is empty");
-      return; // Exit early if the vendor ID is empty
+      return;
     }
 
     try {
       final userRef =
           FirebaseFirestore.instance.collection('Customer').doc(userId);
+      final favoriteRef = userRef.collection('favorite').doc(vendorId);
 
-      if (favoriteVendors.contains(vendorId)) {
-        // Remove from favorites
-        await userRef.collection('favorite').doc(vendorId).delete();
-        setState(() {
+      setState(() {
+        if (favoriteVendors.contains(vendorId)) {
           favoriteVendors.remove(vendorId);
-        });
-        print("Vendor removed from favorites: $vendorId");
-      } else {
-        // Add to favorites
-        await userRef.collection('favorite').doc(vendorId).set({
-          'Vendor_ID': vendorId,
-          'Type': 'vendor',
-        });
-        setState(() {
+          favoriteRef.delete();
+        } else {
           favoriteVendors.add(vendorId);
-        });
-        print("Vendor added to favorites: $vendorId");
-      }
+          favoriteRef.set({'Vendor_ID': vendorId, 'Type': 'vendor'});
+        }
+      });
     } catch (e) {
       print("Error toggling favorite: $e");
     }
@@ -556,24 +541,18 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   }
 
   Future<void> _navigateToFoodMenu(String vendorId) async {
-    bool isFromHomePage = true;
-    bool refresh = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            FoodMenuPage(vendorId: vendorId, isFromHomePage: isFromHomePage),
+        builder: (context) => FoodMenuPage(vendorId: vendorId),
       ),
     );
 
-    // If 'true' is returned (i.e., a favorite was added), refresh the page
-    if (refresh) {
+    if (mounted) {
       setState(() {
-        // Refresh the page
-        fetchAllVendors();
-        fetchPromotions();
         final userId = FirebaseAuth.instance.currentUser?.uid;
         if (userId != null) {
-          fetchFavoriteVendors(userId); // Refresh favorite vendors
+          fetchFavoriteVendors(userId);
         }
       });
     }
@@ -776,17 +755,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                   itemCount: vendors.length,
                   itemBuilder: (context, index) {
                     final vendor = vendors[index];
-
-                    // Get vendor ID safely, fallback to a default value if null or empty
-                    final vendorId =
-                        vendor['id'] ?? ''; // Use an empty string fallback
-                    if (vendorId.isEmpty) {
-                      print(
-                          "Warning: Vendor ID is empty!"); // Add a warning log if the ID is empty
-                      // Prevent processing this vendor
-                    }
-
-                    bool isFavorite = favoriteVendors.contains(vendorId);
+                    final vendorId = vendor['id'] ?? '';
 
                     return Padding(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -799,9 +768,12 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                         imageUrl: vendor['Logo']?.isNotEmpty == true
                             ? vendor['Logo']
                             : 'https://via.placeholder.com/150',
-                        isFavorite: isFavorite,
-                        onCardTap: () {
-                          _navigateToFoodMenu(vendor['id']);
+                        onCardTap: () async {
+                          if (vendorId.isNotEmpty) {
+                            _navigateToFoodMenu(vendorId);
+                          } else {
+                            print("Error: Vendor ID is empty");
+                          }
                         },
                         vendorId: vendorId, // Pass the validated vendor ID
                         userId: userId,
@@ -903,7 +875,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                   ),
                 ),
                 child: isFetching || images.isEmpty
-                    ? Center(child: CircularProgressIndicator())
+                    ? Text('No Promotions')
                     : PageView.builder(
                         controller: _pageController,
                         itemCount: images.length,
@@ -1178,6 +1150,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                   itemCount: recommendedVendors.length,
                   itemBuilder: (context, index) {
                     final vendor = recommendedVendors[index];
+                    final vendorId = vendor['id'];
 
                     return _buildSuggestionVendorCard(
                       screenWidth: screenWidth,
@@ -1188,17 +1161,12 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                       imageUrl: vendor['Logo']?.isNotEmpty == true
                           ? vendor['Logo']
                           : 'https://via.placeholder.com/150',
-                      isFavorite: isFavorite,
-                      onCardTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FoodMenuPage(
-                              vendorId: vendor['id'],
-                              isFromHomePage: true,
-                            ),
-                          ),
-                        );
+                      onCardTap: () async {
+                        if (vendorId.isNotEmpty) {
+                          _navigateToFoodMenu(vendorId);
+                        } else {
+                          print("Error: Vendor ID is empty");
+                        }
                       },
                       vendorId: vendor['id'],
                       userId: userId,
@@ -1242,6 +1210,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final vendor = filteredVendors[index];
+                      final vendorId = vendor['id'];
                       return _buildAllVendorCard(
                         screenWidth: screenWidth,
                         screenHeight: screenHeight,
@@ -1251,17 +1220,12 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                         imageUrl: vendor['Logo']?.isNotEmpty == true
                             ? vendor['Logo']
                             : 'https://via.placeholder.com/150',
-                        isFavorite: isFavorite,
-                        onCardTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FoodMenuPage(
-                                vendorId: vendor['id'],
-                                isFromHomePage: true,
-                              ),
-                            ),
-                          );
+                        onCardTap: () async {
+                          if (vendorId.isNotEmpty) {
+                            _navigateToFoodMenu(vendorId);
+                          } else {
+                            print("Error: Vendor ID is empty");
+                          }
                         },
                         vendorId: vendor['id'],
                         userId: userId,
@@ -1286,7 +1250,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     required Function() onCardTap,
     required String vendorId,
     required String userId,
-    required bool isFavorite,
   }) {
     final isFavorite = favoriteVendors.contains(vendorId);
     return Padding(
@@ -1380,12 +1343,14 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     required Function() onCardTap,
     required String vendorId,
     required String userId,
-    required bool isFavorite,
   }) {
-    final isFavorite = favoriteVendors.contains(vendorId);
+    final isFavorite =
+        favoriteVendors.contains(vendorId); // Check if vendor is favorited
     return Padding(
       padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.04, vertical: screenHeight * 0.01),
+        horizontal: screenWidth * 0.04,
+        vertical: screenHeight * 0.01,
+      ),
       child: Stack(
         children: [
           GestureDetector(
@@ -1400,6 +1365,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                 padding: EdgeInsets.all(screenWidth * 0.00),
                 child: Row(
                   children: [
+                    // Vendor image and details
                     Container(
                       width: screenWidth * 0.2,
                       height: screenHeight * 0.1,
@@ -1446,6 +1412,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
               ),
             ),
           ),
+          // Favorite icon
           Positioned(
             top: screenHeight * 0.01,
             right: screenWidth * 0.04,
