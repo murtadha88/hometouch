@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hometouch/reset_password_page.dart';
-import 'sign_up_page.dart';
-import 'home_page.dart';
+import 'package:hometouch/Common%20Pages/reset_password_page.dart';
+import '../Customer View/sign_up_page.dart';
+import '../Customer View/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

@@ -3,9 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hometouch/login_page.dart';
-import 'package:hometouch/profile_page.dart';
-import 'package:hometouch/setting_page.dart';
+import 'package:hometouch/Common%20Pages/login_page.dart';
+import 'package:hometouch/Customer%20View/cart_page2.dart';
+import 'package:hometouch/Customer%20View/favorite_page.dart';
+import 'package:hometouch/Customer%20View/home_page.dart';
+import 'package:hometouch/Customer%20View/profile_page.dart';
+import 'package:hometouch/Customer%20View/setting_page.dart';
+import 'package:hometouch/Customer%20View/subscription_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -15,18 +19,59 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  int trackNavBarIcons = 0;
+  int trackNavBarIcons = 4;
   String? userPhotoUrl;
   String userName = 'Loading...';
   String userEmail = 'Loading...';
   int loyaltyPoints = 0;
   bool isSubscribed = false;
+  int _selectedIndex = 4;
 
   @override
   void initState() {
     super.initState();
     _getUserInfo();
     _checkSubscriptionStatus();
+  }
+
+  void _onItemTapped(int index) {
+    switch (index) {
+      case 0:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  HomeTouchScreen()), // Navigate to SettingsPage
+        );
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  FavoritesPage()), // Navigate to SettingsPage
+        );
+        break;
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  FavoritesPage()), // Navigate to SettingsPage
+        );
+        break;
+      case 4:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => AccountPage()), // Navigate to SettingsPage
+        );
+        break;
+    }
+    setState(() {
+      _selectedIndex = index; // Update the selected index
+    });
+    // You can add additional logic here to navigate or update UI as needed
   }
 
   Future<void> _getUserInfo() async {
@@ -215,11 +260,16 @@ class _AccountPageState extends State<AccountPage> {
             screenWidth,
             screenHeight,
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        SettingsPage()), // Navigate to SettingsPage
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true, // Allow it to expand as needed
+                backgroundColor: Colors.transparent, // Transparent background
+                builder: (BuildContext context) {
+                  return SubscriptionDialog(
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
+                  );
+                },
               );
             },
           ),
@@ -277,7 +327,7 @@ class _AccountPageState extends State<AccountPage> {
                 context,
                 MaterialPageRoute(
                     builder: (context) =>
-                        SettingsPage()), // Navigate to SettingsPage
+                        FavoritesPage()), // Navigate to SettingsPage
               );
             },
           ),
@@ -312,27 +362,83 @@ class _AccountPageState extends State<AccountPage> {
           _buildSignOutButton(context, screenWidth, screenHeight),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: trackNavBarIcons,
-        selectedItemColor: const Color(0xFFBF0000),
-        unselectedItemColor: Colors.black54,
-        onTap: (index) {
-          setState(() {
-            trackNavBarIcons = index;
-          });
-        },
-        selectedLabelStyle: const TextStyle(fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.favorite), label: "Favorite"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart), label: "Cart"),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: "Orders"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle), label: "Account"),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 2,
+        color: Colors.white,
+        child: SizedBox(
+          height: 50, // ✅ Adjust height
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(Icons.home, "Home", 0),
+              _buildNavItem(Icons.favorite_border, "Favorite", 1),
+              const SizedBox(width: 40), // Space for FloatingActionButton
+              _buildNavItem(Icons.list_alt, "Orders", 3),
+              _buildNavItem(Icons.account_circle, "Account", 4),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage2()),
+              );
+            },
+            backgroundColor: const Color(0xFFBF0000),
+            shape: const CircleBorder(),
+            elevation: 5,
+            child:
+                const Icon(Icons.shopping_cart, color: Colors.white, size: 30),
+          ),
+
+          // ✅ Show "Cart" label ONLY when cart is selected
+          if (_selectedIndex == 2) ...[
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: 1.0, // 🔽 Only show label when selected
+              child: Text(
+                "Cart",
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFBF0000),
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, int index) {
+    bool isSelected = _selectedIndex == index;
+
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: isSelected ? 32 : 22, // 🔼 Enlarges when selected
+            color: isSelected ? const Color(0xFFBF0000) : Colors.black45,
+          ),
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: isSelected ? 1.0 : 0.0, // 🔽 Only show label when selected
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFFBF0000)),
+            ),
+          ),
         ],
       ),
     );

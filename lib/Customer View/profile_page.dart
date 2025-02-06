@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:hometouch/acoount_page.dart';
-import 'package:hometouch/address_dialog.dart';
-import 'package:hometouch/reset_password_page.dart';
+import 'package:hometouch/Customer%20View/address_dialog.dart';
+import 'package:hometouch/Common%20Pages/reset_password_page.dart';
 
 class ProfilePage extends StatefulWidget {
   @override

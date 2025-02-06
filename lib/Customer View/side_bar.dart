@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:hometouch/about_us_page.dart';
-import 'package:hometouch/acoount_page.dart';
-import 'package:hometouch/faq_page.dart';
-import 'package:hometouch/notification_page.dart';
-import 'package:hometouch/setting_page.dart';
+import 'package:hometouch/Customer%20View/about_us_page.dart';
+import 'package:hometouch/Customer%20View/acoount_page.dart';
+import 'package:hometouch/Customer%20View/faq_page.dart';
+import 'package:hometouch/Customer%20View/favorite_page.dart';
+import 'package:hometouch/Customer%20View/notification_page.dart';
+import 'package:hometouch/Customer%20View/setting_page.dart';
 
 class DrawerScreen extends StatefulWidget {
   final int selectedIndex;
@@ -136,6 +137,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Favorite',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      FavoritesPage()), // Navigate to SettingsPage
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,

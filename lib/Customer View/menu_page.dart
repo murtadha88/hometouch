@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// import 'home_page.dart';
+import 'package:hometouch/Customer%20View/product_details_page.dart';
 
 class FoodMenuPage extends StatefulWidget {
   final String vendorId;
@@ -200,22 +200,14 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
       List<Map<String, dynamic>> products = [];
       for (var doc in productSnapshot.docs) {
         String name = doc['Name'] ?? '';
-        String image =
-            doc['Image'] ?? 'https://via.placeholder.com/150'; // Default image
+        String image = doc['Image'] ?? 'https://via.placeholder.com/150';
+        double price = (doc['Price'] as num?)?.toDouble() ?? 0.0;
 
-        double? price;
-        if (doc['Price'] is num) {
-          price = (doc['Price'] as num).toDouble();
-        } else if (doc['Price'] != null) {
-          print(
-              'Price for product ${doc['Name']} in category $categoryId is not a number! Value: ${doc['Price']}');
-        }
-        double actualPrice = price ?? 0.0;
-
-        if (name.isNotEmpty && actualPrice > 0) {
+        if (name.isNotEmpty && price > 0) {
           products.add({
+            'id': doc.id, // ✅ Include Product ID (doc.id)
             'name': name,
-            'price': actualPrice,
+            'price': price,
             'image': image,
           });
         }
@@ -477,85 +469,114 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                     itemCount: items.length,
                                     itemBuilder: (context, itemIndex) {
                                       final item = items[itemIndex];
-                                      return Card(
-                                        color: Colors.white,
-                                        elevation: 4,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(15),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius:
-                                                  const BorderRadius.vertical(
-                                                top: Radius.circular(15),
-                                              ),
-                                              child: _buildImage(
-                                                  item['image'], item['name']),
+
+                                      return GestureDetector(
+                                        onTap: () {
+                                          // Navigate to ProductDetailsPage when tapping the entire box
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ProductDetailsPage(
+                                                      productId: item["id"]),
                                             ),
-                                            Padding(
-                                              padding: EdgeInsets.all(
-                                                  screenWidth * 0.02),
-                                              child: Text(
-                                                item['name'],
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: screenWidth * 0.04,
+                                          );
+                                        },
+                                        child: Card(
+                                          color: Colors.white,
+                                          elevation: 4,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(15),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius:
+                                                    const BorderRadius.vertical(
+                                                  top: Radius.circular(15),
+                                                ),
+                                                child: _buildImage(
+                                                    item['image'],
+                                                    item['name']),
+                                              ),
+                                              Padding(
+                                                padding: EdgeInsets.all(
+                                                    screenWidth * 0.02),
+                                                child: Text(
+                                                  item['name'],
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize:
+                                                        screenWidth * 0.04,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: screenWidth * 0.02,
-                                                vertical:
-                                                    item['name'].length > 18
-                                                        ? screenHeight * 0.01
-                                                        : screenHeight * 0.0235,
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    'BHD ${item['price'].toStringAsFixed(2)}',
-                                                    style: TextStyle(
-                                                      color: const Color(
-                                                          0xFFBF0000),
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize:
-                                                          screenWidth * 0.04,
-                                                    ),
-                                                  ),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      // Add to cart logic
-                                                    },
-                                                    child: Container(
-                                                      padding: EdgeInsets.all(
-                                                          screenWidth * 0.02),
-                                                      decoration:
-                                                          const BoxDecoration(
-                                                        color:
-                                                            Color(0xFFBF0000),
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: Icon(
-                                                        Icons.add,
-                                                        color: Colors.white,
-                                                        size:
+                                              Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      screenWidth * 0.02,
+                                                  vertical:
+                                                      item['name'].length > 18
+                                                          ? screenHeight * 0.01
+                                                          : screenHeight *
+                                                              0.0235,
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      '${item['price'].toStringAsFixed(3)} BHD',
+                                                      style: TextStyle(
+                                                        color: const Color(
+                                                            0xFFBF0000),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize:
                                                             screenWidth * 0.04,
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                    GestureDetector(
+                                                      onTap: () {
+                                                        // Navigate when tapping the "+" button
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                ProductDetailsPage(
+                                                                    productId:
+                                                                        item[
+                                                                            "id"]),
+                                                          ),
+                                                        );
+                                                      },
+                                                      child: Container(
+                                                        padding: EdgeInsets.all(
+                                                            screenWidth * 0.02),
+                                                        decoration:
+                                                            const BoxDecoration(
+                                                          color:
+                                                              Color(0xFFBF0000),
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                        child: Icon(
+                                                          Icons.add,
+                                                          color: Colors.white,
+                                                          size: screenWidth *
+                                                              0.04,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       );
                                     },

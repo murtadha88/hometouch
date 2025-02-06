@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'new_password_page.dart';
+import '../Common Pages/new_password_page.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
