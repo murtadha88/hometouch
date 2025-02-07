@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hometouch/Customer%20View/acoount_page.dart';
+import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page2.dart';
-import 'package:hometouch/Customer%20View/home_page.dart';
 import 'menu_page.dart'; // For the vendor menu page
 import 'add_product_review.dart' as review; // Using 'review' as a prefix
 import 'product_details_page.dart'; // For the ProductDetailsPage
@@ -10,7 +9,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FavoritesPage extends StatefulWidget {
-  const FavoritesPage({super.key});
+  final bool isFromNavBar;
+
+  const FavoritesPage({super.key, this.isFromNavBar = false});
 
   @override
   State<FavoritesPage> createState() => _FavoritesPageState();
@@ -36,46 +37,6 @@ class _FavoritesPageState extends State<FavoritesPage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _onItemTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  HomeTouchScreen()), // Navigate to SettingsPage
-        );
-        break;
-      case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  FavoritesPage()), // Navigate to SettingsPage
-        );
-        break;
-      case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  FavoritesPage()), // Navigate to SettingsPage
-        );
-        break;
-      case 4:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => AccountPage()), // Navigate to SettingsPage
-        );
-        break;
-    }
-    setState(() {
-      _selectedIndex = index; // Update the selected index
-    });
-    // You can add additional logic here to navigate or update UI as needed
   }
 
   Future<void> fetchFavorites() async {
@@ -188,106 +149,101 @@ class _FavoritesPageState extends State<FavoritesPage>
 
   @override
   Widget build(BuildContext context) {
-    // Use MediaQuery to adapt to screen size
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: Padding(
-          padding: EdgeInsets.only(
-            top: screenHeight * 0.03,
-            left: screenWidth * 0.02,
-            right: screenWidth * 0.02,
-          ),
-          child: GestureDetector(
-            onTap: () {
-              Navigator.pop(context);
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFBF0000),
-              ),
-              alignment: Alignment.center,
-              padding: EdgeInsets.all(screenHeight * 0.01),
-              child: Padding(
-                padding: EdgeInsets.only(left: screenWidth * 0.02),
-                child: Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.white,
-                  size: screenWidth * 0.055,
+    return WillPopScope(
+      onWillPop: () async {
+        return !widget.isFromNavBar; // 🔴 Prevent back if from NavBar
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 1,
+          leading: widget.isFromNavBar
+              ? const SizedBox() // 🔴 Remove back button if from NavBar
+              : Padding(
+                  padding: EdgeInsets.only(
+                    top: screenHeight * 0.03,
+                    left: screenWidth * 0.02,
+                    right: screenWidth * 0.02,
+                  ),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFBF0000),
+                      ),
+                      alignment: Alignment.center,
+                      padding: EdgeInsets.all(screenHeight * 0.01),
+                      child: Padding(
+                        padding: EdgeInsets.only(left: screenWidth * 0.02),
+                        child: Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                          size: screenWidth * 0.055,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
+          title: Padding(
+            padding: EdgeInsets.only(top: screenHeight * 0.02),
+            child: Text(
+              'Favorites',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                fontSize: screenWidth * 0.06,
               ),
             ),
           ),
-        ),
-        title: Padding(
-          padding: EdgeInsets.only(top: screenHeight * 0.02),
-          child: Text(
-            'Favorites',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-              fontSize: screenWidth * 0.06,
-            ),
-          ),
-        ),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFFBF0000),
-          unselectedLabelColor: Colors.black54,
-          indicatorColor: const Color(0xFFBF0000),
-          indicatorWeight: 3,
-          tabs: const [
-            Tab(text: "Vendors", icon: Icon(Icons.store)),
-            Tab(text: "Food", icon: Icon(Icons.fastfood)),
-          ],
-        ),
-      ),
-      body: Container(
-        color: Colors.white,
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildTab(favoriteVendors, true, screenWidth, screenHeight),
-                  _buildTab(favoriteProducts, false, screenWidth, screenHeight),
-                ],
-              ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 2,
-        color: Colors.white,
-        child: SizedBox(
-          height: 50, // ✅ Adjust height
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home, "Home", 0),
-              _buildNavItem(Icons.favorite_border, "Favorite", 1),
-              const SizedBox(width: 40), // Space for FloatingActionButton
-              _buildNavItem(Icons.list_alt, "Orders", 3),
-              _buildNavItem(Icons.account_circle, "Account", 4),
+          centerTitle: true,
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: const Color(0xFFBF0000),
+            unselectedLabelColor: Colors.black54,
+            indicatorColor: const Color(0xFFBF0000),
+            indicatorWeight: 3,
+            tabs: const [
+              Tab(text: "Vendors", icon: Icon(Icons.store)),
+              Tab(text: "Food", icon: Icon(Icons.fastfood)),
             ],
           ),
         ),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton(
+        body: Container(
+          color: Colors.white,
+          child: isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
+                  ),
+                )
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildTab(favoriteVendors, true, screenWidth, screenHeight),
+                    _buildTab(
+                        favoriteProducts, false, screenWidth, screenHeight),
+                  ],
+                ),
+        ),
+        bottomNavigationBar: BottomNavBar(selectedIndex: 1),
+        floatingActionButton: Container(
+          height: 58, // Bigger size to overlap the bottom bar
+          width: 58,
+          child: FloatingActionButton(
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const CartPage2()),
-              );
+              if (_selectedIndex != 2) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage2()),
+                );
+              }
             },
             backgroundColor: const Color(0xFFBF0000),
             shape: const CircleBorder(),
@@ -295,49 +251,8 @@ class _FavoritesPageState extends State<FavoritesPage>
             child:
                 const Icon(Icons.shopping_cart, color: Colors.white, size: 30),
           ),
-
-          // ✅ Show "Cart" label ONLY when cart is selected
-          if (_selectedIndex == 2) ...[
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: 1.0, // 🔽 Only show label when selected
-              child: Text(
-                "Cart",
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFBF0000),
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    bool isSelected = _selectedIndex == index;
-
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: isSelected ? 32 : 22, // 🔼 Enlarges when selected
-            color: isSelected ? const Color(0xFFBF0000) : Colors.black45,
-          ),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isSelected ? 1.0 : 0.0, // 🔽 Only show label when selected
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFBF0000)),
-            ),
-          ),
-        ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }

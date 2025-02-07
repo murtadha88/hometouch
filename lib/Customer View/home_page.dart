@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hometouch/Customer%20View/acoount_page.dart';
+import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page2.dart';
-import 'package:hometouch/Customer%20View/favorite_page.dart';
-// import 'package:hometouch/Customer%20View/acoount_page.dart';
-// // import 'package:hometouch/Customer%20View/cart_page.dart';
-// import 'package:hometouch/Customer%20View/favorite_page.dart';
 import 'dart:async';
 import 'side_bar.dart';
 import 'address_dialog.dart';
@@ -14,7 +10,13 @@ import 'menu_page.dart';
 
 class HomeTouchScreen extends StatefulWidget {
   final int initialIndex;
-  const HomeTouchScreen({super.key, this.initialIndex = 0});
+  final bool isFromNavBar;
+
+  const HomeTouchScreen({
+    super.key,
+    this.initialIndex = 0,
+    this.isFromNavBar = false,
+  });
 
   @override
   State<HomeTouchScreen> createState() => _HomeTouchScreenState();
@@ -104,39 +106,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   }
 
   void _onItemTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  HomeTouchScreen()), // Navigate to SettingsPage
-        );
-        break;
-      case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  FavoritesPage()), // Navigate to SettingsPage
-        );
-        break;
-      case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  FavoritesPage()), // Navigate to SettingsPage
-        );
-        break;
-      case 4:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => AccountPage()), // Navigate to SettingsPage
-        );
-        break;
-    }
     setState(() {
       _selectedIndex = index; // Update the selected index
     });
@@ -725,87 +694,29 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
             onItemTapped:
                 _onItemTapped, // Pass the onItemTapped function to the drawer
           ),
-          bottomNavigationBar: BottomAppBar(
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 2,
-            color: Colors.white,
-            child: SizedBox(
-              height: 50, // ✅ Adjust height
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home, "Home", 0),
-                  _buildNavItem(Icons.favorite_border, "Favorite", 1),
-                  const SizedBox(width: 40), // Space for FloatingActionButton
-                  _buildNavItem(Icons.list_alt, "Orders", 3),
-                  _buildNavItem(Icons.account_circle, "Account", 4),
-                ],
-              ),
-            ),
-          ),
-          floatingActionButton: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FloatingActionButton(
-                onPressed: () {
+          bottomNavigationBar: BottomNavBar(selectedIndex: 0),
+          floatingActionButton: Container(
+            height: 58, // Bigger size to overlap the bottom bar
+            width: 58,
+            child: FloatingActionButton(
+              onPressed: () {
+                if (_selectedIndex != 2) {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const CartPage2()),
                   );
-                },
-                backgroundColor: const Color(0xFFBF0000),
-                shape: const CircleBorder(),
-                elevation: 5,
-                child: const Icon(Icons.shopping_cart,
-                    color: Colors.white, size: 30),
-              ),
-
-              // ✅ Show "Cart" label ONLY when cart is selected
-              if (_selectedIndex == 2) ...[
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: 1.0, // 🔽 Only show label when selected
-                  child: Text(
-                    "Cart",
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFBF0000),
-                        fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ],
+                }
+              },
+              backgroundColor: const Color(0xFFBF0000),
+              shape: const CircleBorder(),
+              elevation: 5,
+              child: const Icon(Icons.shopping_cart,
+                  color: Colors.white, size: 30),
+            ),
           ),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
         ));
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    bool isSelected = _selectedIndex == index;
-
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: isSelected ? 32 : 22, // 🔼 Enlarges when selected
-            color: isSelected ? const Color(0xFFBF0000) : Colors.black45,
-          ),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isSelected ? 1.0 : 0.0, // 🔽 Only show label when selected
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFBF0000)),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildSearchPage() {

@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/login_page.dart';
+import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page2.dart';
 import 'package:hometouch/Customer%20View/favorite_page.dart';
-import 'package:hometouch/Customer%20View/home_page.dart';
 import 'package:hometouch/Customer%20View/profile_page.dart';
 import 'package:hometouch/Customer%20View/setting_page.dart';
 import 'package:hometouch/Customer%20View/subscription_dialog.dart';
@@ -14,6 +14,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AccountPage extends StatefulWidget {
+  final bool isFromNavBar;
+
+  const AccountPage({super.key, this.isFromNavBar = false});
+
   @override
   _AccountPageState createState() => _AccountPageState();
 }
@@ -32,46 +36,6 @@ class _AccountPageState extends State<AccountPage> {
     super.initState();
     _getUserInfo();
     _checkSubscriptionStatus();
-  }
-
-  void _onItemTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  HomeTouchScreen()), // Navigate to SettingsPage
-        );
-        break;
-      case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  FavoritesPage()), // Navigate to SettingsPage
-        );
-        break;
-      case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  FavoritesPage()), // Navigate to SettingsPage
-        );
-        break;
-      case 4:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => AccountPage()), // Navigate to SettingsPage
-        );
-        break;
-    }
-    setState(() {
-      _selectedIndex = index; // Update the selected index
-    });
-    // You can add additional logic here to navigate or update UI as needed
   }
 
   Future<void> _getUserInfo() async {
@@ -166,230 +130,220 @@ class _AccountPageState extends State<AccountPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(screenHeight * 0.1),
-        child: AppBar(
-          leading: Padding(
-            padding: EdgeInsets.only(
-              top: screenHeight * 0.03,
-              left: screenWidth * 0.02,
-              right: screenWidth * 0.02,
-            ),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pop(context);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFBF0000),
+    return WillPopScope(
+      onWillPop: () async {
+        return !widget.isFromNavBar; // 🔴 Prevent back if from NavBar
+      },
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(screenHeight * 0.1),
+          child: AppBar(
+            leading: widget.isFromNavBar
+                ? const SizedBox()
+                : Padding(
+                    padding: EdgeInsets.only(
+                      top: screenHeight * 0.03,
+                      left: screenWidth * 0.02,
+                      right: screenWidth * 0.02,
+                    ),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFBF0000),
+                        ),
+                        alignment: Alignment.center,
+                        padding: EdgeInsets.all(screenHeight * 0.01),
+                        child: Padding(
+                          padding: EdgeInsets.only(left: screenWidth * 0.02),
+                          child: Icon(
+                            Icons.arrow_back_ios,
+                            color: Colors.white,
+                            size: screenWidth * 0.055,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+            title: Padding(
+              padding: EdgeInsets.only(top: screenHeight * 0.02),
+              child: Text(
+                'Account',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  fontSize: screenWidth * 0.06,
                 ),
-                alignment: Alignment.center,
-                padding: EdgeInsets.all(screenHeight * 0.01),
-                child: Padding(
-                  padding: EdgeInsets.only(left: screenWidth * 0.02),
-                  child: Icon(
-                    Icons.arrow_back_ios,
-                    color: Colors.white,
-                    size: screenWidth * 0.055,
+              ),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            bottom: PreferredSize(
+              preferredSize: Size.fromHeight(screenHeight * 0.002),
+              child: Divider(
+                thickness: screenHeight * 0.001,
+                color: Colors.grey[300],
+                height: screenHeight * 0.002,
+              ),
+            ),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        body: ListView(
+          children: [
+            _buildUserInfo(screenWidth, screenHeight),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.07),
+              child: Divider(
+                color: Color(0xFFBF0000),
+                thickness: 2.0,
+                height: 20.0,
+              ),
+            ),
+            _buildMenuItem(
+              'Profile',
+              Icons.person,
+              screenWidth,
+              screenHeight,
+              onTap: () async {
+                final updatedUserInfo = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                );
+
+                // If data is returned from ProfilePage
+                if (updatedUserInfo != null) {
+                  setState(() {
+                    userName = updatedUserInfo['name'];
+                    userEmail = updatedUserInfo['email'];
+                  });
+                }
+              },
+            ),
+            _buildMenuItem(
+              'Subscription',
+              FontAwesomeIcons.crown,
+              screenWidth,
+              screenHeight,
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true, // Allow it to expand as needed
+                  backgroundColor: Colors.transparent, // Transparent background
+                  builder: (BuildContext context) {
+                    return SubscriptionDialog(
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                    );
+                  },
+                );
+              },
+            ),
+            _buildMenuItem(
+              'Overview',
+              Icons.dashboard,
+              screenWidth,
+              screenHeight,
+              onTap: isSubscribed
+                  ? () {
+                      // Navigate to Overview Page if subscribed
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                SettingsPage()), // Replace with actual overview page
+                      );
+                    }
+                  : null,
+            ),
+            if (!isSubscribed)
+              Padding(
+                padding: EdgeInsets.only(left: screenWidth * 0.22),
+                child: Text(
+                  'Requires subscription',
+                  style: TextStyle(
+                    color: Color(0xFFBF0000),
+                    fontSize: screenWidth * 0.033,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
+            _buildLoyaltyPoints(screenWidth, screenHeight),
+            _buildMenuItem(
+              'Rewards',
+              FontAwesomeIcons.gift,
+              screenWidth,
+              screenHeight,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          SettingsPage()), // Navigate to SettingsPage
+                );
+              },
             ),
-          ),
-          title: Padding(
-            padding: EdgeInsets.only(top: screenHeight * 0.02),
-            child: Text(
-              'Account',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: screenWidth * 0.06,
-              ),
+            _buildMenuItem(
+              'Favorites',
+              Icons.favorite,
+              screenWidth,
+              screenHeight,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          FavoritesPage()), // Navigate to SettingsPage
+                );
+              },
             ),
-          ),
-          centerTitle: true,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          bottom: PreferredSize(
-            preferredSize: Size.fromHeight(screenHeight * 0.002),
-            child: Divider(
-              thickness: screenHeight * 0.001,
-              color: Colors.grey[300],
-              height: screenHeight * 0.002,
+            _buildMenuItem(
+              'Chat History',
+              Icons.chat,
+              screenWidth,
+              screenHeight,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          SettingsPage()), // Navigate to SettingsPage
+                );
+              },
             ),
-          ),
+            _buildMenuItem(
+              'Settings',
+              Icons.settings,
+              screenWidth,
+              screenHeight,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          SettingsPage()), // Navigate to SettingsPage
+                );
+              },
+            ),
+            _buildSignOutButton(context, screenWidth, screenHeight),
+          ],
         ),
-      ),
-      backgroundColor: Colors.white,
-      body: ListView(
-        children: [
-          _buildUserInfo(screenWidth, screenHeight),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.07),
-            child: Divider(
-              color: Color(0xFFBF0000),
-              thickness: 2.0,
-              height: 20.0,
-            ),
-          ),
-          _buildMenuItem(
-            'Profile',
-            Icons.person,
-            screenWidth,
-            screenHeight,
-            onTap: () async {
-              final updatedUserInfo = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfilePage()),
-              );
-
-              // If data is returned from ProfilePage
-              if (updatedUserInfo != null) {
-                setState(() {
-                  userName = updatedUserInfo['name'];
-                  userEmail = updatedUserInfo['email'];
-                });
-              }
-            },
-          ),
-          _buildMenuItem(
-            'Subscription',
-            FontAwesomeIcons.crown,
-            screenWidth,
-            screenHeight,
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true, // Allow it to expand as needed
-                backgroundColor: Colors.transparent, // Transparent background
-                builder: (BuildContext context) {
-                  return SubscriptionDialog(
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
-                  );
-                },
-              );
-            },
-          ),
-          _buildMenuItem(
-            'Overview',
-            Icons.dashboard,
-            screenWidth,
-            screenHeight,
-            onTap: isSubscribed
-                ? () {
-                    // Navigate to Overview Page if subscribed
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              SettingsPage()), // Replace with actual overview page
-                    );
-                  }
-                : null,
-          ),
-          if (!isSubscribed)
-            Padding(
-              padding: EdgeInsets.only(left: screenWidth * 0.22),
-              child: Text(
-                'Requires subscription',
-                style: TextStyle(
-                  color: Color(0xFFBF0000),
-                  fontSize: screenWidth * 0.033,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          _buildLoyaltyPoints(screenWidth, screenHeight),
-          _buildMenuItem(
-            'Rewards',
-            FontAwesomeIcons.gift,
-            screenWidth,
-            screenHeight,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        SettingsPage()), // Navigate to SettingsPage
-              );
-            },
-          ),
-          _buildMenuItem(
-            'Favorites',
-            Icons.favorite,
-            screenWidth,
-            screenHeight,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        FavoritesPage()), // Navigate to SettingsPage
-              );
-            },
-          ),
-          _buildMenuItem(
-            'Chat History',
-            Icons.chat,
-            screenWidth,
-            screenHeight,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        SettingsPage()), // Navigate to SettingsPage
-              );
-            },
-          ),
-          _buildMenuItem(
-            'Settings',
-            Icons.settings,
-            screenWidth,
-            screenHeight,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        SettingsPage()), // Navigate to SettingsPage
-              );
-            },
-          ),
-          _buildSignOutButton(context, screenWidth, screenHeight),
-        ],
-      ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 2,
-        color: Colors.white,
-        child: SizedBox(
-          height: 50, // ✅ Adjust height
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home, "Home", 0),
-              _buildNavItem(Icons.favorite_border, "Favorite", 1),
-              const SizedBox(width: 40), // Space for FloatingActionButton
-              _buildNavItem(Icons.list_alt, "Orders", 3),
-              _buildNavItem(Icons.account_circle, "Account", 4),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton(
+        bottomNavigationBar: BottomNavBar(selectedIndex: 4),
+        floatingActionButton: Container(
+          height: 58, // Bigger size to overlap the bottom bar
+          width: 58,
+          child: FloatingActionButton(
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const CartPage2()),
-              );
+              if (_selectedIndex != 2) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage2()),
+                );
+              }
             },
             backgroundColor: const Color(0xFFBF0000),
             shape: const CircleBorder(),
@@ -397,49 +351,8 @@ class _AccountPageState extends State<AccountPage> {
             child:
                 const Icon(Icons.shopping_cart, color: Colors.white, size: 30),
           ),
-
-          // ✅ Show "Cart" label ONLY when cart is selected
-          if (_selectedIndex == 2) ...[
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: 1.0, // 🔽 Only show label when selected
-              child: Text(
-                "Cart",
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFBF0000),
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    bool isSelected = _selectedIndex == index;
-
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: isSelected ? 32 : 22, // 🔼 Enlarges when selected
-            color: isSelected ? const Color(0xFFBF0000) : Colors.black45,
-          ),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isSelected ? 1.0 : 0.0, // 🔽 Only show label when selected
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Color(0xFFBF0000)),
-            ),
-          ),
-        ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
