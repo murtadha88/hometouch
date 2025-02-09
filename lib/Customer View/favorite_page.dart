@@ -20,6 +20,7 @@ class FavoritesPage extends StatefulWidget {
 class _FavoritesPageState extends State<FavoritesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  // late ScrollController _scrollController;
   List<Map<String, dynamic>> favoriteVendors = [];
   List<Map<String, dynamic>> favoriteProducts = [];
   bool isLoading = true;
@@ -30,39 +31,36 @@ class _FavoritesPageState extends State<FavoritesPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // _scrollController = ScrollController();
     fetchFavorites();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    // _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> fetchFavorites() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     try {
       final favoriteSnapshot = await FirebaseFirestore.instance
           .collection('Customer')
           .doc(user.uid)
           .collection('favorite')
           .get();
-
       List<Map<String, dynamic>> vendors = [];
       List<Map<String, dynamic>> products = [];
-
       for (var doc in favoriteSnapshot.docs) {
         var data = doc.data();
         String Favorite_ID = doc.id; // ✅ Store favorite doc ID
-
         if (data['Type'] == 'vendor') {
           final vendorDoc = await FirebaseFirestore.instance
               .collection('vendor')
               .doc(data['Vendor_ID'])
               .get();
-
           if (vendorDoc.exists && vendorDoc.data() != null) {
             var vendorData = vendorDoc.data() as Map<String, dynamic>;
             vendorData['id'] = vendorDoc.id;
@@ -72,17 +70,14 @@ class _FavoritesPageState extends State<FavoritesPage>
         } else if (data['Type'] == 'product') {
           if (data['Product_ID'] is DocumentReference) {
             DocumentReference productRef = data['Product_ID'];
-
             try {
               var productDoc = await productRef.get();
               if (productDoc.exists && productDoc.data() != null) {
                 var productData = productDoc.data() as Map<String, dynamic>;
-
                 productData['id'] = productDoc.id;
                 productData['Image'] ??= 'https://via.placeholder.com/150';
                 productData['Name'] ??= 'Unknown Product';
-                productData['Favorite_ID'] = Favorite_ID; // ✅ Store favorite ID
-
+                productData['Favorite_ID'] = Favorite_ID;
                 products.add(productData);
               }
             } catch (e) {
@@ -91,7 +86,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           }
         }
       }
-
       setState(() {
         favoriteVendors = vendors;
         favoriteProducts = products;
@@ -129,22 +123,45 @@ class _FavoritesPageState extends State<FavoritesPage>
     }
   }
 
-  void _reorderItem(Map<String, dynamic> item) {
-    // Create a cart item with default values
-    Map<String, dynamic> cartItem = {
-      "name": item["name"],
-      "price": 3.000, // Default base price
-      "quantity": 1, // Default quantity
-      "addOns": [], // No add-ons by default
-    };
+  Future<void> _reorderItem(Map<String, dynamic> item) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    // Navigate to the CartPage with the reordered item
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CartPage(cartItems: [cartItem]),
-      ),
-    );
+    try {
+      final cartRef = FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(user.uid)
+          .collection('cart');
+
+      // Check if the item is already in the cart
+      final existingItem =
+          await cartRef.where('name', isEqualTo: item["Name"]).get();
+
+      if (existingItem.docs.isNotEmpty) {
+        // If item exists, update the quantity
+        final docId = existingItem.docs.first.id;
+        final currentQuantity = existingItem.docs.first['quantity'];
+        await cartRef.doc(docId).update({'quantity': currentQuantity + 1});
+      } else {
+        // If item does not exist, add it as a new cart item
+        await cartRef.add({
+          "name": item["Name"],
+          "price": item["Price"] ?? 0.000, // Default to 3.000 if null
+          "quantity": 1, // Default quantity
+          "addOns": [], // No add-ons by default
+        });
+      }
+
+      // Navigate to the Cart Page after adding the item
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CartPage()),
+        );
+      }
+    } catch (e) {
+      print("❌ Error adding item to cart: $e");
+    }
   }
 
   @override
@@ -273,13 +290,23 @@ class _FavoritesPageState extends State<FavoritesPage>
       radius: const Radius.circular(8.0),
       thumbVisibility: true,
       child: ListView.builder(
-        padding: EdgeInsets.all(
-            screenWidth * 0.04), // Dynamic padding based on screen width
+        // primary: false,
+        padding: EdgeInsets.all(screenWidth * 0.04),
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          String imageUrl = item["Image"] ?? 'https://via.placeholder.com/150';
-          String name = item["Name"] ?? "Unknown";
+
+          // ✅ Ensure Name, Image, and ID are present before proceeding
+          if (item["id"] == null || item["Name"] == null) {
+            return const SizedBox(); // Skip invalid entries
+          }
+
+          String imageUrl = (item["Image"] != null && item["Image"] != "")
+              ? item["Image"]
+              : 'https://via.placeholder.com/150';
+
+          String name = item["Name"] ?? "Unknown Product";
+
           return GestureDetector(
             onTap: () {
               if (isVendor) {
@@ -293,15 +320,15 @@ class _FavoritesPageState extends State<FavoritesPage>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) =>
-                          ProductDetailsPage(productId: item["id"])),
+                    builder: (context) =>
+                        ProductDetailsPage(productId: item["id"]),
+                  ),
                 );
               }
             },
             child: Card(
               elevation: 4,
-              margin: EdgeInsets.symmetric(
-                  vertical: screenHeight * 0.02), // Dynamic vertical margin
+              margin: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -315,8 +342,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                   ),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.all(screenWidth *
-                      0.04), // Dynamic padding based on screen width
+                  padding: EdgeInsets.all(screenWidth * 0.04),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -324,8 +350,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           CircleAvatar(
-                            radius: screenWidth *
-                                0.08, // Dynamic size based on screen width
+                            radius: screenWidth * 0.08,
                             backgroundImage: NetworkImage(
                               isVendor
                                   ? (item["Logo"] ??
@@ -336,11 +361,10 @@ class _FavoritesPageState extends State<FavoritesPage>
                           SizedBox(width: screenWidth * 0.03),
                           Expanded(
                             child: Text(
-                              (name),
+                              name,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize:
-                                    screenWidth * 0.05, // Dynamic font size
+                                fontSize: screenWidth * 0.05,
                                 color: Colors.black87,
                               ),
                             ),
@@ -353,13 +377,12 @@ class _FavoritesPageState extends State<FavoritesPage>
                           ),
                         ],
                       ),
-                      SizedBox(height: screenHeight * 0.02), // Dynamic spacing
+                      SizedBox(height: screenHeight * 0.02),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           SizedBox(
-                            width: screenWidth /
-                                3.5, // Dynamic width based on screen size
+                            width: screenWidth / 3.5,
                             child: OutlinedButton(
                               onPressed: () {
                                 Navigator.push(
@@ -367,8 +390,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         review.AddProductReviewPage(
-                                      // Use prefixed import
-                                      productName: item["name"] ?? "Unknown",
+                                      productName: name,
                                     ),
                                   ),
                                 );
@@ -380,8 +402,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                                   borderRadius: BorderRadius.circular(8.0),
                                 ),
                                 padding: EdgeInsets.symmetric(
-                                    vertical: screenHeight *
-                                        0.015), // Dynamic padding
+                                    vertical: screenHeight * 0.015),
                               ),
                               child: const Text(
                                 "Rate",
@@ -391,12 +412,10 @@ class _FavoritesPageState extends State<FavoritesPage>
                           ),
                           if (!isVendor)
                             SizedBox(
-                              width: screenWidth /
-                                  3.5, // Dynamic width based on screen size
+                              width: screenWidth / 3.5,
                               child: ElevatedButton(
                                 onPressed: () {
-                                  _reorderItem(
-                                      item); // Call the reorder function
+                                  _reorderItem(item);
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFBF0000),
@@ -404,8 +423,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                                     borderRadius: BorderRadius.circular(8.0),
                                   ),
                                   padding: EdgeInsets.symmetric(
-                                      vertical: screenHeight *
-                                          0.019), // Dynamic padding
+                                      vertical: screenHeight * 0.019),
                                 ),
                                 child: const Text(
                                   "Reorder",

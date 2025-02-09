@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Customer%20View/product_details_page.dart';
 
 class FoodMenuPage extends StatefulWidget {
@@ -23,6 +24,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
   bool isLoading = true;
   bool isFavorite = false; // Track favorite status
   String? customerId;
+  int cartItemCount = 0;
 
   @override
   void initState() {
@@ -31,7 +33,8 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     _fetchVendorDetails();
     _fetchCategories();
     _getCurrentUserId();
-    _checkIfFavorite(); // Check if vendor is already favorited
+    _checkIfFavorite();
+    _fetchCartItemCount();
   }
 
   void _getCurrentUserId() {
@@ -233,6 +236,25 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
+  Future<void> _fetchCartItemCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final cartSnapshot = await FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(user.uid)
+          .collection('cart')
+          .get();
+
+      setState(() {
+        cartItemCount = cartSnapshot.docs.length;
+      });
+    } catch (e) {
+      print("❌ Error fetching cart count: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -271,11 +293,42 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
             onPressed: _toggleFavorite,
           ),
           IconButton(
-            icon: const CircleAvatar(
-              backgroundColor: Color(0xFFBF0000),
-              child: Icon(Icons.shopping_cart_outlined, color: Colors.white),
+            icon: Stack(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Color(0xFFBF0000),
+                  child:
+                      Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                ),
+                if (cartItemCount > 0)
+                  Positioned(
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$cartItemCount',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFBF0000),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CartPage(),
+                ),
+              );
+            },
           ),
         ],
       ),

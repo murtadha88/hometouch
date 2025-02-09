@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'cart_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ProductDetailsPage extends StatefulWidget {
@@ -137,25 +136,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     return (basePrice + _addOnsTotal) * (_quantity > 0 ? _quantity : 1);
   }
 
-  void _addToCart() {
-    List<Map<String, dynamic>> selectedAddOns =
-        addOns.where((addOn) => addOn["selected"] == true).toList();
-
-    Map<String, dynamic> cartItem = {
-      "name": productData?["Name"] ?? "Unknown",
-      "price": productData?["Price"] ?? 0,
-      "quantity": _quantity,
-      "addOns": selectedAddOns,
-    };
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CartPage(cartItems: [cartItem]),
-      ),
-    );
-  }
-
   Future<void> _fetchRecentReviews() async {
     if (productData?["vendorId"] == null ||
         productData?["categoryId"] == null) {
@@ -284,6 +264,39 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     setState(() {
       isFavorite = !isFavorite;
     });
+  }
+
+  Future<void> _addToCart() async {
+    if (productData == null) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final cartRef = FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(user.uid)
+          .collection('cart');
+
+      List<Map<String, dynamic>> selectedAddOns =
+          addOns.where((addOn) => addOn["selected"] == true).toList();
+
+      Map<String, dynamic> cartItem = {
+        "productId": widget.productId,
+        "name": productData?["Name"] ?? "Unknown",
+        "price": productData?["Price"] ?? 0,
+        "quantity": _quantity,
+        "addOns": selectedAddOns,
+        "vendorId": productData?["vendorId"],
+        "image": productData?["Image"],
+      };
+
+      await cartRef.add(cartItem);
+
+      Navigator.pop(context); // 🔴 Go back to Menu Page after adding
+    } catch (e) {
+      print("❌ Error adding to cart: $e");
+    }
   }
 
   @override
