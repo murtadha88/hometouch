@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'favorite_page.dart';
-import 'cart_page2.dart';
 import 'account_page.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -19,9 +18,6 @@ class BottomNavBar extends StatelessWidget {
         break;
       case 1:
         nextPage = const FavoritesPage(isFromNavBar: true);
-        break;
-      case 2:
-        nextPage = const CartPage2(isFromNavBar: true);
         break;
       case 3:
         nextPage = const AccountPage(isFromNavBar: true);
@@ -49,7 +45,7 @@ class BottomNavBar extends StatelessWidget {
       child: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
-        color: Colors.white,
+        color: const Color.fromARGB(255, 241, 241, 241),
         elevation: 5,
         child: SizedBox(
           height: 60, // ✅ Adjust height

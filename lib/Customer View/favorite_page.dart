@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
-import 'package:hometouch/Customer%20View/cart_page2.dart';
 import 'menu_page.dart'; // For the vendor menu page
 import 'add_product_review.dart' as review; // Using 'review' as a prefix
 import 'product_details_page.dart'; // For the ProductDetailsPage
@@ -258,7 +257,8 @@ class _FavoritesPageState extends State<FavoritesPage>
               if (_selectedIndex != 2) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const CartPage2()),
+                  MaterialPageRoute(
+                      builder: (context) => const CartPage(isFromNavBar: true)),
                 );
               }
             },

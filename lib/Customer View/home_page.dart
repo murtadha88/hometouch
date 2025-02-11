@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
-import 'package:hometouch/Customer%20View/cart_page2.dart';
+import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'dart:async';
 import 'side_bar.dart';
 import 'address_dialog.dart';
@@ -703,7 +703,9 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                 if (_selectedIndex != 2) {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const CartPage2()),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const CartPage(isFromNavBar: true)),
                   );
                 }
               },

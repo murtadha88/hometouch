@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/reset_password_page.dart';
 import '../Customer View/sign_up_page.dart';
 import '../Customer View/home_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -42,10 +43,14 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text.trim(),
       );
 
+      // ✅ Save login status to SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
       _showSuccessDialog();
 
       Future.delayed(const Duration(seconds: 3), () {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeTouchScreen()),
         );
@@ -91,15 +96,17 @@ class _LoginPageState extends State<LoginPage> {
       UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
-      // Save user details to Firestore
+      // ✅ Save user details to Firestore
       await _saveUserToFirestore(userCredential.user);
 
-      // Show dialog after successful login
+      // ✅ Save login status to SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
       _showSuccessDialog();
 
-      // Navigate to Home page after a brief delay
       Future.delayed(const Duration(seconds: 3), () {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeTouchScreen()),
         );
@@ -124,15 +131,17 @@ class _LoginPageState extends State<LoginPage> {
       UserCredential userCredential =
           await _auth.signInWithCredential(facebookAuthCredential);
 
-      // Save user details to Firestore
+      // ✅ Save user details to Firestore
       await _saveUserToFirestore(userCredential.user);
 
-      // Show dialog after successful login
+      // ✅ Save login status to SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
       _showSuccessDialog();
 
-      // Navigate to Home page after a brief delay
       Future.delayed(const Duration(seconds: 3), () {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeTouchScreen()),
         );

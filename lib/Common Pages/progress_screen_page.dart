@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:hometouch/Customer%20View/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome_page.dart';
 import 'login_page.dart';
 import 'network_error_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -86,6 +88,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
+    bool isLoggedIn =
+        prefs.getBool('isLoggedIn') ?? false; // ✅ Track login status
+    User? user = FirebaseAuth.instance.currentUser;
 
     setState(() {
       _isNavigating = true;
@@ -93,6 +98,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     });
 
     if (isFirstTime) {
+      // ✅ First-time user → Go to Welcome Page
       await prefs.setBool('isFirstTime', false);
       if (mounted) {
         Navigator.pushReplacement(
@@ -100,11 +106,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
           MaterialPageRoute(builder: (context) => const WelcomePage()),
         );
       }
-    } else {
+    } else if (!isLoggedIn || user == null) {
+      // ✅ User NOT logged in → Go to Login Page
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
+    } else {
+      // ✅ User already logged in → Go to Home Page
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeTouchScreen()),
         );
       }
     }

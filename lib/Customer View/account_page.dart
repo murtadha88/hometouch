@@ -5,13 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/login_page.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
-import 'package:hometouch/Customer%20View/cart_page2.dart';
+import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Customer%20View/favorite_page.dart';
 import 'package:hometouch/Customer%20View/profile_page.dart';
 import 'package:hometouch/Customer%20View/setting_page.dart';
 import 'package:hometouch/Customer%20View/subscription_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountPage extends StatefulWidget {
   final bool isFromNavBar;
@@ -136,35 +137,26 @@ class _AccountPageState extends State<AccountPage> {
       },
       child: Scaffold(
         appBar: PreferredSize(
-          preferredSize: Size.fromHeight(screenHeight * 0.1),
+          preferredSize: Size.fromHeight(screenHeight * 0.09),
           child: AppBar(
             leading: widget.isFromNavBar
-                ? const SizedBox()
+                ? SizedBox()
                 : Padding(
                     padding: EdgeInsets.only(
-                      top: screenHeight * 0.03,
-                      left: screenWidth * 0.02,
-                      right: screenWidth * 0.02,
-                    ),
+                        top: screenHeight * 0.025, left: screenWidth * 0.02),
                     child: GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
+                      onTap: () => Navigator.pop(context),
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFBF0000),
+                          color: Color(0xFFBF0000),
                         ),
                         alignment: Alignment.center,
-                        padding: EdgeInsets.all(screenHeight * 0.01),
-                        child: Padding(
-                          padding: EdgeInsets.only(left: screenWidth * 0.02),
-                          child: Icon(
-                            Icons.arrow_back_ios,
-                            color: Colors.white,
-                            size: screenWidth * 0.055,
-                          ),
-                        ),
+                        padding: EdgeInsets.only(
+                            top: screenHeight * 0.001,
+                            left: screenWidth * 0.02),
+                        child: Icon(Icons.arrow_back_ios,
+                            color: Colors.white, size: screenHeight * 0.025),
                       ),
                     ),
                   ),
@@ -175,7 +167,7 @@ class _AccountPageState extends State<AccountPage> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
-                  fontSize: screenWidth * 0.06,
+                  fontSize: screenHeight * 0.027,
                 ),
               ),
             ),
@@ -185,10 +177,7 @@ class _AccountPageState extends State<AccountPage> {
             bottom: PreferredSize(
               preferredSize: Size.fromHeight(screenHeight * 0.002),
               child: Divider(
-                thickness: screenHeight * 0.001,
-                color: Colors.grey[300],
-                height: screenHeight * 0.002,
-              ),
+                  thickness: screenHeight * 0.001, color: Colors.grey[300]),
             ),
           ),
         ),
@@ -341,7 +330,8 @@ class _AccountPageState extends State<AccountPage> {
               if (_selectedIndex != 2) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const CartPage2()),
+                  MaterialPageRoute(
+                      builder: (context) => const CartPage(isFromNavBar: true)),
                 );
               }
             },
@@ -463,7 +453,7 @@ class _AccountPageState extends State<AccountPage> {
     return Padding(
       padding: EdgeInsets.only(
           top: screenHeight * 0.02,
-          bottom: screenHeight * 0.02,
+          bottom: screenHeight * 0.05,
           left: screenWidth * 0.2,
           right: screenWidth * 0.2),
       child: OutlinedButton(
@@ -537,14 +527,21 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                       ),
                       onPressed: () async {
+                        // ✅ Sign Out & Clear Login State
                         await FirebaseAuth.instance.signOut();
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                LoginPage(), // Redirect to login page
-                          ),
-                        );
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        await prefs.setBool('isLoggedIn', false);
+
+                        // ✅ Redirect to Login Page
+                        if (mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginPage()),
+                            (route) => false, // Remove all previous routes
+                          );
+                        }
                       },
                       child: Text(
                         'Yes',
@@ -565,8 +562,7 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pop(context);
-                        // Handle "No" action here
+                        Navigator.pop(context); // Close dialog
                       },
                       child: Text(
                         'No',

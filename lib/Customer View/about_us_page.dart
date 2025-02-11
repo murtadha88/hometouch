@@ -79,33 +79,23 @@ class AboutUs extends StatelessWidget {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(screenHeight * 0.1),
+        preferredSize: Size.fromHeight(screenHeight * 0.09),
         child: AppBar(
           leading: Padding(
             padding: EdgeInsets.only(
-              top: screenHeight * 0.03,
-              left: screenWidth * 0.02,
-              right: screenWidth * 0.02,
-            ),
+                top: screenHeight * 0.025, left: screenWidth * 0.02),
             child: GestureDetector(
-              onTap: () {
-                Navigator.pop(context);
-              },
+              onTap: () => Navigator.pop(context),
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFBF0000),
+                  color: Color(0xFFBF0000),
                 ),
                 alignment: Alignment.center,
-                padding: EdgeInsets.all(screenHeight * 0.01),
-                child: Padding(
-                  padding: EdgeInsets.only(left: screenWidth * 0.02),
-                  child: Icon(
-                    Icons.arrow_back_ios,
-                    color: Colors.white,
-                    size: screenWidth * 0.055,
-                  ),
-                ),
+                padding: EdgeInsets.only(
+                    top: screenHeight * 0.001, left: screenWidth * 0.02),
+                child: Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: screenHeight * 0.025),
               ),
             ),
           ),
@@ -116,7 +106,7 @@ class AboutUs extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
-                fontSize: screenWidth * 0.06,
+                fontSize: screenHeight * 0.027,
               ),
             ),
           ),
@@ -126,10 +116,7 @@ class AboutUs extends StatelessWidget {
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(screenHeight * 0.002),
             child: Divider(
-              thickness: screenHeight * 0.001,
-              color: Colors.grey[300],
-              height: screenHeight * 0.002,
-            ),
+                thickness: screenHeight * 0.001, color: Colors.grey[300]),
           ),
         ),
       ),
