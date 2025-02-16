@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
+import 'package:hometouch/Customer%20View/checkout_page.dart';
 
 class CartPage extends StatefulWidget {
   final bool isFromNavBar;
@@ -41,7 +42,7 @@ class _CartPageState extends State<CartPage> {
 
       List<Map<String, dynamic>> items = cartSnapshot.docs.map((doc) {
         var data = doc.data();
-        data["cartId"] = doc.id; // Store document ID for deletion
+        data["cartId"] = doc.id;
         return data;
       }).toList();
 
@@ -119,7 +120,7 @@ class _CartPageState extends State<CartPage> {
 
     return WillPopScope(
       onWillPop: () async {
-        return !widget.isFromNavBar; // 🔴 Prevent back if from NavBar
+        return !widget.isFromNavBar;
       },
       child: Scaffold(
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
@@ -160,7 +161,6 @@ class _CartPageState extends State<CartPage> {
             ),
             centerTitle: true,
             backgroundColor: Colors.white,
-            elevation: 0,
             bottom: PreferredSize(
               preferredSize: Size.fromHeight(screenHeight * 0.002),
               child: Divider(
@@ -169,14 +169,18 @@ class _CartPageState extends State<CartPage> {
           ),
         ),
         body: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFBF0000)))
             : cartItems.isEmpty
                 ? _buildEmptyCart()
                 : Column(
                     children: [
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.03,
+                            vertical: screenHeight * 0.01,
+                          ),
                           itemCount: cartItems.length,
                           itemBuilder: (context, index) {
                             final item = cartItems[index];
@@ -184,101 +188,122 @@ class _CartPageState extends State<CartPage> {
                             final basePrice = item['price'] as double;
                             final quantity = item['quantity'] as int;
                             final addOnsCost = addOns.fold(
-                                0.0,
-                                (sum, addOn) =>
-                                    sum + (addOn['price'] as double));
+                              0.0,
+                              (sum, addOn) => sum + (addOn['price'] as double),
+                            );
 
                             return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 8.0),
-                              elevation: 4,
+                              margin:
+                                  EdgeInsets.only(bottom: screenHeight * 0.01),
+                              elevation: 2,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius:
+                                    BorderRadius.circular(screenWidth * 0.03),
                               ),
+                              color: Colors.white,
                               child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                padding: EdgeInsets.all(screenWidth * 0.03),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                item['name'],
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                  color: Colors.black87,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              if (addOns.isNotEmpty)
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: addOns
-                                                      .map<Widget>((addOn) {
-                                                    return Text(
-                                                      "+ ${addOn['name']} (${addOn['price'].toStringAsFixed(3)} BHD)",
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.black54,
-                                                      ),
-                                                    );
-                                                  }).toList(),
-                                                ),
-                                              Text(
-                                                "Price: ${(basePrice + addOnsCost).toStringAsFixed(3)} x $quantity",
-                                                style: const TextStyle(
+                                    Container(
+                                      width: screenWidth * 0.18,
+                                      height: screenHeight * 0.09,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                            screenWidth * 0.02),
+                                        image: DecorationImage(
+                                          image: (item['image'] != null &&
+                                                  item['image']
+                                                      .toString()
+                                                      .isNotEmpty)
+                                              ? NetworkImage(item['image'])
+                                              : const AssetImage(
+                                                      'assets/placeholder_image.jpg')
+                                                  as ImageProvider,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: screenWidth * 0.03),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item['name'],
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: screenWidth * 0.04,
+                                              color: Colors.black87,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          SizedBox(
+                                              height: screenHeight * 0.005),
+                                          if (addOns.isNotEmpty)
+                                            ...addOns.map<Widget>((addOn) {
+                                              return Text(
+                                                "+ ${addOn['name']} "
+                                                "(${(addOn['price'] as double).toStringAsFixed(3)} BHD)",
+                                                style: TextStyle(
+                                                  fontSize: screenWidth * 0.035,
                                                   color: Colors.black54,
-                                                  fontSize: 14,
                                                 ),
-                                              ),
-                                            ],
+                                              );
+                                            }).toList(),
+                                          SizedBox(
+                                              height: screenHeight * 0.005),
+                                          Text(
+                                            "Price: ${(basePrice + addOnsCost).toStringAsFixed(3)} x $quantity",
+                                            style: TextStyle(
+                                              fontSize: screenWidth * 0.035,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          icon: Icon(
+                                            Icons.add,
+                                            color: const Color(0xFFBF0000),
+                                            size: screenWidth * 0.06,
+                                          ),
+                                          onPressed: () {
+                                            _updateQuantity(
+                                                item['cartId'], quantity + 1);
+                                          },
+                                        ),
+                                        Text(
+                                          "$quantity",
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.04,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        Row(
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.remove,
-                                                color: Color(0xFFBF0000),
-                                              ),
-                                              onPressed: () {
-                                                _updateQuantity(item['cartId'],
-                                                    quantity - 1);
-                                              },
-                                            ),
-                                            Text(
-                                              "$quantity",
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.add,
-                                                color: Color(0xFFBF0000),
-                                              ),
-                                              onPressed: () {
-                                                _updateQuantity(item['cartId'],
-                                                    quantity + 1);
-                                              },
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.delete,
-                                                color: Color(0xFFBF0000),
-                                              ),
-                                              onPressed: () {
-                                                _removeItem(item['cartId']);
-                                              },
-                                            ),
-                                          ],
+                                        IconButton(
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          icon: Icon(
+                                            Icons.remove,
+                                            color: const Color(0xFFBF0000),
+                                            size: screenWidth * 0.06,
+                                          ),
+                                          onPressed: () {
+                                            _updateQuantity(
+                                                item['cartId'], quantity - 1);
+                                            if (quantity == 0) {
+                                              _removeItem(item['cartId']);
+                                            }
+                                          },
                                         ),
                                       ],
                                     ),
@@ -302,7 +327,19 @@ class _CartPageState extends State<CartPage> {
                             _buildSummaryRow("Total", total, isBold: true),
                             const SizedBox(height: 16),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CheckoutPage(
+                                      cartItems: cartItems,
+                                      subtotal: subtotal,
+                                      tax: tax,
+                                      total: total,
+                                    ),
+                                  ),
+                                );
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFBF0000),
                                 shape: RoundedRectangleBorder(
@@ -319,6 +356,7 @@ class _CartPageState extends State<CartPage> {
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 25),
                           ],
                         ),
                       ),
@@ -332,11 +370,6 @@ class _CartPageState extends State<CartPage> {
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: _selectedIndex == 2
-                    ? Border.all(
-                        color: const Color.fromARGB(255, 239, 239, 239),
-                        width: 3) // ✅ White border when selected
-                    : null, // No border when not selected
               ),
               child: FloatingActionButton(
                 onPressed: () {
@@ -383,7 +416,9 @@ class _CartPageState extends State<CartPage> {
         Text(label,
             style: TextStyle(
                 fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-        Text("${value.toStringAsFixed(3)} BHD"),
+        Text("${value.toStringAsFixed(3)} BHD",
+            style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
       ],
     );
   }

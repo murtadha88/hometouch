@@ -148,7 +148,6 @@ class _VerificationPageState extends State<VerificationPage> {
           color: Colors.grey[700],
           splashRadius: 20,
         ),
-        elevation: 0,
         backgroundColor: Colors.white,
       ),
       body: SafeArea(

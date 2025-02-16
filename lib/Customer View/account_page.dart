@@ -94,11 +94,15 @@ class _AccountPageState extends State<AccountPage> {
           SnackBar(
             content: Text(
               'Image is too large. Please select a smaller image.',
-              style: TextStyle(
-                  color: Colors
-                      .white), // Optional: Change text color to white for contrast
+              style: TextStyle(color: Colors.white),
             ),
-            backgroundColor: Colors.red, // Set background color to red
+            behavior: SnackBarBehavior.floating, // ✅ Prevents UI shifting
+            backgroundColor: Colors.red,
+            margin: EdgeInsets.only(
+              bottom: 16, // ✅ Leaves space for FloatingActionButton
+              left: 16,
+              right: 16,
+            ),
           ),
         );
 
@@ -173,7 +177,6 @@ class _AccountPageState extends State<AccountPage> {
             ),
             centerTitle: true,
             backgroundColor: Colors.white,
-            elevation: 0,
             bottom: PreferredSize(
               preferredSize: Size.fromHeight(screenHeight * 0.002),
               child: Divider(
@@ -182,143 +185,152 @@ class _AccountPageState extends State<AccountPage> {
           ),
         ),
         backgroundColor: Colors.white,
-        body: ListView(
+        body: Column(
           children: [
-            _buildUserInfo(screenWidth, screenHeight),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.07),
-              child: Divider(
-                color: Color(0xFFBF0000),
-                thickness: 2.0,
-                height: 20.0,
-              ),
-            ),
-            _buildMenuItem(
-              'Profile',
-              Icons.person,
-              screenWidth,
-              screenHeight,
-              onTap: () async {
-                final updatedUserInfo = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfilePage()),
-                );
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildUserInfo(screenWidth, screenHeight),
+                  Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.07),
+                    child: Divider(
+                      color: Color(0xFFBF0000),
+                      thickness: 2.0,
+                      height: 20.0,
+                    ),
+                  ),
+                  _buildMenuItem(
+                    'Profile',
+                    Icons.person,
+                    screenWidth,
+                    screenHeight,
+                    onTap: () async {
+                      final updatedUserInfo = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ProfilePage()),
+                      );
 
-                // If data is returned from ProfilePage
-                if (updatedUserInfo != null) {
-                  setState(() {
-                    userName = updatedUserInfo['name'];
-                    userEmail = updatedUserInfo['email'];
-                  });
-                }
-              },
-            ),
-            _buildMenuItem(
-              'Subscription',
-              FontAwesomeIcons.crown,
-              screenWidth,
-              screenHeight,
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true, // Allow it to expand as needed
-                  backgroundColor: Colors.transparent, // Transparent background
-                  builder: (BuildContext context) {
-                    return SubscriptionDialog(
-                      screenWidth: screenWidth,
-                      screenHeight: screenHeight,
-                    );
-                  },
-                );
-              },
-            ),
-            _buildMenuItem(
-              'Overview',
-              Icons.dashboard,
-              screenWidth,
-              screenHeight,
-              onTap: isSubscribed
-                  ? () {
-                      // Navigate to Overview Page if subscribed
+                      // If data is returned from ProfilePage
+                      if (updatedUserInfo != null) {
+                        setState(() {
+                          userName = updatedUserInfo['name'];
+                          userEmail = updatedUserInfo['email'];
+                        });
+                      }
+                    },
+                  ),
+                  _buildMenuItem(
+                    'Subscription',
+                    FontAwesomeIcons.crown,
+                    screenWidth,
+                    screenHeight,
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled:
+                            true, // Allow it to expand as needed
+                        backgroundColor:
+                            Colors.transparent, // Transparent background
+                        builder: (BuildContext context) {
+                          return SubscriptionDialog(
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    'Overview',
+                    Icons.dashboard,
+                    screenWidth,
+                    screenHeight,
+                    onTap: isSubscribed
+                        ? () {
+                            // Navigate to Overview Page if subscribed
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      SettingsPage()), // Replace with actual overview page
+                            );
+                          }
+                        : null,
+                  ),
+                  if (!isSubscribed)
+                    Padding(
+                      padding: EdgeInsets.only(left: screenWidth * 0.22),
+                      child: Text(
+                        'Requires subscription',
+                        style: TextStyle(
+                          color: Color(0xFFBF0000),
+                          fontSize: screenWidth * 0.033,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  _buildLoyaltyPoints(screenWidth, screenHeight),
+                  _buildMenuItem(
+                    'Rewards',
+                    FontAwesomeIcons.gift,
+                    screenWidth,
+                    screenHeight,
+                    onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
-                                SettingsPage()), // Replace with actual overview page
+                                SettingsPage()), // Navigate to SettingsPage
                       );
-                    }
-                  : null,
-            ),
-            if (!isSubscribed)
-              Padding(
-                padding: EdgeInsets.only(left: screenWidth * 0.22),
-                child: Text(
-                  'Requires subscription',
-                  style: TextStyle(
-                    color: Color(0xFFBF0000),
-                    fontSize: screenWidth * 0.033,
-                    fontWeight: FontWeight.w600,
+                    },
                   ),
-                ),
+                  _buildMenuItem(
+                    'Favorites',
+                    Icons.favorite,
+                    screenWidth,
+                    screenHeight,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                FavoritesPage()), // Navigate to SettingsPage
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    'Chat History',
+                    Icons.chat,
+                    screenWidth,
+                    screenHeight,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                SettingsPage()), // Navigate to SettingsPage
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                    'Settings',
+                    Icons.settings,
+                    screenWidth,
+                    screenHeight,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                SettingsPage()), // Navigate to SettingsPage
+                      );
+                    },
+                  ),
+                  _buildSignOutButton(context, screenWidth, screenHeight),
+                ],
               ),
-            _buildLoyaltyPoints(screenWidth, screenHeight),
-            _buildMenuItem(
-              'Rewards',
-              FontAwesomeIcons.gift,
-              screenWidth,
-              screenHeight,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          SettingsPage()), // Navigate to SettingsPage
-                );
-              },
             ),
-            _buildMenuItem(
-              'Favorites',
-              Icons.favorite,
-              screenWidth,
-              screenHeight,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          FavoritesPage()), // Navigate to SettingsPage
-                );
-              },
-            ),
-            _buildMenuItem(
-              'Chat History',
-              Icons.chat,
-              screenWidth,
-              screenHeight,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          SettingsPage()), // Navigate to SettingsPage
-                );
-              },
-            ),
-            _buildMenuItem(
-              'Settings',
-              Icons.settings,
-              screenWidth,
-              screenHeight,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          SettingsPage()), // Navigate to SettingsPage
-                );
-              },
-            ),
-            _buildSignOutButton(context, screenWidth, screenHeight),
           ],
         ),
         bottomNavigationBar: BottomNavBar(selectedIndex: 4),

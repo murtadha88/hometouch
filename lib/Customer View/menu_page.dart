@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Customer%20View/product_details_page.dart';
+import 'package:hometouch/Customer%20View/review_page.dart';
 
 class FoodMenuPage extends StatefulWidget {
   final String vendorId;
@@ -35,6 +36,55 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     _getCurrentUserId();
     _checkIfFavorite();
     _fetchCartItemCount();
+    _initializeUserAndCart();
+  }
+
+  Future<void> _initializeUserAndCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        customerId = user.uid;
+      });
+      await _resetCartIfVendorMismatch();
+      await _fetchCartItemCount();
+    } else {
+      print("No user is currently signed in.");
+    }
+  }
+
+  Future<void> _resetCartIfVendorMismatch() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Get the cart snapshot.
+    final cartSnapshot = await FirebaseFirestore.instance
+        .collection('Customer')
+        .doc(user.uid)
+        .collection('cart')
+        .get();
+
+    // Check if any item in the cart has a vendorId that is not equal to widget.vendorId.
+    bool vendorMismatch = false;
+    for (var doc in cartSnapshot.docs) {
+      final data = doc.data();
+      // Ensure that each cart item includes a vendorId field when added.
+      if (data['vendorId'] != widget.vendorId) {
+        vendorMismatch = true;
+        break;
+      }
+    }
+
+    // If there is a vendor mismatch, delete all items in the cart.
+    if (vendorMismatch) {
+      for (var doc in cartSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      setState(() {
+        cartItemCount = 0;
+        _fetchCartItemCount();
+      });
+      print("Cart has been reset due to vendor mismatch.");
+    }
   }
 
   void _getCurrentUserId() {
@@ -97,11 +147,15 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
   }
 
   // Build the image widget with a fallback
-  Widget _buildImage(String? image, String productName) {
+  Widget _buildImage(String? image, String productName, double screenWidth,
+      double screenHeight) {
+    double imageWidth = screenWidth * 0.47; // Adjust width dynamically
+    double imageHeight = screenHeight * 0.135; // Adjust height dynamically
+
     if (image == null || image.isEmpty) {
       return Container(
-        width: 150,
-        height: 100,
+        width: imageWidth,
+        height: imageHeight,
         child: Image.asset(
           'assets/placeholder_image.jpg',
           fit: BoxFit.cover,
@@ -113,8 +167,8 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
       Uri.parse(image); // Attempt to parse the URL
 
       return Container(
-        width: 150,
-        height: 100,
+        width: imageWidth,
+        height: imageHeight,
         child: Image.network(
           image,
           fit: BoxFit.cover,
@@ -128,8 +182,8 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
       );
     } catch (e) {
       return Container(
-        width: 150,
-        height: 100,
+        width: imageWidth,
+        height: imageHeight,
         child: Image.asset(
           'assets/placeholder_image.jpg',
           fit: BoxFit.cover,
@@ -262,75 +316,118 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: CircleAvatar(
-            backgroundColor: const Color(0xFFBF0000),
-            child: Padding(
-              padding: EdgeInsets.only(left: screenWidth * 0.02),
-              child: Icon(
-                Icons.arrow_back_ios,
-                color: Colors.white,
-                size: screenWidth * 0.055,
-              ),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(
+            screenHeight * 0.09), // ✅ Match second AppBar height
+        child: AppBar(
+          backgroundColor: Colors.white, // ✅ Ensure white background
+          elevation: 0, // ✅ Remove shadow if needed
+          leading: Padding(
+            padding: EdgeInsets.only(
+              top: screenHeight * 0.025,
+              left: screenWidth * 0.02,
             ),
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: CircleAvatar(
-              backgroundColor: const Color(0xFFBF0000),
-              child: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: Colors.white,
-              ),
-            ),
-            onPressed: _toggleFavorite,
-          ),
-          IconButton(
-            icon: Stack(
-              children: [
-                const CircleAvatar(
-                  backgroundColor: Color(0xFFBF0000),
-                  child:
-                      Icon(Icons.shopping_cart_outlined, color: Colors.white),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFBF0000),
                 ),
-                if (cartItemCount > 0)
-                  Positioned(
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
+                alignment: Alignment.center,
+                padding: EdgeInsets.only(
+                  top: screenHeight * 0.001,
+                  left: screenWidth * 0.02,
+                ),
+                child: Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                  size: screenHeight * 0.025, // ✅ Match second AppBar size
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            // Favorite Button
+            Padding(
+              padding: EdgeInsets.only(
+                  top: screenHeight * 0.02, right: screenWidth * 0.02),
+              child: GestureDetector(
+                onTap: _toggleFavorite, // ✅ Handle tap
+                child: CircleAvatar(
+                  backgroundColor: const Color(0xFFBF0000),
+                  radius:
+                      screenHeight * 0.027, // ✅ Match second AppBar icon size
+                  child: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: Colors.white,
+                    size:
+                        screenHeight * 0.027, // ✅ Keep same size as other icons
+                  ),
+                ),
+              ),
+            ),
+
+            // Cart Button with Badge
+            Padding(
+              padding: EdgeInsets.only(
+                  top: screenHeight * 0.02, right: screenWidth * 0.02),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CartPage(),
+                    ),
+                  ).then((_) {
+                    _fetchCartItemCount(); // ✅ Refresh cart count when coming back
+                  });
+                },
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: const Color(0xFFBF0000),
+                      radius: screenHeight *
+                          0.027, // ✅ Match second AppBar icon size
+                      child: Icon(
+                        Icons.shopping_cart_outlined,
                         color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$cartItemCount',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFBF0000),
-                        ),
+                        size: screenHeight *
+                            0.027, // ✅ Keep same size as other icons
                       ),
                     ),
-                  ),
-              ],
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CartPage(),
+                    if (cartItemCount > 0)
+                      Positioned(
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Color.fromARGB(255, 238, 238, 238),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$cartItemCount',
+                            style: TextStyle(
+                              fontSize: screenHeight * 0.018,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFBF0000),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              );
-            },
+              ),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(screenHeight * 0.002),
+            child: Divider(
+              thickness: screenHeight * 0.001,
+              color: Colors.grey[300],
+            ),
           ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -340,13 +437,13 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
         child: const Icon(Icons.message, color: Colors.white),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+              color: Color(0xFFBF0000),
+            ))
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Divider between AppBar and Vendor Details
-                const Divider(thickness: 1, height: 1, color: Colors.black12),
-                // Vendor Info Section
                 Padding(
                   padding: EdgeInsets.symmetric(
                       horizontal: screenWidth * 0.04,
@@ -428,17 +525,27 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                         icon: CircleAvatar(
                           backgroundColor: const Color(0xFFBF0000),
                           child: Icon(Icons.rate_review,
-                              color: Colors.white, size: screenWidth * 0.05),
+                              color: Colors.white, size: screenWidth * 0.06),
                         ),
                         onPressed: () {
-                          // Navigate to the AllReviewsPage
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ReviewPage(vendorId: widget.vendorId),
+                            ),
+                          ).then((_) {
+                            _fetchVendorDetails(); // Refresh the cart count when coming back
+                          });
                         },
                       ),
                     ],
                   ),
                 ),
-                const Divider(thickness: 1, height: 20, color: Colors.black12),
-                // Categories Navigation
+                Divider(
+                  thickness: screenHeight * 0.001,
+                  color: Colors.grey[300],
+                ),
                 SizedBox(
                   height: screenHeight * 0.06,
                   child: ListView.builder(
@@ -533,7 +640,9 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                                   ProductDetailsPage(
                                                       productId: item["id"]),
                                             ),
-                                          );
+                                          ).then((_) {
+                                            _fetchCartItemCount(); // Refresh the cart count when coming back
+                                          });
                                         },
                                         child: Card(
                                           color: Colors.white,
@@ -553,7 +662,9 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                                 ),
                                                 child: _buildImage(
                                                     item['image'],
-                                                    item['name']),
+                                                    item['name'],
+                                                    screenWidth,
+                                                    screenHeight),
                                               ),
                                               Padding(
                                                 padding: EdgeInsets.all(

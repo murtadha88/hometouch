@@ -173,31 +173,31 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   Future<List<Map<String, dynamic>>> fetchRecommendedVendors(
       String userId) async {
     try {
-      final customerRef =
-          FirebaseFirestore.instance.collection('Customer').doc(userId);
-
+      // Fetch all orders placed by the user
       final ordersQuery = await FirebaseFirestore.instance
           .collection('order')
-          .where('Customer_ID', isEqualTo: customerRef)
+          .where('Customer_ID', isEqualTo: userId)
           .get();
 
       if (ordersQuery.docs.isNotEmpty) {
         final Map<String, int> vendorOrderCount = {};
 
+        // Count orders for each vendor
         for (var doc in ordersQuery.docs) {
-          final vendorRef = doc['Vendor_ID'] as DocumentReference?;
-          if (vendorRef != null) {
-            final vendorId = vendorRef.id;
+          final vendorId = doc['Vendor_ID'] as String?;
+          if (vendorId != null) {
             vendorOrderCount[vendorId] = (vendorOrderCount[vendorId] ?? 0) + 1;
           }
         }
 
+        // Sort vendors by most ordered
         final sortedVendors = vendorOrderCount.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
 
         final sortedVendorIds =
             sortedVendors.map((entry) => entry.key).toList();
 
+        // Fetch vendor details
         final vendorsQuery = await FirebaseFirestore.instance
             .collection('vendor')
             .where(FieldPath.documentId, whereIn: sortedVendorIds)
@@ -206,16 +206,18 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
         final vendors = vendorsQuery.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id;
-          data['Order_Count'] = vendorOrderCount[doc.id];
+          data['Order_Count'] = vendorOrderCount[doc.id] ?? 0;
           return data;
         }).toList();
 
+        // Sort again by Order_Count to ensure correct ordering
         vendors.sort((a, b) =>
             (b['Order_Count'] as int).compareTo(a['Order_Count'] as int));
 
         return vendors;
       }
 
+      // If no orders found, return top-rated vendors instead
       final topVendorsQuery = await FirebaseFirestore.instance
           .collection('vendor')
           .orderBy('Rating', descending: true)
@@ -228,7 +230,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
         return data;
       }).toList();
     } catch (e) {
-      print('Error fetching recommended vendors: $e');
+      print('❌ Error fetching recommended vendors: $e');
       return [];
     }
   }
@@ -574,6 +576,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     return WillPopScope(
         onWillPop: _onWillPop,
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           appBar: AppBar(
             backgroundColor: const Color(0xFFBF0000),
             elevation: 0,
@@ -748,7 +751,9 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
               stream: searchVendors(_searchQuery),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return Center(
+                      child:
+                          CircularProgressIndicator(color: Color(0xFFBF0000)));
                 }
                 if (snapshot.hasError) {
                   return Center(child: Text("Error fetching data"));
@@ -1113,7 +1118,9 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
               future: fetchRecommendedVendors(userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return Center(
+                      child:
+                          CircularProgressIndicator(color: Color(0xFFBF0000)));
                 }
 
                 if (snapshot.hasError) {

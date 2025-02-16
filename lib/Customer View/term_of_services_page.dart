@@ -51,7 +51,6 @@ class TermsOfServicePage extends StatelessWidget {
           ),
           centerTitle: true,
           backgroundColor: Colors.white,
-          elevation: 0,
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(screenHeight * 0.002),
             child: Divider(

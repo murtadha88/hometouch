@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hometouch/Customer%20View/order_history_page.dart';
 import 'home_page.dart';
 import 'favorite_page.dart';
 import 'account_page.dart';
@@ -20,7 +21,7 @@ class BottomNavBar extends StatelessWidget {
         nextPage = const FavoritesPage(isFromNavBar: true);
         break;
       case 3:
-        nextPage = const AccountPage(isFromNavBar: true);
+        nextPage = const OrdersPage(isFromNavBar: true);
         break;
       case 4:
         nextPage = const AccountPage(isFromNavBar: true);

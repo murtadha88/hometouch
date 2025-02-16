@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hometouch/Customer%20View/review_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String productId; // Only pass the Product ID
@@ -137,58 +138,67 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   }
 
   Future<void> _fetchRecentReviews() async {
-    if (productData?["vendorId"] == null ||
-        productData?["categoryId"] == null) {
-      print("❌ ERROR: Vendor ID or Category ID is NULL! Cannot fetch reviews.");
-      return;
-    }
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection("review")
+          .where("Product_ID", isEqualTo: widget.productId)
+          .orderBy("Date", descending: true)
+          .limit(3)
+          .get();
 
-    DocumentReference productRef = FirebaseFirestore.instance
-        .collection("vendor")
-        .doc(productData?["vendorId"])
-        .collection("category")
-        .doc(productData?["categoryId"])
-        .collection("products")
-        .doc(widget.productId);
+      if (snapshot.docs.isEmpty) {
+        print("No reviews found for Product ID: ${widget.productId}");
+        setState(() {
+          reviews = [];
+        });
+        return;
+      }
 
-    print("🔍 Fetching reviews for: $productRef");
+      List<Future<Map<String, dynamic>>> reviewFutures =
+          snapshot.docs.map((doc) async {
+        var data = doc.data() as Map<String, dynamic>;
+        var customerRef = data["Customer_ID"] as DocumentReference;
 
-    var reviewRef = FirebaseFirestore.instance
-        .collection("review")
-        .where("Product_ID", isEqualTo: productRef)
-        .orderBy("Date", descending: true)
-        .limit(3);
+        try {
+          var customerSnapshot = await customerRef.get();
+          var customerData = customerSnapshot.data() as Map<String, dynamic>?;
 
-    var snapshot = await reviewRef.get();
+          return {
+            "name": customerData?["Name"] ?? "Unknown Customer",
+            "photo": customerData?["Photo"] ?? "", // Handle missing images
+            "rating": data["Rating"],
+            "review": data["Review"],
+            "date": (data["Date"] as Timestamp).toDate(),
+          };
+        } catch (e) {
+          print("Error fetching customer details: $e");
+          return {
+            "name": "Unknown Customer",
+            "photo": "",
+            "rating": data["Rating"],
+            "review": data["Review"],
+            "date": (data["Date"] as Timestamp).toDate(),
+          };
+        }
+      }).toList();
 
-    List<Map<String, dynamic>> fetchedReviews = [];
+      // Wait for all customer data to be fetched before updating the state
+      List<Map<String, dynamic>> fetchedReviews =
+          await Future.wait(reviewFutures);
 
-    for (var doc in snapshot.docs) {
-      var data = doc.data();
-      var customerRef = data["Customer_ID"] as DocumentReference;
-      var customerSnapshot = await customerRef.get();
-
-      fetchedReviews.add({
-        "name": customerSnapshot["Name"],
-        "photo": customerSnapshot["Photo"], // Get base64 photo
-        "rating": data["Rating"],
-        "review": data["Review"],
-        "date": data["Date"].toDate(),
+      setState(() {
+        reviews = fetchedReviews;
       });
+    } catch (e) {
+      print("Error fetching reviews: $e");
     }
-
-    setState(() {
-      reviews = fetchedReviews;
-    });
-
-    print("✅ Reviews fetched: ${reviews.length}");
   }
 
   Future<void> _checkFavoriteStatus() async {
     if (productData?["vendorId"] == null ||
         productData?["categoryId"] == null) {
       print(
-          "❌ ERROR: Vendor ID or Category ID is NULL! Cannot check favorite status.");
+          "ERROR: Vendor ID or Category ID is NULL! Cannot check favorite status.");
       return;
     }
 
@@ -201,7 +211,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         .collection("products")
         .doc(widget.productId);
 
-    print("🔍 Checking favorite status for: $productRef");
+    print("Checking favorite status for: $productRef");
 
     var favoriteRef = FirebaseFirestore.instance
         .collection("Customer")
@@ -216,7 +226,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       isFavorite = snapshot.docs.isNotEmpty;
     });
 
-    print("❤️ Favorite status: ${isFavorite ? 'YES' : 'NO'}");
+    print("Favorite status: ${isFavorite ? 'YES' : 'NO'}");
   }
 
   void _toggleFavorite() async {
@@ -293,9 +303,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
       await cartRef.add(cartItem);
 
-      Navigator.pop(context); // 🔴 Go back to Menu Page after adding
+      Navigator.pop(context);
     } catch (e) {
-      print("❌ Error adding to cart: $e");
+      print("Error adding to cart: $e");
     }
   }
 
@@ -310,38 +320,61 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 2,
-        leading: IconButton(
-          icon: CircleAvatar(
-            backgroundColor: const Color(0xFFBF0000),
-            child: Padding(
-              padding: EdgeInsets.only(left: screenWidth * 0.02),
-              child: Icon(
-                Icons.arrow_back_ios,
-                color: Colors.white,
-                size: screenWidth * 0.055,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(screenHeight * 0.09),
+        child: AppBar(
+          backgroundColor: Colors.white,
+          leading: Padding(
+            padding: EdgeInsets.only(
+              top: screenHeight * 0.025,
+              left: screenWidth * 0.02,
+            ),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFBF0000),
+                ),
+                alignment: Alignment.center,
+                padding: EdgeInsets.only(
+                  top: screenHeight * 0.001,
+                  left: screenWidth * 0.02,
+                ),
+                child: Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                  size: screenHeight * 0.025, // Match second AppBar size
+                ),
               ),
             ),
           ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          actions: [
+            Padding(
+              padding: EdgeInsets.only(
+                  top: screenHeight * 0.02, right: screenWidth * 0.02),
+              child: GestureDetector(
+                onTap: _toggleFavorite, // ✅ Handle tap
+                child: CircleAvatar(
+                  backgroundColor: const Color(0xFFBF0000),
+                  radius: screenHeight * 0.027, // Match second AppBar icon size
+                  child: Icon(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: Colors.white,
+                    size: screenHeight * 0.027, // Keep same size as other icons
+                  ),
+                ),
+              ),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(screenHeight * 0.002),
+            child: Divider(
+              thickness: screenHeight * 0.001,
+              color: Colors.grey[300],
+            ),
+          ),
         ),
-        actions: [
-          IconButton(
-            icon: CircleAvatar(
-              backgroundColor: const Color(0xFFBF0000),
-              child: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: Colors.white,
-                size: screenWidth * 0.06,
-              ),
-            ),
-            onPressed: _toggleFavorite,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
@@ -349,7 +382,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image
             Container(
               height: screenHeight * 0.25,
               decoration: BoxDecoration(
@@ -360,31 +392,95 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
               ),
             ),
-            SizedBox(height: screenHeight * 0.02),
-
-            // Product Name & Price
-            Text(
-              productData?["Name"] ?? "Unknown Product",
-              style: TextStyle(
-                  fontSize: screenWidth * 0.07, fontWeight: FontWeight.bold),
-            ),
             SizedBox(height: screenHeight * 0.01),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Product Name + Rating in the red box
+                Row(
+                  children: [
+                    // Product Name
+                    Text(
+                      productData?["Name"] ?? "Unknown Product",
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.07,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(width: screenWidth * 0.03),
+
+                    // Star Icon + Rating Number
+                    Row(
+                      children: [
+                        Icon(Icons.star,
+                            color: Color(0xFFBF0000),
+                            size: screenWidth * 0.065),
+                        SizedBox(width: 2),
+                        Text(
+                          (productData?["Rating"] ?? 0.0).toStringAsFixed(1),
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.065,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // Review Icon Button (on the far right)
+                IconButton(
+                  icon: CircleAvatar(
+                    backgroundColor: const Color(0xFFBF0000),
+                    child: Icon(Icons.rate_review,
+                        color: Colors.white, size: screenHeight * 0.03),
+                  ),
+                  onPressed: () {
+                    if (productData?["categoryId"] == null) {
+                      print(
+                          "ERROR: categoryId is required to rate this product.");
+                      return;
+                    }
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ReviewPage(
+                          productId: widget.productId,
+                          categoryId: productData?["categoryId"],
+                        ),
+                      ),
+                    ).then((_) {
+                      _fetchRecentReviews();
+                      _fetchProductDetails();
+                    });
+                  },
+                ),
+              ],
+            ),
+
             Text(
               "${productData?["Price"].toStringAsFixed(3)} BHD",
               style: TextStyle(
-                  fontSize: screenWidth * 0.06,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFFBF0000)),
+                fontSize: screenWidth * 0.06,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFBF0000),
+              ),
             ),
-            SizedBox(height: screenHeight * 0.02),
+            SizedBox(height: screenHeight * 0.01),
 
-            // Description
             Text(
               productData?["Description"] ?? "No description available.",
               style: TextStyle(
-                  fontSize: screenWidth * 0.04,
-                  color: Colors.black54,
-                  height: 1.6),
+                fontSize: screenWidth * 0.04,
+                color: Colors.black54,
+                height: 1.6,
+              ),
             ),
             SizedBox(height: screenHeight * 0.03),
 
@@ -545,7 +641,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           index < review["rating"]
                               ? Icons.star
                               : Icons.star_border,
-                          color: Colors.amber,
+                          color: Color(0xFFBF0000),
                           size: 18,
                         );
                       }),
@@ -579,8 +675,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             });
           },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: const Color(0xFFBF0000), // Red background when selected
-          checkColor: Colors.white, // White tick when selected
+          activeColor: const Color(0xFFBF0000),
+          checkColor: Colors.white,
         );
       }).toList(),
     );

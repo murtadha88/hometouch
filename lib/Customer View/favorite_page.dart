@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
-import 'menu_page.dart'; // For the vendor menu page
-import 'add_product_review.dart' as review; // Using 'review' as a prefix
-import 'product_details_page.dart'; // For the ProductDetailsPage
-import 'cart_page.dart'; // For the CartPage
+import 'package:hometouch/Customer%20View/review_page.dart';
+import 'menu_page.dart';
+import 'product_details_page.dart';
+import 'cart_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -19,7 +19,7 @@ class FavoritesPage extends StatefulWidget {
 class _FavoritesPageState extends State<FavoritesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  // late ScrollController _scrollController;
+  late ScrollController _scrollController;
   List<Map<String, dynamic>> favoriteVendors = [];
   List<Map<String, dynamic>> favoriteProducts = [];
   bool isLoading = true;
@@ -30,14 +30,14 @@ class _FavoritesPageState extends State<FavoritesPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // _scrollController = ScrollController();
+    _scrollController = ScrollController();
     fetchFavorites();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    // _scrollController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -54,7 +54,7 @@ class _FavoritesPageState extends State<FavoritesPage>
       List<Map<String, dynamic>> products = [];
       for (var doc in favoriteSnapshot.docs) {
         var data = doc.data();
-        String Favorite_ID = doc.id; // ✅ Store favorite doc ID
+        String favoriteId = doc.id;
         if (data['Type'] == 'vendor') {
           final vendorDoc = await FirebaseFirestore.instance
               .collection('vendor')
@@ -63,7 +63,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           if (vendorDoc.exists && vendorDoc.data() != null) {
             var vendorData = vendorDoc.data() as Map<String, dynamic>;
             vendorData['id'] = vendorDoc.id;
-            vendorData['Favorite_ID'] = Favorite_ID; // ✅ Store favorite ID
+            vendorData['Favorite_ID'] = favoriteId;
             vendors.add(vendorData);
           }
         } else if (data['Type'] == 'product') {
@@ -76,7 +76,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                 productData['id'] = productDoc.id;
                 productData['Image'] ??= 'https://via.placeholder.com/150';
                 productData['Name'] ??= 'Unknown Product';
-                productData['Favorite_ID'] = Favorite_ID;
+                productData['Favorite_ID'] = favoriteId;
                 products.add(productData);
               }
             } catch (e) {
@@ -85,6 +85,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           }
         }
       }
+      if (!mounted) return; // <-- Check if the widget is still around
       setState(() {
         favoriteVendors = vendors;
         favoriteProducts = products;
@@ -122,7 +123,7 @@ class _FavoritesPageState extends State<FavoritesPage>
     }
   }
 
-  Future<void> _reorderItem(Map<String, dynamic> item) async {
+  void _reorderItem(Map<String, dynamic> item, bool isVendor) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -132,34 +133,92 @@ class _FavoritesPageState extends State<FavoritesPage>
           .doc(user.uid)
           .collection('cart');
 
-      // Check if the item is already in the cart
-      final existingItem =
-          await cartRef.where('name', isEqualTo: item["Name"]).get();
+      // Clear existing cart
+      var cartDocs = await cartRef.get();
+      for (var doc in cartDocs.docs) {
+        await doc.reference.delete();
+      }
 
-      if (existingItem.docs.isNotEmpty) {
-        // If item exists, update the quantity
-        final docId = existingItem.docs.first.id;
-        final currentQuantity = existingItem.docs.first['quantity'];
-        await cartRef.doc(docId).update({'quantity': currentQuantity + 1});
+      if (isVendor) {
+        // If it's a vendor, fetch its products
+        QuerySnapshot productsSnapshot = await FirebaseFirestore.instance
+            .collection('products')
+            .where("Vendor_ID", isEqualTo: item['id'])
+            .get();
+
+        for (var doc in productsSnapshot.docs) {
+          var product = doc.data() as Map<String, dynamic>;
+          await cartRef.add({
+            "name": product["Name"],
+            "price": product["Price"] ?? 0.000,
+            "quantity": 1,
+            "addOns": product["AddOns"] ?? [],
+            "image": product["Image"] ?? "",
+            "vendorId": item["id"],
+          });
+        }
       } else {
-        // If item does not exist, add it as a new cart item
+        // If it's a product, add it directly
         await cartRef.add({
           "name": item["Name"],
-          "price": item["Price"] ?? 0.000, // Default to 3.000 if null
-          "quantity": 1, // Default quantity
-          "addOns": [], // No add-ons by default
+          "price": item["Price"] ?? 0.000,
+          "quantity": 1,
+          "addOns": [],
+          "image": item["Image"] ?? "",
+          "vendorId": item["Vendor_ID"],
         });
       }
 
-      // Navigate to the Cart Page after adding the item
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const CartPage()),
-        );
-      }
+      // Navigate to Cart Page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const CartPage()),
+      );
     } catch (e) {
-      print("❌ Error adding item to cart: $e");
+      print("❌ Error reordering item: $e");
+    }
+  }
+
+  void _rateItem(Map<String, dynamic> item, bool isVendor) async {
+    if (isVendor) {
+      // Navigate to rate Vendor
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ReviewPage(vendorId: item['id']),
+        ),
+      );
+    } else {
+      // Fetch `categoryId` from the product document
+      String? categoryId;
+      try {
+        DocumentSnapshot productDoc = await FirebaseFirestore.instance
+            .collection("vendor")
+            .doc(item["Vendor_ID"])
+            .collection("category")
+            .doc(item["Category_ID"])
+            .collection("products")
+            .doc(item["id"])
+            .get();
+
+        if (productDoc.exists) {
+          categoryId = item["Category_ID"]; // Ensure categoryId is available
+        }
+      } catch (e) {
+        print("❌ Error fetching category ID: $e");
+      }
+
+      // Navigate to rate Product
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ReviewPage(
+            productId: item['id'],
+            vendorId: item['Vendor_ID'],
+            categoryId: categoryId, // ✅ Pass categoryId
+          ),
+        ),
+      );
     }
   }
 
@@ -234,11 +293,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           color: Colors.white,
           child: isLoading
               ? const Center(
-                  child: CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
-                  ),
-                )
+                  child: CircularProgressIndicator(color: Color(0xFFBF0000)))
               : TabBarView(
                   controller: _tabController,
                   children: [
@@ -286,11 +341,12 @@ class _FavoritesPageState extends State<FavoritesPage>
     }
 
     return Scrollbar(
+      controller: _scrollController,
       thickness: 4.0,
       radius: const Radius.circular(8.0),
       thumbVisibility: true,
       child: ListView.builder(
-        // primary: false,
+        controller: _scrollController,
         padding: EdgeInsets.all(screenWidth * 0.04),
         itemCount: items.length,
         itemBuilder: (context, index) {
@@ -384,17 +440,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                           SizedBox(
                             width: screenWidth / 3.5,
                             child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        review.AddProductReviewPage(
-                                      productName: name,
-                                    ),
-                                  ),
-                                );
-                              },
+                              onPressed: () => _rateItem(item, isVendor),
                               style: OutlinedButton.styleFrom(
                                 side:
                                     const BorderSide(color: Color(0xFFBF0000)),
@@ -415,7 +461,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                               width: screenWidth / 3.5,
                               child: ElevatedButton(
                                 onPressed: () {
-                                  _reorderItem(item);
+                                  _reorderItem(item, isVendor);
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFBF0000),
