@@ -4,6 +4,8 @@ import 'package:hometouch/firebase_options.dart';
 import 'Common Pages/progress_screen_page.dart';
 import 'network_manager.dart'; // Import NetworkManager
 
+const String braintreeTokenizationKey = "sandbox_q7krsq7f_6nwm8jysmwxnwx4z";
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(

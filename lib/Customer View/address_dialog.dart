@@ -12,6 +12,7 @@ class Address {
   final int? apartment; // Changed to int for numerical data
   final int? office; // Changed to int for numerical data
   final String? companyName;
+  final GeoPoint location;
 
   Address({
     required this.name,
@@ -22,6 +23,7 @@ class Address {
     this.apartment,
     this.office,
     this.companyName,
+    required this.location,
   });
 
   // Create the full address string
@@ -43,26 +45,19 @@ class Address {
   factory Address.fromFirestore(Map<String, dynamic> data) {
     return Address(
       name: data['Name'],
-      building: data['Building'] is int
-          ? data['Building']
-          : int.tryParse(data['Building'].toString()) ??
-              0, // Ensure it's an int
-      road: data['Road'] is int
-          ? data['Road']
-          : int.tryParse(data['Road'].toString()) ?? 0, // Ensure it's an int
-      block: data['Block'] is int
-          ? data['Block']
-          : int.tryParse(data['Block'].toString()) ?? 0, // Ensure it's an int
-      floor: data['Floor'] is int
-          ? data['Floor']
-          : int.tryParse(data['Floor'].toString()), // Ensure it's an int
-      apartment: data['Apartment'] is int
-          ? data['Apartment']
-          : int.tryParse(data['Apartment'].toString()), // Ensure it's an int
-      office: data['Office'] is int
-          ? data['Office']
-          : int.tryParse(data['Office'].toString()), // Ensure it's an int
+      building: int.tryParse(data['Building'].toString()) ?? 0,
+      road: int.tryParse(data['Road'].toString()) ?? 0,
+      block: int.tryParse(data['Block'].toString()) ?? 0,
+      floor:
+          data['Floor'] != null ? int.tryParse(data['Floor'].toString()) : null,
+      apartment: data['Apartment'] != null
+          ? int.tryParse(data['Apartment'].toString())
+          : null,
+      office: data['Office'] != null
+          ? int.tryParse(data['Office'].toString())
+          : null,
       companyName: data['Company_Name'],
+      location: data['Location'] ?? GeoPoint(0.0, 0.0), // ✅ Read GeoPoint
     );
   }
 }
@@ -152,9 +147,7 @@ class _AddressDialogState extends State<AddressDialog> {
             // Dynamically build the address fields if addresses exist
             ...addresses.isNotEmpty
                 ? addresses.map((address) => _buildAddressField(
-                      title: address.name,
-                      address: address
-                          .getFullAddress(), // Get the full address dynamically
+                    address: address // Get the full address dynamically
                     ))
                 : [
                     Center(
@@ -217,40 +210,45 @@ class _AddressDialogState extends State<AddressDialog> {
     );
   }
 
-  Widget _buildAddressField({required String title, required String address}) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: widget.screenWidth * 0.09,
-          vertical: widget.screenHeight * 0.01),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: widget.screenHeight * 0.022,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+  Widget _buildAddressField({required Address address}) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context, address); // ✅ Return selected address
+      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: widget.screenWidth * 0.09,
+            vertical: widget.screenHeight * 0.01),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              address.name,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: widget.screenHeight * 0.022,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
-          ),
-          SizedBox(height: widget.screenHeight * 0.005),
-          Text(
-            address,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: widget.screenHeight * 0.014,
-              fontWeight: FontWeight.w400,
-              color: Colors.black,
+            SizedBox(height: widget.screenHeight * 0.005),
+            Text(
+              address.getFullAddress(),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: widget.screenHeight * 0.014,
+                fontWeight: FontWeight.w400,
+                color: Colors.black,
+              ),
             ),
-          ),
-          SizedBox(height: widget.screenHeight * 0.008),
-          Container(
-            width: double.infinity,
-            height: 2,
-            color: const Color(0xFFBF0000),
-          ),
-        ],
+            SizedBox(height: widget.screenHeight * 0.008),
+            Container(
+              width: double.infinity,
+              height: 2,
+              color: const Color(0xFFBF0000),
+            ),
+          ],
+        ),
       ),
     );
   }

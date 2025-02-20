@@ -266,7 +266,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
         await favoriteRef.add({
           "Type": "product",
-          "Product_ID": productRef, // Store as Firestore reference
+          "Product_ID": productRef,
+          "Vendor_ID": productData?["vendorId"],
         });
       }
     }

@@ -50,11 +50,14 @@ class _FavoritesPageState extends State<FavoritesPage>
           .doc(user.uid)
           .collection('favorite')
           .get();
+
       List<Map<String, dynamic>> vendors = [];
       List<Map<String, dynamic>> products = [];
+
       for (var doc in favoriteSnapshot.docs) {
         var data = doc.data();
         String favoriteId = doc.id;
+
         if (data['Type'] == 'vendor') {
           final vendorDoc = await FirebaseFirestore.instance
               .collection('vendor')
@@ -77,6 +80,14 @@ class _FavoritesPageState extends State<FavoritesPage>
                 productData['Image'] ??= 'https://via.placeholder.com/150';
                 productData['Name'] ??= 'Unknown Product';
                 productData['Favorite_ID'] = favoriteId;
+
+                // ✅ Ensure Vendor_ID is correctly assigned
+                if (data.containsKey("Vendor_ID")) {
+                  productData["Vendor_ID"] = data["Vendor_ID"];
+                } else {
+                  productData["Vendor_ID"] = "Unknown"; // Default value
+                }
+
                 products.add(productData);
               }
             } catch (e) {
@@ -85,7 +96,8 @@ class _FavoritesPageState extends State<FavoritesPage>
           }
         }
       }
-      if (!mounted) return; // <-- Check if the widget is still around
+
+      if (!mounted) return;
       setState(() {
         favoriteVendors = vendors;
         favoriteProducts = products;
@@ -140,7 +152,6 @@ class _FavoritesPageState extends State<FavoritesPage>
       }
 
       if (isVendor) {
-        // If it's a vendor, fetch its products
         QuerySnapshot productsSnapshot = await FirebaseFirestore.instance
             .collection('products')
             .where("Vendor_ID", isEqualTo: item['id'])
@@ -158,19 +169,19 @@ class _FavoritesPageState extends State<FavoritesPage>
           });
         }
       } else {
-        // If it's a product, add it directly
+        print("🛒 Vendor_ID before adding to cart: ${item["Vendor_ID"]}");
+
         await cartRef.add({
           "name": item["Name"],
           "price": item["Price"] ?? 0.000,
           "quantity": 1,
           "addOns": [],
           "image": item["Image"] ?? "",
-          "vendorId": item["Vendor_ID"],
+          "vendorId": item["Vendor_ID"] ?? "Unknown",
         });
       }
 
-      // Navigate to Cart Page
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const CartPage()),
       );

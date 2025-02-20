@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hometouch/Customer%20View/order_history_page.dart';
 import 'package:intl/intl.dart';
+import 'package:hometouch/Customer View/address_dialog.dart';
 
 class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final double subtotal;
   final double tax;
   final double total;
+  final Address selectedAddress;
 
   const CheckoutPage({
     Key? key,
@@ -15,6 +18,7 @@ class CheckoutPage extends StatefulWidget {
     required this.subtotal,
     required this.tax,
     required this.total,
+    required this.selectedAddress,
   }) : super(key: key);
 
   @override
@@ -22,7 +26,7 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  int selectedPaymentMethod = 0; // 0: Card, 1: Benefit Pay, 2: Cash
+  int selectedPaymentMethod = 0;
   bool? useDelivery;
   bool? selectedTime;
   DateTime? scheduleTime;
@@ -56,14 +60,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ? widget.cartItems.first["vendorId"].toString()
           : "Unknown";
 
+      double roundedTotal = double.parse(widget.total.toStringAsFixed(3));
+
       await FirebaseFirestore.instance.collection('order').add({
         "Customer_ID": user.uid,
-        "Order_Number": "#$orderNumber", // ✅ Always stored as a string with "#"
-        "Vendor_ID": vendorId, // ✅ Ensure it's a String
+        "Order_Number": "#$orderNumber",
+        "Vendor_ID": vendorId,
+        "Driver_ID": "eJXF01SPCo4QK3UApmpR",
         "Items": widget.cartItems,
         "Subtotal": widget.subtotal,
         "Tax": widget.tax,
-        "Total": widget.total,
+        "Total": roundedTotal,
         "Payment_Method": selectedPaymentMethod == 0
             ? "Card"
             : selectedPaymentMethod == 1
@@ -73,26 +80,96 @@ class _CheckoutPageState extends State<CheckoutPage> {
         "Time": selectedTime == true ? "Now" : "Scheduled",
         "Schedule_Time":
             scheduleTime != null ? Timestamp.fromDate(scheduleTime!) : null,
-        "Status": "In Progress",
+        "Status": "Preparing",
         "Order_Date": FieldValue.serverTimestamp(),
+        "Customer_Address": {
+          "Name": widget.selectedAddress.name,
+          "Building": widget.selectedAddress.building,
+          "Road": widget.selectedAddress.road,
+          "Block": widget.selectedAddress.block,
+          "Floor": widget.selectedAddress.floor,
+          "Apartment": widget.selectedAddress.apartment,
+          "Office": widget.selectedAddress.office,
+          "Company_Name": widget.selectedAddress.companyName,
+          "Location": widget.selectedAddress.location
+        }
       });
 
-      // Clear Cart
-      final cartRef = FirebaseFirestore.instance
+      // ✅ Increase Loyalty_Points by 100
+      await FirebaseFirestore.instance
           .collection('Customer')
           .doc(user.uid)
-          .collection('cart');
-      var cartDocs = await cartRef.get();
-      for (var doc in cartDocs.docs) {
-        await doc.reference.delete();
-      }
+          .update({"Loyalty_Points": FieldValue.increment(100)});
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Order placed successfully!")),
-      );
+      _showSuccessDialog();
+
+      Future.delayed(const Duration(seconds: 3), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => OrdersPage()),
+        );
+      });
     } catch (e) {
       print("❌ Error placing order: $e");
     }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+              vertical: screenHeight * 0.03, horizontal: screenWidth * 0.05),
+          title: Container(
+            padding: EdgeInsets.all(screenWidth * 0.05),
+            decoration: const BoxDecoration(
+              color: Color(0xFFBF0000),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check,
+              color: Colors.white,
+              size: screenWidth * 0.12,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Order Placed',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              Container(
+                alignment: Alignment.center,
+                child: Text(
+                  'Please wait. You will be directed to the order history page',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: screenWidth * 0.035,
+                    fontWeight: FontWeight.w300,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              CircularProgressIndicator(
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _selectScheduleTime() async {

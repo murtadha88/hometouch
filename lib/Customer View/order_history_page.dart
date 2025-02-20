@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
+import 'package:hometouch/Customer%20View/order_tracking_page.dart';
 import 'package:hometouch/Customer%20View/review_page.dart';
 
 const Color primaryRed = Color(0xFFBF0000);
@@ -12,9 +13,11 @@ Color getStatusBackground(String status) {
     case 'cancelled':
     case 'rejected':
       return Colors.red.shade100;
-    case 'in progress':
+    case 'preparing':
       return Colors.yellow.shade100;
-    case 'completed':
+    case 'on the way':
+      return Colors.yellow.shade100;
+    case 'delivered':
       return Colors.green.shade100;
     default:
       return Colors.grey.shade200;
@@ -26,9 +29,11 @@ Color getStatusTextColor(String status) {
     case 'cancelled':
     case 'rejected':
       return Colors.red;
-    case 'in progress':
+    case 'preparing':
       return Colors.yellow.shade800;
-    case 'completed':
+    case 'on the way':
+      return Colors.yellow.shade800;
+    case 'delivered':
       return Colors.green;
     default:
       return primaryRed;
@@ -97,19 +102,15 @@ class _OrdersPageState extends State<OrdersPage>
 
         if (vendorSnapshot.exists) {
           order["vendorLogo"] = vendorSnapshot["Logo"];
-          order["restaurant"] =
-              vendorSnapshot["Name"]; // ✅ Replace with vendor name
+          order["restaurant"] = vendorSnapshot["Name"];
         } else {
-          order["vendorLogo"] =
-              'https://via.placeholder.com/50'; // Default image
-          order["restaurant"] =
-              "Unknown Vendor"; // Default name if vendor not found
+          order["vendorLogo"] = 'https://via.placeholder.com/50';
+          order["restaurant"] = "Unknown Vendor";
         }
 
-        // Normalize Status to lowercase
         String status = order["Status"].toString().toLowerCase();
 
-        if (status == "in progress") {
+        if (status == "preparing" || status == "on the way") {
           ongoing.add(order);
         } else {
           history.add(order);
@@ -294,7 +295,15 @@ class _OrdersPageState extends State<OrdersPage>
                     if (isOngoing) ...[
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {}, // Track Order Logic Here
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OrderTrackingPage(
+                                    orderId: order['orderId']),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryRed,
                             foregroundColor: Colors.white,

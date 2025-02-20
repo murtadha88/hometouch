@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hometouch/Customer%20View/address_dialog.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/checkout_page.dart';
 
@@ -327,18 +328,31 @@ class _CartPageState extends State<CartPage> {
                             _buildSummaryRow("Total", total, isBold: true),
                             const SizedBox(height: 16),
                             ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CheckoutPage(
-                                      cartItems: cartItems,
-                                      subtotal: subtotal,
-                                      tax: tax,
-                                      total: total,
-                                    ),
+                              onPressed: () async {
+                                final selectedAddress =
+                                    await showModalBottomSheet<Address?>(
+                                  context: context,
+                                  builder: (context) => AddressDialog(
+                                    screenWidth: screenWidth,
+                                    screenHeight: screenHeight,
+                                    onClose: () => Navigator.pop(context),
                                   ),
                                 );
+
+                                if (selectedAddress != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CheckoutPage(
+                                        cartItems: cartItems,
+                                        subtotal: subtotal,
+                                        tax: tax,
+                                        total: total,
+                                        selectedAddress: selectedAddress,
+                                      ),
+                                    ),
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFBF0000),
