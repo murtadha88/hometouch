@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:hometouch/Common%20Pages/network_error_page.dart';
-import 'main.dart'; // Import MyApp for navigatorKey
+import 'main.dart';
 
 class NetworkManager {
   static final NetworkManager _instance = NetworkManager._internal();
@@ -28,7 +28,7 @@ class NetworkManager {
   }
 
   void _showNetworkErrorPage() {
-    if (_isErrorPageShown) return; // ✅ Prevent multiple error screens
+    if (_isErrorPageShown) return;
     _isErrorPageShown = true;
 
     MyApp.navigatorKey.currentState?.push(

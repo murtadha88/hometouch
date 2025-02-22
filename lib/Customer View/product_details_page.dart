@@ -5,9 +5,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hometouch/Customer%20View/review_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
-  final String productId; // Only pass the Product ID
+  final String productId;
+  final bool isFromRewards;
+  final int points;
 
-  const ProductDetailsPage({super.key, required this.productId});
+  const ProductDetailsPage({
+    Key? key,
+    required this.productId,
+    this.isFromRewards = false,
+    this.points = 0,
+  }) : super(key: key);
 
   @override
   State<ProductDetailsPage> createState() => _ProductDetailsPageState();
@@ -58,9 +65,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
             setState(() {
               productData = productDoc.data() as Map<String, dynamic>?;
-              productData?["vendorId"] = vendorDoc.id; // ✅ Store Vendor ID
-              productData?["categoryId"] =
-                  categoryDoc.id; // ✅ Store Category ID
+              productData?["vendorId"] = vendorDoc.id;
+              productData?["categoryId"] = categoryDoc.id;
               isLoading = false;
             });
 
@@ -74,7 +80,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       }
 
       setState(() {
-        isLoading = false; // ✅ Stop loading if product is not found
+        isLoading = false;
       });
     } catch (e) {
       print("❌ Error fetching product details: $e");
@@ -87,7 +93,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Future<void> _fetchAddOnsAndRemovals(
       String vendorId, String categoryId) async {
     try {
-      // Fetch Add-Ons
       QuerySnapshot addOnsSnapshot = await FirebaseFirestore.instance
           .collection('vendor')
           .doc(vendorId)
@@ -98,7 +103,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           .collection('Add_Ons')
           .get();
 
-      // Fetch Removals
       QuerySnapshot removalsSnapshot = await FirebaseFirestore.instance
           .collection('vendor')
           .doc(vendorId)
@@ -132,9 +136,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  double get _totalPrice {
-    double basePrice = (productData?["Price"] ?? 0).toDouble();
-    return (basePrice + _addOnsTotal) * (_quantity > 0 ? _quantity : 1);
+  String get _totalDisplay {
+    if (widget.isFromRewards) {
+      return "${(widget.points * _quantity)} Points";
+    } else {
+      double basePrice = (productData?["Price"] ?? 0).toDouble();
+      double totalPrice =
+          (basePrice + _addOnsTotal) * (_quantity > 0 ? _quantity : 1);
+      return "${totalPrice.toStringAsFixed(3)} BHD";
+    }
   }
 
   Future<void> _fetchRecentReviews() async {
@@ -165,7 +175,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
           return {
             "name": customerData?["Name"] ?? "Unknown Customer",
-            "photo": customerData?["Photo"] ?? "", // Handle missing images
+            "photo": customerData?["Photo"] ?? "",
             "rating": data["Rating"],
             "review": data["Review"],
             "date": (data["Date"] as Timestamp).toDate(),
@@ -182,7 +192,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         }
       }).toList();
 
-      // Wait for all customer data to be fetched before updating the state
       List<Map<String, dynamic>> fetchedReviews =
           await Future.wait(reviewFutures);
 
@@ -202,7 +211,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       return;
     }
 
-    // Get the product reference
     DocumentReference productRef = FirebaseFirestore.instance
         .collection("vendor")
         .doc(productData?["vendorId"])
@@ -218,7 +226,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         .doc(currentUserId)
         .collection("favorite")
         .where("Type", isEqualTo: "product")
-        .where("Product_ID", isEqualTo: productRef); // Compare as reference
+        .where("Product_ID", isEqualTo: productRef);
 
     var snapshot = await favoriteRef.get();
 
@@ -236,7 +244,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         .collection("favorite");
 
     if (isFavorite) {
-      // Remove from favorites
       var favoriteDoc = await favoriteRef
           .where("Type", isEqualTo: "product")
           .where("Product_ID",
@@ -246,14 +253,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   .collection("category")
                   .doc(productData?["categoryId"])
                   .collection("products")
-                  .doc(widget.productId)) // Ensure it's a reference
+                  .doc(widget.productId))
           .get();
 
       for (var doc in favoriteDoc.docs) {
         await doc.reference.delete();
       }
     } else {
-      // Ensure vendor and category IDs exist before adding
       if (productData?["vendorId"] != null &&
           productData?["categoryId"] != null) {
         DocumentReference productRef = FirebaseFirestore.instance
@@ -295,7 +301,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       Map<String, dynamic> cartItem = {
         "productId": widget.productId,
         "name": productData?["Name"] ?? "Unknown",
-        "price": productData?["Price"] ?? 0,
+        "price": widget.isFromRewards ? 0 : (productData?["Price"]) ?? 0,
+        "points":
+            widget.isFromRewards ? (productData?["Points"] ?? 0).toInt() : 0,
         "quantity": _quantity,
         "addOns": selectedAddOns,
         "vendorId": productData?["vendorId"],
@@ -345,7 +353,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 child: Icon(
                   Icons.arrow_back_ios,
                   color: Colors.white,
-                  size: screenHeight * 0.025, // Match second AppBar size
+                  size: screenHeight * 0.025,
                 ),
               ),
             ),
@@ -355,14 +363,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               padding: EdgeInsets.only(
                   top: screenHeight * 0.02, right: screenWidth * 0.02),
               child: GestureDetector(
-                onTap: _toggleFavorite, // ✅ Handle tap
+                onTap: _toggleFavorite,
                 child: CircleAvatar(
                   backgroundColor: const Color(0xFFBF0000),
-                  radius: screenHeight * 0.027, // Match second AppBar icon size
+                  radius: screenHeight * 0.027,
                   child: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: Colors.white,
-                    size: screenHeight * 0.027, // Keep same size as other icons
+                    size: screenHeight * 0.027,
                   ),
                 ),
               ),
@@ -394,15 +402,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               ),
             ),
             SizedBox(height: screenHeight * 0.01),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Product Name + Rating in the red box
                 Row(
                   children: [
-                    // Product Name
                     Text(
                       productData?["Name"] ?? "Unknown Product",
                       style: TextStyle(
@@ -413,8 +418,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(width: screenWidth * 0.03),
-
-                    // Star Icon + Rating Number
                     Row(
                       children: [
                         Icon(Icons.star,
@@ -433,8 +436,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     ),
                   ],
                 ),
-
-                // Review Icon Button (on the far right)
                 IconButton(
                   icon: CircleAvatar(
                     backgroundColor: const Color(0xFFBF0000),
@@ -464,17 +465,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
               ],
             ),
-
             Text(
-              "${productData?["Price"].toStringAsFixed(3)} BHD",
+              widget.isFromRewards
+                  ? "${widget.points.toStringAsFixed(0)} Points Required"
+                  : "${productData?["Price"].toStringAsFixed(3)} BHD",
               style: TextStyle(
-                fontSize: screenWidth * 0.06,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFFBF0000),
-              ),
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFBF0000)),
             ),
-            SizedBox(height: screenHeight * 0.01),
-
+            SizedBox(height: screenHeight * 0.02),
             Text(
               productData?["Description"] ?? "No description available.",
               style: TextStyle(
@@ -484,18 +484,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               ),
             ),
             SizedBox(height: screenHeight * 0.03),
-
-            // Add-Ons
             _buildSectionTitle("Add-Ons", screenWidth),
             _buildAddOns(),
             SizedBox(height: screenHeight * 0.02),
-
-            // Removals
             _buildSectionTitle("Remove", screenWidth),
             _buildRemovals(),
             SizedBox(height: screenHeight * 0.02),
-
-            // Reviews Section
             _buildSectionTitle("Reviews", screenWidth),
             _buildReviews(),
           ],
@@ -512,7 +506,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Quantity Selector
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -552,9 +545,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
               ],
             ),
-            // SizedBox(height: screenHeight * 0.01),
-
-            // Add to Cart Button
             ElevatedButton(
               onPressed: _addToCart,
               style: ElevatedButton.styleFrom(
@@ -565,7 +555,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               ),
               child: Center(
                 child: Text(
-                  "Add to Cart (${_totalPrice.toStringAsFixed(3)} BHD)",
+                  widget.isFromRewards
+                      ? "Add to Cart ($_totalDisplay)"
+                      : "Add to Cart ($_totalDisplay)",
                   style: TextStyle(
                       fontSize: screenWidth * 0.05, color: Colors.white),
                 ),
@@ -695,8 +687,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             });
           },
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: const Color(0xFFBF0000), // Red background when selected
-          checkColor: Colors.white, // White tick when selected
+          activeColor: const Color(0xFFBF0000),
+          checkColor: Colors.white,
         );
       }).toList(),
     );

@@ -9,6 +9,7 @@ import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Customer%20View/favorite_page.dart';
 import 'package:hometouch/Customer%20View/profile_page.dart';
 import 'package:hometouch/Customer%20View/setting_page.dart';
+import 'package:hometouch/Customer%20View/rewards_page.dart';
 import 'package:hometouch/Customer%20View/subscription_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -60,20 +61,16 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _checkSubscriptionStatus() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final userRef = FirebaseFirestore.instance
-          .collection('Customer')
-          .doc(user.uid); // Reference to the current user's document
+      final userRef =
+          FirebaseFirestore.instance.collection('Customer').doc(user.uid);
 
       final subscriptionSnapshot = await FirebaseFirestore.instance
           .collection('subscription')
-          .where('Customer_ID',
-              isEqualTo:
-                  userRef) // Check if the reference matches the current user's reference
+          .where('Customer_ID', isEqualTo: userRef)
           .get();
 
       setState(() {
-        isSubscribed = subscriptionSnapshot
-            .docs.isNotEmpty; // Check if there's a subscription for this user
+        isSubscribed = subscriptionSnapshot.docs.isNotEmpty;
       });
     }
   }
@@ -85,21 +82,18 @@ class _AccountPageState extends State<AccountPage> {
     if (pickedFile != null) {
       File file = File(pickedFile.path);
 
-      // Check if image size exceeds the 1MB limit
       int fileSize = await file.length();
       if (fileSize > 1048576) {
-        // 1MB in bytes
-        // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Image is too large. Please select a smaller image.',
               style: TextStyle(color: Colors.white),
             ),
-            behavior: SnackBarBehavior.floating, // ✅ Prevents UI shifting
+            behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
             margin: EdgeInsets.only(
-              bottom: 16, // ✅ Leaves space for FloatingActionButton
+              bottom: 16,
               left: 16,
               right: 16,
             ),
@@ -109,20 +103,17 @@ class _AccountPageState extends State<AccountPage> {
         return;
       }
 
-      // Convert image to base64 string
       List<int> imageBytes = await file.readAsBytes();
       String base64String = base64Encode(imageBytes);
 
       try {
-        // Update Firestore with the base64 string
         await FirebaseFirestore.instance
             .collection('Customer')
             .doc(FirebaseAuth.instance.currentUser!.uid)
             .update({'Photo': base64String});
 
         setState(() {
-          userPhotoUrl =
-              base64String; // Update the state with the new base64 string
+          userPhotoUrl = base64String;
         });
       } catch (e) {
         print('Error uploading photo: $e');
@@ -137,7 +128,7 @@ class _AccountPageState extends State<AccountPage> {
 
     return WillPopScope(
       onWillPop: () async {
-        return !widget.isFromNavBar; // 🔴 Prevent back if from NavBar
+        return !widget.isFromNavBar;
       },
       child: Scaffold(
         appBar: PreferredSize(
@@ -211,7 +202,6 @@ class _AccountPageState extends State<AccountPage> {
                         MaterialPageRoute(builder: (context) => ProfilePage()),
                       );
 
-                      // If data is returned from ProfilePage
                       if (updatedUserInfo != null) {
                         setState(() {
                           userName = updatedUserInfo['name'];
@@ -228,10 +218,8 @@ class _AccountPageState extends State<AccountPage> {
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
-                        isScrollControlled:
-                            true, // Allow it to expand as needed
-                        backgroundColor:
-                            Colors.transparent, // Transparent background
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
                         builder: (BuildContext context) {
                           return SubscriptionDialog(
                             screenWidth: screenWidth,
@@ -248,12 +236,10 @@ class _AccountPageState extends State<AccountPage> {
                     screenHeight,
                     onTap: isSubscribed
                         ? () {
-                            // Navigate to Overview Page if subscribed
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      SettingsPage()), // Replace with actual overview page
+                                  builder: (context) => SettingsPage()),
                             );
                           }
                         : null,
@@ -279,9 +265,7 @@ class _AccountPageState extends State<AccountPage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                SettingsPage()), // Navigate to SettingsPage
+                        MaterialPageRoute(builder: (context) => RewardsPage()),
                       );
                     },
                   ),
@@ -294,8 +278,7 @@ class _AccountPageState extends State<AccountPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) =>
-                                FavoritesPage()), // Navigate to SettingsPage
+                            builder: (context) => FavoritesPage()),
                       );
                     },
                   ),
@@ -307,9 +290,7 @@ class _AccountPageState extends State<AccountPage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                SettingsPage()), // Navigate to SettingsPage
+                        MaterialPageRoute(builder: (context) => SettingsPage()),
                       );
                     },
                   ),
@@ -321,9 +302,7 @@ class _AccountPageState extends State<AccountPage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                SettingsPage()), // Navigate to SettingsPage
+                        MaterialPageRoute(builder: (context) => SettingsPage()),
                       );
                     },
                   ),
@@ -335,7 +314,7 @@ class _AccountPageState extends State<AccountPage> {
         ),
         bottomNavigationBar: BottomNavBar(selectedIndex: 4),
         floatingActionButton: Container(
-          height: 58, // Bigger size to overlap the bottom bar
+          height: 58,
           width: 58,
           child: FloatingActionButton(
             onPressed: () {
@@ -371,8 +350,7 @@ class _AccountPageState extends State<AccountPage> {
                 radius: screenWidth * 0.2,
                 backgroundColor: Colors.grey[300],
                 backgroundImage: userPhotoUrl != null
-                    ? MemoryImage(
-                        base64Decode(userPhotoUrl!)) // Show base64 image
+                    ? MemoryImage(base64Decode(userPhotoUrl!))
                     : NetworkImage(
                         'https://i.imgur.com/OtAn7hT.jpeg',
                       ),
@@ -381,7 +359,7 @@ class _AccountPageState extends State<AccountPage> {
                 bottom: screenHeight * 0.01,
                 right: screenWidth * 0.02,
                 child: GestureDetector(
-                  onTap: _uploadPhoto, // Allow the user to upload a photo
+                  onTap: _uploadPhoto,
                   child: CircleAvatar(
                     radius: screenWidth * 0.06,
                     backgroundColor: Colors.grey[100],
@@ -539,19 +517,17 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                       ),
                       onPressed: () async {
-                        // ✅ Sign Out & Clear Login State
                         await FirebaseAuth.instance.signOut();
                         SharedPreferences prefs =
                             await SharedPreferences.getInstance();
                         await prefs.setBool('isLoggedIn', false);
 
-                        // ✅ Redirect to Login Page
                         if (mounted) {
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
                                 builder: (context) => const LoginPage()),
-                            (route) => false, // Remove all previous routes
+                            (route) => false,
                           );
                         }
                       },
@@ -574,7 +550,7 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pop(context); // Close dialog
+                        Navigator.pop(context);
                       },
                       child: Text(
                         'No',

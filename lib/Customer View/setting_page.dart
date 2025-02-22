@@ -63,26 +63,24 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       backgroundColor: Colors.white,
       body: Padding(
-        padding:
-            EdgeInsets.only(top: screenHeight * 0.03), // Adjust top padding
+        padding: EdgeInsets.only(top: screenHeight * 0.03),
         child: ListView(
           children: [
             Padding(
-              padding: EdgeInsets.all(screenWidth * 0.04), // Adjust padding
+              padding: EdgeInsets.all(screenWidth * 0.04),
               child: Text(
                 'GENERAL',
                 style: TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
-                  fontSize: screenWidth * 0.05, // Adjust font size
+                  fontSize: screenWidth * 0.05,
                 ),
               ),
             ),
             ListTile(
               title: Text('Push Notification',
-                  style: TextStyle(
-                      fontSize: screenWidth * 0.045)), // Adjust text size
+                  style: TextStyle(fontSize: screenWidth * 0.045)),
               trailing: Switch(
                 value: isPushNotificationEnabled,
                 activeColor: Colors.white,
@@ -98,8 +96,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             ListTile(
               title: Text('Location',
-                  style: TextStyle(
-                      fontSize: screenWidth * 0.045)), // Adjust text size
+                  style: TextStyle(fontSize: screenWidth * 0.045)),
               trailing: Switch(
                 value: isLocationEnabled,
                 activeColor: Colors.white,
@@ -112,23 +109,21 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             Padding(
-              padding: EdgeInsets.all(screenWidth * 0.04), // Adjust padding
+              padding: EdgeInsets.all(screenWidth * 0.04),
               child: Text(
                 'OTHER',
                 style: TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
-                  fontSize: screenWidth * 0.05, // Adjust font size
+                  fontSize: screenWidth * 0.05,
                 ),
               ),
             ),
             ListTile(
               title: Text('About Us',
-                  style: TextStyle(
-                      fontSize: screenWidth * 0.045)), // Adjust text size
-              trailing: Icon(Icons.arrow_forward_ios,
-                  size: screenWidth * 0.04), // Adjust icon size
+                  style: TextStyle(fontSize: screenWidth * 0.045)),
+              trailing: Icon(Icons.arrow_forward_ios, size: screenWidth * 0.04),
               onTap: () {
                 Navigator.push(
                   context,
@@ -138,10 +133,8 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             ListTile(
               title: Text('Privacy Policy',
-                  style: TextStyle(
-                      fontSize: screenWidth * 0.045)), // Adjust text size
-              trailing: Icon(Icons.arrow_forward_ios,
-                  size: screenWidth * 0.04), // Adjust icon size
+                  style: TextStyle(fontSize: screenWidth * 0.045)),
+              trailing: Icon(Icons.arrow_forward_ios, size: screenWidth * 0.04),
               onTap: () {
                 Navigator.push(
                   context,
@@ -151,10 +144,8 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             ListTile(
               title: Text('Terms of Service',
-                  style: TextStyle(
-                      fontSize: screenWidth * 0.045)), // Adjust text size
-              trailing: Icon(Icons.arrow_forward_ios,
-                  size: screenWidth * 0.04), // Adjust icon size
+                  style: TextStyle(fontSize: screenWidth * 0.045)),
+              trailing: Icon(Icons.arrow_forward_ios, size: screenWidth * 0.04),
               onTap: () {
                 Navigator.push(
                   context,

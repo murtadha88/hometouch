@@ -81,11 +81,10 @@ class _FavoritesPageState extends State<FavoritesPage>
                 productData['Name'] ??= 'Unknown Product';
                 productData['Favorite_ID'] = favoriteId;
 
-                // ✅ Ensure Vendor_ID is correctly assigned
                 if (data.containsKey("Vendor_ID")) {
                   productData["Vendor_ID"] = data["Vendor_ID"];
                 } else {
-                  productData["Vendor_ID"] = "Unknown"; // Default value
+                  productData["Vendor_ID"] = "Unknown";
                 }
 
                 products.add(productData);
@@ -113,7 +112,6 @@ class _FavoritesPageState extends State<FavoritesPage>
     if (user == null) return;
 
     try {
-      // ✅ Wait for Firestore deletion before updating the UI
       await FirebaseFirestore.instance
           .collection('Customer')
           .doc(user.uid)
@@ -121,7 +119,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           .doc(favoriteId)
           .delete();
 
-      // ✅ Ensure UI updates correctly for both vendors and products
       setState(() {
         favoriteVendors
             .removeWhere((item) => item['Favorite_ID'] == favoriteId);
@@ -145,7 +142,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           .doc(user.uid)
           .collection('cart');
 
-      // Clear existing cart
       var cartDocs = await cartRef.get();
       for (var doc in cartDocs.docs) {
         await doc.reference.delete();
@@ -192,7 +188,6 @@ class _FavoritesPageState extends State<FavoritesPage>
 
   void _rateItem(Map<String, dynamic> item, bool isVendor) async {
     if (isVendor) {
-      // Navigate to rate Vendor
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -200,7 +195,6 @@ class _FavoritesPageState extends State<FavoritesPage>
         ),
       );
     } else {
-      // Fetch `categoryId` from the product document
       String? categoryId;
       try {
         DocumentSnapshot productDoc = await FirebaseFirestore.instance
@@ -213,20 +207,18 @@ class _FavoritesPageState extends State<FavoritesPage>
             .get();
 
         if (productDoc.exists) {
-          categoryId = item["Category_ID"]; // Ensure categoryId is available
+          categoryId = item["Category_ID"];
         }
       } catch (e) {
         print("❌ Error fetching category ID: $e");
       }
 
-      // Navigate to rate Product
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ReviewPage(
             productId: item['id'],
-            vendorId: item['Vendor_ID'],
-            categoryId: categoryId, // ✅ Pass categoryId
+            categoryId: categoryId,
           ),
         ),
       );
@@ -240,14 +232,14 @@ class _FavoritesPageState extends State<FavoritesPage>
 
     return WillPopScope(
       onWillPop: () async {
-        return !widget.isFromNavBar; // 🔴 Prevent back if from NavBar
+        return !widget.isFromNavBar;
       },
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 1,
           leading: widget.isFromNavBar
-              ? const SizedBox() // 🔴 Remove back button if from NavBar
+              ? const SizedBox()
               : Padding(
                   padding: EdgeInsets.only(
                     top: screenHeight * 0.03,
@@ -316,7 +308,7 @@ class _FavoritesPageState extends State<FavoritesPage>
         ),
         bottomNavigationBar: BottomNavBar(selectedIndex: 1),
         floatingActionButton: Container(
-          height: 58, // Bigger size to overlap the bottom bar
+          height: 58,
           width: 58,
           child: FloatingActionButton(
             onPressed: () {
@@ -363,9 +355,8 @@ class _FavoritesPageState extends State<FavoritesPage>
         itemBuilder: (context, index) {
           final item = items[index];
 
-          // ✅ Ensure Name, Image, and ID are present before proceeding
           if (item["id"] == null || item["Name"] == null) {
-            return const SizedBox(); // Skip invalid entries
+            return const SizedBox();
           }
 
           String imageUrl = (item["Image"] != null && item["Image"] != "")
@@ -512,6 +503,7 @@ class _FavoritesPageState extends State<FavoritesPage>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -537,10 +529,9 @@ class _FavoritesPageState extends State<FavoritesPage>
                     ),
                   ),
                   onPressed: () async {
-                    await removeFavorite(
-                        favoriteId); // ✅ Wait for Firestore to delete
+                    await removeFavorite(favoriteId);
                     if (mounted) {
-                      Navigator.of(context).pop(); // ✅ Close after deletion
+                      Navigator.of(context).pop();
                     }
                   },
                   child:

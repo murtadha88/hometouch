@@ -91,9 +91,8 @@ class _OrdersPageState extends State<OrdersPage>
 
       for (var doc in orderSnapshot.docs) {
         var order = doc.data() as Map<String, dynamic>;
-        order["orderId"] = doc.id; // Store document ID
+        order["orderId"] = doc.id;
 
-        // Fetch vendor details
         String vendorId = order["Vendor_ID"];
         DocumentSnapshot vendorSnapshot = await FirebaseFirestore.instance
             .collection('vendor')
@@ -154,13 +153,11 @@ class _OrdersPageState extends State<OrdersPage>
           .doc(user.uid)
           .collection('cart');
 
-      // Clear existing cart
       var cartDocs = await cartRef.get();
       for (var doc in cartDocs.docs) {
         await doc.reference.delete();
       }
 
-      // Add items from previous order
       for (var item in order['Items']) {
         await cartRef.add({
           "name": item["name"],
@@ -172,7 +169,6 @@ class _OrdersPageState extends State<OrdersPage>
         });
       }
 
-      // Navigate to Cart Page
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const CartPage()),
@@ -227,7 +223,7 @@ class _OrdersPageState extends State<OrdersPage>
             borderRadius: BorderRadius.circular(screenWidth * 0.03),
           ),
           elevation: 4,
-          color: Colors.white, // Ensure the card has a white background
+          color: Colors.white,
           child: Padding(
             padding: EdgeInsets.all(screenWidth * 0.04),
             child: Column(
@@ -407,12 +403,12 @@ class _OrdersPageState extends State<OrdersPage>
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: Colors.white, // Ensuring full white background
+        backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 1,
           leading: widget.isFromNavBar
-              ? const SizedBox() // 🔴 Remove back button if from NavBar
+              ? const SizedBox()
               : Padding(
                   padding: EdgeInsets.only(
                     top: screenHeight * 0.03,

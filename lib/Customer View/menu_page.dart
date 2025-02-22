@@ -18,12 +18,12 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
   late ScrollController _scrollController;
   final ScrollController _categoriesScrollController = ScrollController();
   final Map<String, GlobalKey> _categoryKeys = {};
-  String selectedCategory = ""; // Default to show all products
+  String selectedCategory = "";
   Map<String, List<Map<String, dynamic>>> menuItems = {};
-  List<String> categories = []; // Remove "All" as the first category
+  List<String> categories = [];
   Map<String, dynamic> vendorDetails = {};
   bool isLoading = true;
-  bool isFavorite = false; // Track favorite status
+  bool isFavorite = false;
   String? customerId;
   int cartItemCount = 0;
 
@@ -56,25 +56,21 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    // Get the cart snapshot.
     final cartSnapshot = await FirebaseFirestore.instance
         .collection('Customer')
         .doc(user.uid)
         .collection('cart')
         .get();
 
-    // Check if any item in the cart has a vendorId that is not equal to widget.vendorId.
     bool vendorMismatch = false;
     for (var doc in cartSnapshot.docs) {
       final data = doc.data();
-      // Ensure that each cart item includes a vendorId field when added.
       if (data['vendorId'] != widget.vendorId) {
         vendorMismatch = true;
         break;
       }
     }
 
-    // If there is a vendor mismatch, delete all items in the cart.
     if (vendorMismatch) {
       for (var doc in cartSnapshot.docs) {
         await doc.reference.delete();
@@ -98,10 +94,8 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  // Check if the vendor is already favorited
   Future<void> _checkIfFavorite() async {
-    if (customerId == null) return; // Skip if no user is signed in
-
+    if (customerId == null) return;
     try {
       final favoriteSnapshot = await FirebaseFirestore.instance
           .collection('Customer')
@@ -121,7 +115,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  // Remove any navigation from the favorite toggle function
   Future<void> _toggleFavorite() async {
     if (customerId == null) return;
 
@@ -146,11 +139,10 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  // Build the image widget with a fallback
   Widget _buildImage(String? image, String productName, double screenWidth,
       double screenHeight) {
-    double imageWidth = screenWidth * 0.47; // Adjust width dynamically
-    double imageHeight = screenHeight * 0.135; // Adjust height dynamically
+    double imageWidth = screenWidth * 0.47;
+    double imageHeight = screenHeight * 0.135;
 
     if (image == null || image.isEmpty) {
       return Container(
@@ -164,7 +156,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
 
     try {
-      Uri.parse(image); // Attempt to parse the URL
+      Uri.parse(image);
 
       return Container(
         width: imageWidth,
@@ -192,7 +184,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  // Fetch vendor details like name and rating
   Future<void> _fetchVendorDetails() async {
     try {
       DocumentSnapshot vendorSnapshot = await FirebaseFirestore.instance
@@ -210,7 +201,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  // Fetch categories and products from Firebase
   Future<void> _fetchCategories() async {
     try {
       QuerySnapshot categorySnapshot = await FirebaseFirestore.instance
@@ -243,7 +233,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  // Fetch products for each category
   Future<List<Map<String, dynamic>>> _fetchProducts(String categoryId) async {
     try {
       QuerySnapshot productSnapshot = await FirebaseFirestore.instance
@@ -262,7 +251,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
 
         if (name.isNotEmpty && price > 0) {
           products.add({
-            'id': doc.id, // ✅ Include Product ID (doc.id)
+            'id': doc.id,
             'name': name,
             'price': price,
             'image': image,
@@ -317,11 +306,10 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(
-            screenHeight * 0.09), // ✅ Match second AppBar height
+        preferredSize: Size.fromHeight(screenHeight * 0.09),
         child: AppBar(
-          backgroundColor: Colors.white, // ✅ Ensure white background
-          elevation: 0, // ✅ Remove shadow if needed
+          backgroundColor: Colors.white,
+          elevation: 0,
           leading: Padding(
             padding: EdgeInsets.only(
               top: screenHeight * 0.025,
@@ -342,33 +330,28 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                 child: Icon(
                   Icons.arrow_back_ios,
                   color: Colors.white,
-                  size: screenHeight * 0.025, // ✅ Match second AppBar size
+                  size: screenHeight * 0.025,
                 ),
               ),
             ),
           ),
           actions: [
-            // Favorite Button
             Padding(
               padding: EdgeInsets.only(
                   top: screenHeight * 0.02, right: screenWidth * 0.02),
               child: GestureDetector(
-                onTap: _toggleFavorite, // ✅ Handle tap
+                onTap: _toggleFavorite,
                 child: CircleAvatar(
                   backgroundColor: const Color(0xFFBF0000),
-                  radius:
-                      screenHeight * 0.027, // ✅ Match second AppBar icon size
+                  radius: screenHeight * 0.027,
                   child: Icon(
                     isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: Colors.white,
-                    size:
-                        screenHeight * 0.027, // ✅ Keep same size as other icons
+                    size: screenHeight * 0.027,
                   ),
                 ),
               ),
             ),
-
-            // Cart Button with Badge
             Padding(
               padding: EdgeInsets.only(
                   top: screenHeight * 0.02, right: screenWidth * 0.02),
@@ -380,20 +363,18 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                       builder: (context) => CartPage(),
                     ),
                   ).then((_) {
-                    _fetchCartItemCount(); // ✅ Refresh cart count when coming back
+                    _fetchCartItemCount();
                   });
                 },
                 child: Stack(
                   children: [
                     CircleAvatar(
                       backgroundColor: const Color(0xFFBF0000),
-                      radius: screenHeight *
-                          0.027, // ✅ Match second AppBar icon size
+                      radius: screenHeight * 0.027,
                       child: Icon(
                         Icons.shopping_cart_outlined,
                         color: Colors.white,
-                        size: screenHeight *
-                            0.027, // ✅ Keep same size as other icons
+                        size: screenHeight * 0.027,
                       ),
                     ),
                     if (cartItemCount > 0)
@@ -430,9 +411,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Navigate to ChatPage when pressed
-        },
+        onPressed: () {},
         backgroundColor: const Color(0xFFBF0000),
         child: const Icon(Icons.message, color: Colors.white),
       ),
@@ -476,8 +455,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                             ),
                             SizedBox(height: screenHeight * 0.01),
                             Column(
-                              crossAxisAlignment: CrossAxisAlignment
-                                  .start, // Align text to the start
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
@@ -486,9 +464,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                       color: const Color(0xFFBF0000),
                                       size: screenWidth * 0.05,
                                     ),
-                                    SizedBox(
-                                        width: screenWidth *
-                                            0.01), // Add spacing between icon and text
+                                    SizedBox(width: screenWidth * 0.01),
                                     Text(
                                       '${vendorDetails['Rating'] ?? '0.0'}',
                                       style: const TextStyle(
@@ -497,9 +473,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                     ),
                                   ],
                                 ),
-                                SizedBox(
-                                    height: screenHeight *
-                                        0.005), // Add spacing between the two lines
+                                SizedBox(height: screenHeight * 0.005),
                                 Row(
                                   children: [
                                     const Icon(
@@ -535,7 +509,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                   ReviewPage(vendorId: widget.vendorId),
                             ),
                           ).then((_) {
-                            _fetchVendorDetails(); // Refresh the cart count when coming back
+                            _fetchVendorDetails();
                           });
                         },
                       ),
@@ -587,7 +561,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.02),
-                // Menu Items
                 Expanded(
                   child: Scrollbar(
                     controller: _scrollController,
@@ -632,7 +605,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
 
                                       return GestureDetector(
                                         onTap: () {
-                                          // Navigate to ProductDetailsPage when tapping the entire box
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -641,7 +613,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                                       productId: item["id"]),
                                             ),
                                           ).then((_) {
-                                            _fetchCartItemCount(); // Refresh the cart count when coming back
+                                            _fetchCartItemCount();
                                           });
                                         },
                                         child: Card(
@@ -706,7 +678,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                                     ),
                                                     GestureDetector(
                                                       onTap: () {
-                                                        // Navigate when tapping the "+" button
                                                         Navigator.push(
                                                           context,
                                                           MaterialPageRoute(

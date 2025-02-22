@@ -10,7 +10,7 @@ class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key, required this.selectedIndex});
 
   void _onItemTapped(BuildContext context, int index) {
-    if (selectedIndex == index) return; // Prevent unnecessary navigation
+    if (selectedIndex == index) return;
 
     Widget nextPage;
     switch (index) {
@@ -49,13 +49,13 @@ class BottomNavBar extends StatelessWidget {
         color: const Color.fromARGB(255, 241, 241, 241),
         elevation: 5,
         child: SizedBox(
-          height: 60, // ✅ Adjust height
+          height: 60,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(context, Icons.home, "Home", 0),
               _buildNavItem(context, Icons.favorite_border, "Favorite", 1),
-              const SizedBox(width: 40), // Space for FloatingActionButton
+              const SizedBox(width: 40),
               _buildNavItem(context, Icons.list_alt, "Orders", 3),
               _buildNavItem(context, Icons.account_circle, "Account", 4),
             ],
@@ -76,12 +76,12 @@ class BottomNavBar extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: isSelected ? 32 : 22, // Enlarges when selected
+            size: isSelected ? 32 : 22,
             color: isSelected ? const Color(0xFFBF0000) : Colors.black45,
           ),
           AnimatedOpacity(
             duration: const Duration(milliseconds: 200),
-            opacity: isSelected ? 1.0 : 0.0, // Show label only when selected
+            opacity: isSelected ? 1.0 : 0.0,
             child: Text(
               label,
               style: const TextStyle(fontSize: 12, color: Color(0xFFBF0000)),

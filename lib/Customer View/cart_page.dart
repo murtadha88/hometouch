@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Customer%20View/address_dialog.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/checkout_page.dart';
+import 'package:hometouch/Customer%20View/order_history_page.dart';
 
 class CartPage extends StatefulWidget {
   final bool isFromNavBar;
@@ -18,7 +19,8 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  final double deliveryCost = 0.500;
+  final double defaultDeliveryCost = 0.500;
+  double deliveryCost = 0.500;
   final double taxPercentage = 10 / 100;
   List<Map<String, dynamic>> cartItems = [];
   bool isLoading = true;
@@ -28,6 +30,7 @@ class _CartPageState extends State<CartPage> {
   void initState() {
     super.initState();
     _fetchCartItems();
+    _checkSubscription();
   }
 
   Future<void> _fetchCartItems() async {
@@ -59,14 +62,61 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
+  Future<void> _checkSubscription() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      QuerySnapshot subscriptionSnapshot = await FirebaseFirestore.instance
+          .collection('subscription')
+          .where('Customer_ID',
+              isEqualTo: FirebaseFirestore.instance
+                  .collection('Customer')
+                  .doc(user.uid))
+          .get();
+
+      if (subscriptionSnapshot.docs.isNotEmpty) {
+        var subscriptionData =
+            subscriptionSnapshot.docs.first.data() as Map<String, dynamic>;
+
+        Timestamp startDate = subscriptionData["Start_Date"];
+        Timestamp endDate = subscriptionData["End_Date"];
+        int freeDeliveryNo = subscriptionData["Free_Delivery_No"] ?? 0;
+
+        DateTime now = DateTime.now();
+
+        if (now.isAfter(startDate.toDate()) &&
+            now.isBefore(endDate.toDate()) &&
+            freeDeliveryNo > 0) {
+          setState(() {
+            deliveryCost = 0.000;
+          });
+        }
+      }
+    } catch (e) {
+      print("❌ Error checking subscription: $e");
+    }
+  }
+
   double get subtotal => cartItems.fold(
         0.0,
         (sum, item) {
-          double basePrice = item['price'] as double;
-          int quantity = item['quantity'] as int;
-          double addOnsCost = (item['addOns'] as List<dynamic>)
-              .fold(0.0, (sum, addOn) => sum + (addOn['price'] as double));
+          double basePrice = (item['price'] as num).toDouble();
+          int quantity = (item['quantity'] as num).toInt();
+          double addOnsCost = (item['addOns'] as List<dynamic>).fold(
+            0.0,
+            (sum, addOn) => sum + (addOn['price'] as num).toDouble(),
+          );
           return sum + (basePrice + addOnsCost) * quantity;
+        },
+      );
+
+  int get totalPoints => cartItems.fold(
+        0,
+        (sum, item) {
+          int points = (item['points'] as num?)?.toInt() ?? 0;
+          int quantity = (item['quantity'] as num?)?.toInt() ?? 0;
+          return sum + (points * quantity);
         },
       );
 
@@ -186,7 +236,7 @@ class _CartPageState extends State<CartPage> {
                           itemBuilder: (context, index) {
                             final item = cartItems[index];
                             final addOns = item['addOns'] as List<dynamic>;
-                            final basePrice = item['price'] as double;
+                            final basePrice = (item['price'] as num).toDouble();
                             final quantity = item['quantity'] as int;
                             final addOnsCost = addOns.fold(
                               0.0,
@@ -247,18 +297,22 @@ class _CartPageState extends State<CartPage> {
                                           if (addOns.isNotEmpty)
                                             ...addOns.map<Widget>((addOn) {
                                               return Text(
-                                                "+ ${addOn['name']} "
-                                                "(${(addOn['price'] as double).toStringAsFixed(3)} BHD)",
+                                                "+ ${addOn['name']} (${(addOn['price'] as num).toDouble().toStringAsFixed(3)} BHD)",
                                                 style: TextStyle(
-                                                  fontSize: screenWidth * 0.035,
-                                                  color: Colors.black54,
-                                                ),
+                                                    fontSize:
+                                                        screenWidth * 0.035,
+                                                    color: Colors.black54),
                                               );
                                             }).toList(),
                                           SizedBox(
                                               height: screenHeight * 0.005),
                                           Text(
-                                            "Price: ${(basePrice + addOnsCost).toStringAsFixed(3)} x $quantity",
+                                            ((item["points"] as num?)
+                                                            ?.toInt() ??
+                                                        0) >
+                                                    0
+                                                ? "Points: ${((item["points"] as num?)?.toInt() ?? 0) * quantity}"
+                                                : "Price: ${(basePrice + addOnsCost).toStringAsFixed(3)} x $quantity",
                                             style: TextStyle(
                                               fontSize: screenWidth * 0.035,
                                               color: Colors.black54,
@@ -325,20 +379,31 @@ class _CartPageState extends State<CartPage> {
                             _buildSummaryRow("Delivery Cost", deliveryCost),
                             _buildSummaryRow("Tax", tax),
                             const Divider(),
-                            _buildSummaryRow("Total", total, isBold: true),
+                            _buildPointsRow("Total Points Used", totalPoints,
+                                isBold: true),
+                            _buildSummaryRow(
+                                "Total Price (BHD)", total.toDouble(),
+                                isBold: true),
                             const SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: () async {
                                 final selectedAddress =
-                                    await showModalBottomSheet<Address?>(
+                                    await showModalBottomSheet(
                                   context: context,
-                                  builder: (context) => AddressDialog(
-                                    screenWidth: screenWidth,
-                                    screenHeight: screenHeight,
-                                    onClose: () => Navigator.pop(context),
-                                  ),
+                                  isScrollControlled:
+                                      true, // Allows the bottom sheet to expand fully
+                                  backgroundColor: Colors
+                                      .transparent, // Removes the default white background
+                                  builder: (BuildContext context) {
+                                    return AddressDialog(
+                                      screenWidth: screenWidth,
+                                      screenHeight: screenHeight,
+                                      onClose: () {
+                                        Navigator.pop(context);
+                                      },
+                                    );
+                                  },
                                 );
-
                                 if (selectedAddress != null) {
                                   Navigator.push(
                                     context,
@@ -347,6 +412,7 @@ class _CartPageState extends State<CartPage> {
                                         cartItems: cartItems,
                                         subtotal: subtotal,
                                         tax: tax,
+                                        totalPoints: totalPoints,
                                         total: total,
                                         selectedAddress: selectedAddress,
                                       ),
@@ -433,6 +499,22 @@ class _CartPageState extends State<CartPage> {
         Text("${value.toStringAsFixed(3)} BHD",
             style: TextStyle(
                 fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+      ],
+    );
+  }
+
+  Widget _buildPointsRow(String label, int value, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                color: primaryRed)),
+        Text("${value.toStringAsFixed(0)} Points",
+            style: TextStyle(
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                color: primaryRed)),
       ],
     );
   }

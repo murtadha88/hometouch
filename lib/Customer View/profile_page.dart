@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:hometouch/acoount_page.dart';
 import 'package:hometouch/Customer%20View/address_dialog.dart';
 import 'package:hometouch/Common%20Pages/reset_password_page.dart';
 
@@ -15,7 +14,6 @@ class _ProfilePageState extends State<ProfilePage> {
   String userName = 'Loading...';
   String userEmail = 'Loading...';
 
-  // Controllers for capturing user input
   TextEditingController _userNameController = TextEditingController();
   TextEditingController _userEmailController = TextEditingController();
 
@@ -37,7 +35,6 @@ class _ProfilePageState extends State<ProfilePage> {
         userName = docSnapshot['Name'] ?? 'Unknown';
         userEmail = docSnapshot['Email'] ?? 'Not Available';
 
-        // Set the controllers' initial text to the fetched data
         _userNameController.text = userName;
         _userEmailController.text = userEmail;
       });
@@ -56,11 +53,10 @@ class _ProfilePageState extends State<ProfilePage> {
           'Email': _userEmailController.text,
         });
 
-        // Update local state after saving to Firestore
         setState(() {
           userName = _userNameController.text;
           userEmail = _userEmailController.text;
-          _isEditable = false; // Set to non-editable mode after save
+          _isEditable = false;
         });
       } catch (e) {
         print('Error updating user info: $e');
@@ -74,8 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      resizeToAvoidBottomInset:
-          true, // This will avoid overflow when the keyboard appears
+      resizeToAvoidBottomInset: true,
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(screenHeight * 0.09),
         child: AppBar(
@@ -120,7 +115,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        // Wrap the body with SingleChildScrollView
         padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,16 +145,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 () {
                   showModalBottomSheet(
                     context: context,
-                    isScrollControlled: true, // Allow it to expand as needed
-                    backgroundColor:
-                        Colors.transparent, // Transparent background
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
                     builder: (BuildContext context) {
                       return AddressDialog(
                         screenWidth: screenWidth,
                         screenHeight: screenHeight,
                         onClose: () {
-                          Navigator.pop(
-                              context); // Close the bottom sheet when the close button is pressed
+                          Navigator.pop(context);
                         },
                       );
                     },
@@ -270,7 +262,7 @@ class _ProfilePageState extends State<ProfilePage> {
         Expanded(
           flex: 4,
           child: ElevatedButton(
-            onPressed: _updateUserInfo, // Save changes
+            onPressed: _updateUserInfo,
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFFBF0000),
               textStyle: TextStyle(fontWeight: FontWeight.bold),
@@ -318,7 +310,7 @@ class _ProfilePageState extends State<ProfilePage> {
     IconData icon,
     double screenWidth,
     double screenHeight,
-    void Function()? onTap, // Ensure 'onTap' is a named parameter
+    void Function()? onTap,
   ) {
     return ListTile(
       contentPadding:
@@ -343,7 +335,7 @@ class _ProfilePageState extends State<ProfilePage> {
           size: screenWidth * 0.04,
         ),
       ),
-      onTap: onTap, // Make sure to pass 'onTap' here
+      onTap: onTap,
     );
   }
 }

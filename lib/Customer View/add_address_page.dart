@@ -13,14 +13,12 @@ class AddAddressPage extends StatefulWidget {
 }
 
 class _AddAddressPageState extends State<AddAddressPage> {
-  String selectedType = 'Building'; // Default selected type
+  String selectedType = 'Building';
 
-  // Form Keys
   final _buildingFormKey = GlobalKey<FormState>();
   final _apartmentFormKey = GlobalKey<FormState>();
   final _officeFormKey = GlobalKey<FormState>();
 
-  // TextEditingControllers
   final _buildingController = TextEditingController();
   final _roadController = TextEditingController();
   final _blockController = TextEditingController();
@@ -39,7 +37,6 @@ class _AddAddressPageState extends State<AddAddressPage> {
   final _additionalDirectionControllerApartment = TextEditingController();
   final _additionalDirectionControllerOffice = TextEditingController();
 
-  // Google Maps Variables
   late GoogleMapController _mapController;
   late CameraPosition _initialCameraPosition;
   LatLng _currentLocation = LatLng(0, 0);
@@ -49,7 +46,7 @@ class _AddAddressPageState extends State<AddAddressPage> {
     super.initState();
     _initialCameraPosition =
         CameraPosition(target: _currentLocation, zoom: 16.0);
-    _getCurrentLocation(); // Get initial location when the page loads
+    _getCurrentLocation();
   }
 
   @override
@@ -70,7 +67,6 @@ class _AddAddressPageState extends State<AddAddressPage> {
     super.dispose();
   }
 
-  // Get current location
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -106,13 +102,10 @@ class _AddAddressPageState extends State<AddAddressPage> {
       _initialCameraPosition =
           CameraPosition(target: _currentLocation, zoom: 14.0);
 
-      // Move the camera to the user's current location after getting the position
       _mapController.animateCamera(CameraUpdate.newLatLng(_currentLocation));
     });
   }
 
-  // Save Address to Firestore
-  // Save Address to Firestore
   Future<void> _saveAddress() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -129,13 +122,13 @@ class _AddAddressPageState extends State<AddAddressPage> {
         'Building': int.tryParse(_buildingController.text) ?? 0,
         'Road': int.tryParse(_roadController.text) ?? 0,
         'Block': int.tryParse(_blockController.text) ?? 0,
-        'Location': GeoPoint(_currentLocation.latitude,
-            _currentLocation.longitude), // Using GeoPoint
+        'Location':
+            GeoPoint(_currentLocation.latitude, _currentLocation.longitude),
       });
 
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Address added successfully")));
-      Navigator.pop(context); // Close the page
+      Navigator.pop(context);
     }
   }
 
@@ -189,13 +182,10 @@ class _AddAddressPageState extends State<AddAddressPage> {
         ),
       ),
       body: SingleChildScrollView(
-        // Wrap the entire body with SingleChildScrollView
         child: Padding(
-          padding: EdgeInsets.only(
-              bottom: keyboardHeight), // Add padding for the keyboard
+          padding: EdgeInsets.only(bottom: keyboardHeight),
           child: Column(
             children: [
-              // Google Map for location selection
               Container(
                 height: screenHeight * 0.4,
                 width: double.infinity,
@@ -203,8 +193,8 @@ class _AddAddressPageState extends State<AddAddressPage> {
                   initialCameraPosition: _initialCameraPosition,
                   onMapCreated: (GoogleMapController controller) {
                     _mapController = controller;
-                    _mapController.animateCamera(CameraUpdate.newLatLng(
-                        _currentLocation)); // Move to current location
+                    _mapController.animateCamera(
+                        CameraUpdate.newLatLng(_currentLocation));
                   },
                   markers: {
                     Marker(
@@ -256,7 +246,6 @@ class _AddAddressPageState extends State<AddAddressPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Forms Section with Scrollable Inputs
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
                 child: Column(
@@ -274,7 +263,7 @@ class _AddAddressPageState extends State<AddAddressPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 10), // Space below forms for aesthetic
+              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -515,7 +504,7 @@ class _AddAddressPageState extends State<AddAddressPage> {
             borderRadius: BorderRadius.circular(30),
           ),
         ),
-        onPressed: _saveAddress, // Update to use _saveAddress method
+        onPressed: _saveAddress,
         child: const Text(
           'Save Address',
           style: TextStyle(

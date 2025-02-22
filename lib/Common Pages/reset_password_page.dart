@@ -42,11 +42,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       final signInMethods =
           await _auth.fetchSignInMethodsForEmail(email.trim());
       setState(() {
-        _isEmailValid = signInMethods.isNotEmpty; // Check if email exists
+        _isEmailValid = signInMethods.isNotEmpty;
       });
 
       if (_isEmailValid) {
-        _errorMessage = null; // Clear any previous error messages
+        _errorMessage = null;
       } else {
         _errorMessage = "This email is not registered.";
       }
@@ -62,7 +62,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     setState(() {
       _isButtonDisabled = _validateEmail(value) != null;
       _errorMessage = _validateEmail(value);
-      _isEmailValid = true; // Reset email validation on every change
+      _isEmailValid = true;
     });
   }
 
@@ -112,14 +112,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   Future<void> _sendCode() async {
     if (_formKey.currentState!.validate()) {
-      await _checkEmailExists(
-          _emailController.text.trim()); // Check email exists
+      await _checkEmailExists(_emailController.text.trim());
       if (!_isEmailValid) return;
 
       final code = _generateVerificationCode();
       await sendEmailWithMailjet(_emailController.text.trim(), code);
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

@@ -5,12 +5,12 @@ import 'add_address_page.dart';
 
 class Address {
   final String name;
-  final int building; // Changed to int for numerical data
-  final int road; // Changed to int for numerical data
-  final int block; // Changed to int for numerical data
-  final int? floor; // Changed to int for numerical data
-  final int? apartment; // Changed to int for numerical data
-  final int? office; // Changed to int for numerical data
+  final int building;
+  final int road;
+  final int block;
+  final int? floor;
+  final int? apartment;
+  final int? office;
   final String? companyName;
   final GeoPoint location;
 
@@ -26,11 +26,9 @@ class Address {
     required this.location,
   });
 
-  // Create the full address string
   String getFullAddress() {
     String address = "$name, Building $building, Road $road, Block $block";
 
-    // Only add fields if they are not null or 0
     if (floor != null && floor != 0) address += ", Floor $floor";
     if (apartment != null && apartment != 0)
       address += ", Apartment $apartment";
@@ -41,7 +39,6 @@ class Address {
     return address;
   }
 
-  // Factory method to create an Address from Firestore document data
   factory Address.fromFirestore(Map<String, dynamic> data) {
     return Address(
       name: data['Name'],
@@ -57,7 +54,7 @@ class Address {
           ? int.tryParse(data['Office'].toString())
           : null,
       companyName: data['Company_Name'],
-      location: data['Location'] ?? GeoPoint(0.0, 0.0), // ✅ Read GeoPoint
+      location: data['Location'] ?? GeoPoint(0.0, 0.0),
     );
   }
 }
@@ -84,10 +81,9 @@ class _AddressDialogState extends State<AddressDialog> {
   @override
   void initState() {
     super.initState();
-    fetchAddresses(); // Fetch addresses when dialog is initialized
+    fetchAddresses();
   }
 
-  // Fetch the addresses from Firestore
   Future<void> fetchAddresses() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -144,15 +140,13 @@ class _AddressDialogState extends State<AddressDialog> {
                 ),
               ),
             ),
-            // Dynamically build the address fields if addresses exist
             ...addresses.isNotEmpty
-                ? addresses.map((address) => _buildAddressField(
-                    address: address // Get the full address dynamically
-                    ))
+                ? addresses
+                    .map((address) => _buildAddressField(address: address))
                 : [
                     Center(
                       child: Text(
-                        'No saved address', // Message to show when there are no addresses
+                        'No saved address',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -160,7 +154,7 @@ class _AddressDialogState extends State<AddressDialog> {
                         ),
                       ),
                     ),
-                  ], // Show a loader if no addresses are available
+                  ],
             Padding(
               padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.09,
@@ -213,7 +207,7 @@ class _AddressDialogState extends State<AddressDialog> {
   Widget _buildAddressField({required Address address}) {
     return GestureDetector(
       onTap: () {
-        Navigator.pop(context, address); // ✅ Return selected address
+        Navigator.pop(context, address);
       },
       child: Padding(
         padding: EdgeInsets.symmetric(

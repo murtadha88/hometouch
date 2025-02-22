@@ -98,7 +98,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       _showErrors = true;
     });
 
-    // First, validate the form using the synchronous validators
     if (_formKey.currentState!.validate()) {
       if (!_termsAccepted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -112,7 +111,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       }
 
       try {
-        // Check if the email already exists
         final email = _emailController.text.trim();
         final signInMethods =
             await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
@@ -125,26 +123,23 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               backgroundColor: Colors.red,
             ),
           );
-          return; // Stop the process if the email already exists
+          return;
         }
 
-        // Create a user with FirebaseAuth
         final UserCredential userCredential =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: _passwordController.text,
         );
 
-        // Get the user ID (uid)
         final String userId = userCredential.user!.uid;
 
-        // Add user data to Firestore with the userId as the document ID
         try {
           await FirebaseFirestore.instance
               .collection('Customer')
               .doc(userId)
               .set({
-            'Customer_ID': userId, // Save UID in Firestore
+            'Customer_ID': userId,
             'Name': _nameController.text,
             'Phone': _phoneController.text,
             'Email': _emailController.text.trim(),
@@ -155,7 +150,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           print("Error adding user to Firestore: $e");
         }
 
-        // Show success dialog
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -200,7 +194,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           },
         );
 
-        // Redirect to the login page after a delay
         Future.delayed(const Duration(seconds: 3), () {
           Navigator.pop(context);
           Navigator.pop(context);

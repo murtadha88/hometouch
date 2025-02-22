@@ -43,7 +43,6 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text.trim(),
       );
 
-      // ✅ Save login status to SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
 
@@ -96,10 +95,8 @@ class _LoginPageState extends State<LoginPage> {
       UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
-      // ✅ Save user details to Firestore
       await _saveUserToFirestore(userCredential.user);
 
-      // ✅ Save login status to SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
 
@@ -131,10 +128,8 @@ class _LoginPageState extends State<LoginPage> {
       UserCredential userCredential =
           await _auth.signInWithCredential(facebookAuthCredential);
 
-      // ✅ Save user details to Firestore
       await _saveUserToFirestore(userCredential.user);
 
-      // ✅ Save login status to SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
 
@@ -155,7 +150,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-// Function to save user details to Firestore
   Future<void> _saveUserToFirestore(User? user) async {
     if (user == null) return;
 
@@ -168,7 +162,6 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-// Show Success Dialog
   void _showSuccessDialog() {
     showDialog(
       context: context,

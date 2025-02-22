@@ -24,8 +24,8 @@ class DrawerScreen extends StatefulWidget {
 }
 
 class _DrawerScreenState extends State<DrawerScreen> {
-  bool isHelpExpanded = false; // Track if "Help" menu is expanded
-  int? selectedSubItemIndex; // Track selected sub-item index
+  bool isHelpExpanded = false;
+  int? selectedSubItemIndex;
   String? userPhotoUrl;
 
   @override
@@ -59,25 +59,20 @@ class _DrawerScreenState extends State<DrawerScreen> {
       child: Drawer(
         child: Stack(
           children: [
-            // Ensuring the background is white
             Container(
-              color: Colors
-                  .white, // This will ensure the whole drawer has a white background
+              color: Colors.white,
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // Drawer header with a container instead of DrawerHeader
                   Container(
-                    height: screenHeight * 0.181, // Custom height for header
+                    height: screenHeight * 0.181,
                     decoration: BoxDecoration(
-                      color: const Color(
-                          0xFFBF0000), // Background color for the header
+                      color: const Color(0xFFBF0000),
                     ),
                     child: Padding(
                       padding: EdgeInsets.only(
-                        bottom: screenHeight *
-                            0.05, // Adjust bottom padding to reduce height
-                        right: screenWidth * 0.03, // Adjust padding dynamically
+                        bottom: screenHeight * 0.05,
+                        right: screenWidth * 0.03,
                         left: screenWidth * 0.05,
                       ),
                       child: Row(
@@ -85,7 +80,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              Navigator.pop(context); // Close the drawer
+                              Navigator.pop(context);
                             },
                             child: Icon(
                               Icons.menu,
@@ -96,20 +91,17 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             width: screenWidth * 0.07,
                           ),
                           Text(
-                            'HomeTouch', // Title text
+                            'HomeTouch',
                             style: TextStyle(
-                              color: Colors.white, // White color for the text
-                              fontWeight: FontWeight.w800, // ExtraBold weight
-                              fontSize:
-                                  screenWidth * 0.05, // Adjusted font size
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: screenWidth * 0.05,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
-                  // The main list of items below the header
                   Padding(
                     padding: EdgeInsets.only(top: screenHeight * 0.1),
                     child: Column(
@@ -119,14 +111,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           index: 0,
                           icon: Icons.person,
                           label: 'Account',
-                          screenWidth: screenWidth, // Pass screenWidth
-                          screenHeight: screenHeight, // Pass screenHeight
+                          screenWidth: screenWidth,
+                          screenHeight: screenHeight,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      AccountPage()), // Navigate to SettingsPage
+                                  builder: (context) => AccountPage()),
                             );
                           },
                         ),
@@ -141,8 +132,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      FavoritesPage()), // Navigate to SettingsPage
+                                  builder: (context) => FavoritesPage()),
                             );
                           },
                         ),
@@ -157,8 +147,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      NotificationPage()), // Navigate to SettingsPage
+                                  builder: (context) => NotificationPage()),
                             );
                           },
                         ),
@@ -173,8 +162,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      SettingsPage()), // Navigate to SettingsPage
+                                  builder: (context) => SettingsPage()),
                             );
                           },
                         ),
@@ -189,30 +177,27 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      AboutUs()), // Navigate to SettingsPage
+                                  builder: (context) => AboutUs()),
                             );
                           },
                         ),
-                        // Help item with expandable content inside the same design
                         _buildDrawerItem(
                           context,
                           index: 5,
                           icon: Icons.help,
                           label: 'Help',
-                          isExpandable: true, // Flag for expandable item
+                          isExpandable: true,
                           isExpanded: isHelpExpanded,
                           onTap: () {
                             setState(() {
-                              isHelpExpanded =
-                                  !isHelpExpanded; // Toggle expansion
+                              isHelpExpanded = !isHelpExpanded;
                               if (selectedSubItemIndex == null) {
-                                widget.onItemTapped(5); // Highlight Help item
+                                widget.onItemTapped(5);
                               }
                             });
                           },
-                          screenWidth: screenWidth, // Pass screenWidth here
-                          screenHeight: screenHeight, // Pass screenHeight here
+                          screenWidth: screenWidth,
+                          screenHeight: screenHeight,
                           subItems: [
                             _buildSubItem(
                               context,
@@ -221,8 +206,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                               label: 'FAQs',
                               onTap: () {
                                 setState(() {
-                                  selectedSubItemIndex =
-                                      6; // Mark FAQ as selected
+                                  selectedSubItemIndex = 6;
                                 });
                                 widget.onItemTapped(6);
                                 Navigator.push(
@@ -231,8 +215,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
                                       builder: (context) => FAQ()),
                                 );
                               },
-                              screenWidth: screenWidth, // Pass screenWidth
-                              screenHeight: screenHeight, // Pass screenHeight
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
                             ),
                             _buildSubItem(
                               context,
@@ -241,15 +225,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                               label: 'Chat Bot',
                               onTap: () {
                                 setState(() {
-                                  selectedSubItemIndex =
-                                      7; // Mark Chat Bot as selected
+                                  selectedSubItemIndex = 7;
                                 });
-                                widget.onItemTapped(
-                                    7); // Close drawer and select sub-item
-                                Navigator.pop(context); // Close the drawer
+                                widget.onItemTapped(7);
+                                Navigator.pop(context);
                               },
-                              screenWidth: screenWidth, // Pass screenWidth
-                              screenHeight: screenHeight, // Pass screenHeight
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
                             ),
                           ],
                         ),
@@ -259,23 +241,19 @@ class _DrawerScreenState extends State<DrawerScreen> {
                 ],
               ),
             ),
-            // Profile picture positioned over the header
             Positioned(
-              top: screenHeight * 0.12, // Adjust dynamically
-              left: screenWidth * 0.23, // Adjust dynamically
+              top: screenHeight * 0.12,
+              left: screenWidth * 0.23,
               child: Container(
-                width:
-                    screenWidth * 0.25, // Slightly smaller profile picture size
-                height:
-                    screenWidth * 0.25, // Slightly smaller profile picture size
+                width: screenWidth * 0.25,
+                height: screenWidth * 0.25,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                 ),
                 child: CircleAvatar(
-                  radius: screenWidth * 0.125, // Slightly smaller radius
+                  radius: screenWidth * 0.125,
                   backgroundImage: userPhotoUrl != null
-                      ? MemoryImage(
-                          base64Decode(userPhotoUrl!)) // Show base64 image
+                      ? MemoryImage(base64Decode(userPhotoUrl!))
                       : NetworkImage(
                           'https://i.imgur.com/OtAn7hT.jpeg',
                         ),
@@ -293,21 +271,21 @@ class _DrawerScreenState extends State<DrawerScreen> {
     required int index,
     required IconData icon,
     required String label,
-    bool isExpandable = false, // Flag to indicate expandable
-    bool isExpanded = false, // Flag for expanded state
-    void Function()? onTap, // onTap for expanding
-    List<Widget>? subItems, // List of sub-items if expandable
-    required double screenWidth, // Pass screenWidth here
-    required double screenHeight, // Pass screenHeight here
+    bool isExpandable = false,
+    bool isExpanded = false,
+    void Function()? onTap,
+    List<Widget>? subItems,
+    required double screenWidth,
+    required double screenHeight,
   }) {
     return Padding(
       padding: EdgeInsets.only(
-        left: screenWidth * 0.06, // Reduced left padding
+        left: screenWidth * 0.06,
         right: screenWidth * 0.06,
-      ), // Adjusted right padding
+      ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white, // Ensure background is white
+          color: Colors.white,
         ),
         child: Column(
           children: [
@@ -319,9 +297,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   color: widget.selectedIndex == index
-                      ? const Color(0xFFBF0000) // Red text when selected
-                      : Colors.black, // Black text when not selected
-                  fontSize: screenWidth * 0.045, // Slightly smaller font size
+                      ? const Color(0xFFBF0000)
+                      : Colors.black,
+                  fontSize: screenWidth * 0.045,
                 ),
               ),
               selected: widget.selectedIndex == index,
@@ -348,24 +326,22 @@ class _DrawerScreenState extends State<DrawerScreen> {
     required IconData icon,
     required String label,
     void Function()? onTap,
-    required double screenWidth, // Pass screenWidth here
-    required double screenHeight, // Pass screenHeight here
+    required double screenWidth,
+    required double screenHeight,
   }) {
     return Padding(
       padding: EdgeInsets.only(
-        left: screenWidth * 0.08, // Adjusted left padding for sub-items
+        left: screenWidth * 0.08,
         right: screenWidth * 0.04,
       ),
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFFBF0000)),
         title: Text(
           label,
-          style: TextStyle(
-              fontSize: screenWidth * 0.04), // Slightly smaller font size
+          style: TextStyle(fontSize: screenWidth * 0.04),
         ),
-        selected: selectedSubItemIndex == index, // Highlight selected sub-item
-        selectedTileColor:
-            const Color(0xFFBF0000), // Red background when selected
+        selected: selectedSubItemIndex == index,
+        selectedTileColor: const Color(0xFFBF0000),
         onTap: () {
           if (onTap != null) {
             onTap();

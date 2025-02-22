@@ -31,7 +31,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   TextEditingController _searchController = TextEditingController();
   FocusNode _searchFocusNode = FocusNode();
 
-  // bool isFavorite2 = false;
   final Set<String> favoriteVendors = {};
 
   bool isHomeVendorSelected = false;
@@ -39,7 +38,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   PageController _pageController = PageController();
   int _currentIndex = 0;
   int currentMenuIndex = 0;
-  int _selectedIndex = 0; // Keep track of the selected item in the drawer
+  int _selectedIndex = 0;
 
   final GlobalKey allVendorsKey = GlobalKey();
 
@@ -71,8 +70,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final userId = user.uid; // Declare userId here
-      fetchFavoriteVendors(userId); // Use the userId when calling the function
+      final userId = user.uid;
+      fetchFavoriteVendors(userId);
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,9 +106,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index; // Update the selected index
+      _selectedIndex = index;
     });
-    // You can add additional logic here to navigate or update UI as needed
   }
 
   Stream<List<Map<String, dynamic>>> searchVendors(String query) {
@@ -151,7 +149,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
       setState(() {
         images = promotionsQuery.docs.map((doc) {
           final data = doc.data();
-          return data['Image'] as String? ?? ''; // Safe cast to String
+          return data['Image'] as String? ?? '';
         }).toList();
       });
     } catch (e) {
@@ -173,7 +171,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   Future<List<Map<String, dynamic>>> fetchRecommendedVendors(
       String userId) async {
     try {
-      // Fetch all orders placed by the user
       final ordersQuery = await FirebaseFirestore.instance
           .collection('order')
           .where('Customer_ID', isEqualTo: userId)
@@ -182,7 +179,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
       if (ordersQuery.docs.isNotEmpty) {
         final Map<String, int> vendorOrderCount = {};
 
-        // Count orders for each vendor
         for (var doc in ordersQuery.docs) {
           final vendorId = doc['Vendor_ID'] as String?;
           if (vendorId != null) {
@@ -190,14 +186,12 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
           }
         }
 
-        // Sort vendors by most ordered
         final sortedVendors = vendorOrderCount.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
 
         final sortedVendorIds =
             sortedVendors.map((entry) => entry.key).toList();
 
-        // Fetch vendor details
         final vendorsQuery = await FirebaseFirestore.instance
             .collection('vendor')
             .where(FieldPath.documentId, whereIn: sortedVendorIds)
@@ -210,14 +204,12 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
           return data;
         }).toList();
 
-        // Sort again by Order_Count to ensure correct ordering
         vendors.sort((a, b) =>
             (b['Order_Count'] as int).compareTo(a['Order_Count'] as int));
 
         return vendors;
       }
 
-      // If no orders found, return top-rated vendors instead
       final topVendorsQuery = await FirebaseFirestore.instance
           .collection('vendor')
           .orderBy('Rating', descending: true)
@@ -246,8 +238,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
           data['id'] = doc.id;
           return data;
         }).toList();
-        filteredVendors =
-            allVendors; // Initialize filteredVendors with all vendors
+        filteredVendors = allVendors;
       });
     } catch (e) {
       print("Error fetching vendors: $e");
@@ -262,7 +253,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     try {
       List<Map<String, dynamic>> filtered = allVendors;
 
-      // Apply vendor type filter
       if (isHomeVendorSelected) {
         filtered = filtered
             .where((vendor) => vendor['Vendor_Type'] == 'Homemade')
@@ -273,17 +263,14 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
             .toList();
       }
 
-      // Apply category filter
       if (selectedCategoryFilter != null) {
         filtered = filtered
             .where((vendor) => vendor['Category'] == selectedCategoryFilter)
             .toList();
       }
 
-      // Apply rating filter
       if (selectedCategory != null) {
         if (selectedCategory == "Trending") {
-          // Fetch trending vendors (you can implement this logic separately)
           final ordersSnapshot =
               await FirebaseFirestore.instance.collection('order').get();
 
@@ -334,12 +321,10 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
         }
       }
 
-      // Update filteredVendors
       setState(() {
         filteredVendors = filtered;
       });
 
-      // Scroll to "All Vendors" section
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final context = allVendorsKey.currentContext;
         if (context != null) {
@@ -445,49 +430,43 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
   Future<void> filterVendorsByType(String type) async {
     setState(() {
-      // Toggle the filter state based on the current selection
       if (type == "Homemade") {
         isHomeVendorSelected = !isHomeVendorSelected;
-        isFoodTruckSelected = false; // Deselect the other filter
+        isFoodTruckSelected = false;
       } else if (type == "Food Truck") {
         isFoodTruckSelected = !isFoodTruckSelected;
-        isHomeVendorSelected = false; // Deselect the other filter
+        isHomeVendorSelected = false;
       }
     });
 
-    // Apply combined filters
     await applyCombinedFilters();
   }
 
   Future<void> filterVendorsByCategory(String category) async {
     setState(() {
-      // Toggle the category filter
       if (selectedCategoryFilter == category) {
-        selectedCategoryFilter = null; // Deselect if already selected
+        selectedCategoryFilter = null;
       } else {
         selectedCategoryFilter = category;
       }
     });
 
-    // Apply combined filters
     await applyCombinedFilters();
   }
 
   Future<void> scrollToCategory(String category) async {
     setState(() {
-      // Select or deselect the category
       if (selectedCategory == category) {
         selectedCategory = null;
-        filteredVendors = allVendors; // Show all vendors if deselected
+        filteredVendors = allVendors;
       } else {
         selectedCategory = category;
       }
     });
 
-    // Optional: Scroll to the selected category in the horizontal ListView
     if (_categoriesScrollController.hasClients) {
       final index = categories.indexOf(category);
-      final offset = index * 100.0; // Approximate width of each item
+      final offset = index * 100.0;
       _categoriesScrollController.animateTo(
         offset,
         duration: const Duration(milliseconds: 300),
@@ -495,7 +474,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
       );
     }
 
-    // Fetch vendors by filter
     await applyCombinedFilters();
   }
 
@@ -593,8 +571,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                 ),
                 SizedBox(height: screenHeight * 0.01),
                 AnimatedContainer(
-                  duration:
-                      const Duration(milliseconds: 300), // Smooth transition
+                  duration: const Duration(milliseconds: 300),
                   width: screenWidth * 0.9,
                   height: screenHeight * 0.06,
                   child: TextField(
@@ -603,15 +580,13 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                     onTap: () {
                       if (!_isSearching) {
                         setState(() {
-                          _isSearching =
-                              true; // Switch to search mode only when the search bar is tapped
+                          _isSearching = true;
                         });
                       }
                     },
                     onChanged: (query) {
                       setState(() {
-                        _searchQuery =
-                            query; // Update the search query as the user types
+                        _searchQuery = query;
                       });
                     },
                     decoration: InputDecoration(
@@ -622,13 +597,11 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                               icon: Icon(Icons.arrow_back),
                               onPressed: () {
                                 setState(() {
-                                  _isSearching = false; // Return to home page
-                                  _searchQuery =
-                                      ''; // Clear the text inside the search bar
-                                  _searchController
-                                      .clear(); // Clear the TextField's text
+                                  _isSearching = false;
+                                  _searchQuery = '';
+                                  _searchController.clear();
                                 });
-                                _searchFocusNode.unfocus(); // Close keyboard
+                                _searchFocusNode.unfocus();
                               },
                             )
                           : Icon(Icons.search, color: Colors.black54),
@@ -666,19 +639,16 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                   icon: const Icon(Icons.location_on_outlined,
                       color: Colors.white),
                   onPressed: () {
-                    // Show the Address Dialog as a BottomSheet
                     showModalBottomSheet(
                       context: context,
-                      isScrollControlled: true, // Allow it to expand as needed
-                      backgroundColor:
-                          Colors.transparent, // Transparent background
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
                       builder: (BuildContext context) {
                         return AddressDialog(
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
                           onClose: () {
-                            Navigator.pop(
-                                context); // Close the bottom sheet when the close button is pressed
+                            Navigator.pop(context);
                           },
                         );
                       },
@@ -694,12 +664,11 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
               : _buildMainPage(screenWidth, screenHeight),
           drawer: DrawerScreen(
             selectedIndex: _selectedIndex,
-            onItemTapped:
-                _onItemTapped, // Pass the onItemTapped function to the drawer
+            onItemTapped: _onItemTapped,
           ),
           bottomNavigationBar: BottomNavBar(selectedIndex: 0),
           floatingActionButton: Container(
-            height: 58, // Bigger size to overlap the bottom bar
+            height: 58,
             width: 58,
             child: FloatingActionButton(
               onPressed: () {
@@ -788,7 +757,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                             print("Error: Vendor ID is empty");
                           }
                         },
-                        vendorId: vendorId, // Pass the validated vendor ID
+                        vendorId: vendorId,
                         userId: userId,
                       ),
                     );
@@ -1254,7 +1223,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     );
   }
 
-  // This is where the favorite toggle is handled in the card widget
   Widget _buildSuggestionVendorCard({
     required double screenWidth,
     required double screenHeight,
@@ -1335,7 +1303,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
             right: screenWidth * 0.04,
             child: GestureDetector(
               onTap: () async {
-                await _toggleFavorite(vendorId, userId); // Toggle favorite
+                await _toggleFavorite(vendorId, userId);
               },
               child: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -1359,8 +1327,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     required String vendorId,
     required String userId,
   }) {
-    final isFavorite =
-        favoriteVendors.contains(vendorId); // Check if vendor is favorited
+    final isFavorite = favoriteVendors.contains(vendorId);
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: screenWidth * 0.04,
@@ -1380,7 +1347,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                 padding: EdgeInsets.all(screenWidth * 0.00),
                 child: Row(
                   children: [
-                    // Vendor image and details
                     Container(
                       width: screenWidth * 0.2,
                       height: screenHeight * 0.1,
@@ -1427,13 +1393,12 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
               ),
             ),
           ),
-          // Favorite icon
           Positioned(
             top: screenHeight * 0.01,
             right: screenWidth * 0.04,
             child: GestureDetector(
               onTap: () async {
-                await _toggleFavorite(vendorId, userId); // Toggle favorite
+                await _toggleFavorite(vendorId, userId);
               },
               child: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,

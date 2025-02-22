@@ -7,7 +7,6 @@ class NotificationPage extends StatelessWidget {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Format date
   String formatDate(String dateString) {
     DateTime date = DateTime.parse(dateString);
     DateTime today = DateTime.now();
@@ -31,7 +30,6 @@ class NotificationPage extends StatelessWidget {
   Future<List<Map<String, dynamic>>> _getUserNotifications(
       String userId) async {
     try {
-      // Fetch notifications for the user from the "Customer" collection
       var notificationsSnapshot = await _firestore
           .collection('Customer')
           .doc(userId)
@@ -39,7 +37,7 @@ class NotificationPage extends StatelessWidget {
           .get();
 
       if (notificationsSnapshot.docs.isEmpty) {
-        return []; // Return an empty list if no notifications are found
+        return [];
       }
 
       List<Map<String, dynamic>> notifications = notificationsSnapshot.docs
@@ -56,13 +54,12 @@ class NotificationPage extends StatelessWidget {
       return notifications;
     } catch (e) {
       print("Error fetching notifications: $e");
-      return []; // Return an empty list in case of error
+      return [];
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get screen height and width for responsive design
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
@@ -110,7 +107,6 @@ class NotificationPage extends StatelessWidget {
         ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        // Use FutureBuilder for fetching notifications
         future: _getUserNotifications(_auth.currentUser?.uid ?? ''),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -143,7 +139,7 @@ class NotificationPage extends StatelessWidget {
         children: [
           Image.network(
             'https://i.imgur.com/V8iPAob.png',
-            height: screenHeight * 0.4, // Use responsive size for image
+            height: screenHeight * 0.4,
             width: screenWidth * 0.75,
           ),
           SizedBox(height: screenHeight * 0.03),
@@ -189,7 +185,6 @@ class NotificationPage extends StatelessWidget {
 
   List<Widget> _buildNotificationList(List<Map<String, dynamic>> notifications,
       double screenWidth, double screenHeight) {
-    // Grouping notifications by date
     Map<String, List<Map<String, dynamic>>> groupedNotifications = {};
 
     for (var notification in notifications) {
@@ -201,7 +196,6 @@ class NotificationPage extends StatelessWidget {
       }
     }
 
-    // Sorting notifications, prioritizing 'Today' first, followed by other dates in descending order
     var sortedDates = groupedNotifications.keys.toList()
       ..sort((a, b) {
         if (a == 'Today') return -1;
@@ -209,15 +203,13 @@ class NotificationPage extends StatelessWidget {
         return b.compareTo(a);
       });
 
-    // Create list of widgets for notifications
     List<Widget> notificationWidgets = [];
 
     for (var date in sortedDates) {
       notificationWidgets.add(_buildDivider());
       notificationWidgets.add(_buildDateSeparator(
           date: date, screenWidth: screenWidth, screenHeight: screenHeight));
-      notificationWidgets
-          .add(_buildDivider()); // Full width divider after date header
+      notificationWidgets.add(_buildDivider());
 
       var notificationList = groupedNotifications[date]!;
       for (int i = 0; i < notificationList.length; i++) {
@@ -255,9 +247,8 @@ class NotificationPage extends StatelessWidget {
   Widget _buildNotificationTile(Map<String, dynamic> notification,
       double screenWidth, double screenHeight) {
     IconData icon;
-    Color iconColor = Colors.blue; // Default color
+    Color iconColor = Colors.blue;
 
-    // Mapping notification type to the corresponding icon
     switch (notification['type']) {
       case 'order':
         icon = Icons.check_circle;

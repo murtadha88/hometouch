@@ -9,6 +9,7 @@ class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final double subtotal;
   final double tax;
+  final int totalPoints;
   final double total;
   final Address selectedAddress;
 
@@ -17,6 +18,7 @@ class CheckoutPage extends StatefulWidget {
     required this.cartItems,
     required this.subtotal,
     required this.tax,
+    required this.totalPoints,
     required this.total,
     required this.selectedAddress,
   }) : super(key: key);
@@ -41,12 +43,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (querySnapshot.docs.isNotEmpty) {
       String lastOrderNumber = querySnapshot.docs.first['Order_Number'] ?? "#0";
 
-      // Extract the numeric part safely
       int numericOrder = int.tryParse(lastOrderNumber.replaceAll("#", "")) ?? 0;
 
       return numericOrder + 1;
     }
-    return 1; // First order
+    return 1;
   }
 
   Future<void> _placeOrder() async {
@@ -62,15 +63,39 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
       double roundedTotal = double.parse(widget.total.toStringAsFixed(3));
 
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(user.uid)
+          .get();
+
+      int currentPoints = userDoc["Loyalty_Points"] ?? 0;
+
+      if (widget.totalPoints > currentPoints) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "You dont have the requried loyalty points!",
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(8),
+          ),
+        );
+
+        return;
+      }
+
       await FirebaseFirestore.instance.collection('order').add({
         "Customer_ID": user.uid,
         "Order_Number": "#$orderNumber",
-        "Vendor_ID": vendorId,
         "Driver_ID": "eJXF01SPCo4QK3UApmpR",
+        "Vendor_ID": vendorId,
         "Items": widget.cartItems,
         "Subtotal": widget.subtotal,
         "Tax": widget.tax,
         "Total": roundedTotal,
+        "Total_Points_Used": widget.totalPoints,
         "Payment_Method": selectedPaymentMethod == 0
             ? "Card"
             : selectedPaymentMethod == 1
@@ -95,13 +120,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
         }
       });
 
-      // ✅ Increase Loyalty_Points by 100
       await FirebaseFirestore.instance
           .collection('Customer')
           .doc(user.uid)
-          .update({"Loyalty_Points": FieldValue.increment(100)});
+          .update({
+        "Loyalty_Points": FieldValue.increment(100 - widget.totalPoints),
+      });
 
       _showSuccessDialog();
+
+      await _clearCart(user.uid);
 
       Future.delayed(const Duration(seconds: 3), () {
         Navigator.pushReplacement(
@@ -111,6 +139,25 @@ class _CheckoutPageState extends State<CheckoutPage> {
       });
     } catch (e) {
       print("❌ Error placing order: $e");
+    }
+  }
+
+  Future<void> _clearCart(String userId) async {
+    try {
+      var cartCollection = FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(userId)
+          .collection('cart');
+
+      var cartItems = await cartCollection.get();
+
+      for (var doc in cartItems.docs) {
+        await doc.reference.delete();
+      }
+
+      print("✅ Cart cleared successfully!");
+    } catch (e) {
+      print("❌ Error clearing cart: $e");
     }
   }
 
@@ -273,20 +320,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding:
-            EdgeInsets.all(screenWidth * 0.035), // Slightly smaller padding
+        padding: EdgeInsets.all(screenWidth * 0.035),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 buildToggleButton('Delivery', true, screenWidth),
-                SizedBox(width: screenWidth * 0.015), // Reduced spacing
+                SizedBox(width: screenWidth * 0.015),
                 buildToggleButton('Pick up', false, screenWidth),
               ],
             ),
             SizedBox(height: screenHeight * 0.015),
-
             if (useDelivery != null)
               Row(
                 children: [
@@ -296,7 +341,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ],
               ),
             if (useDelivery != null) SizedBox(height: screenHeight * 0.015),
-
             if (selectedTime == false) ...[
               SizedBox(height: screenHeight * 0.012),
               Row(
@@ -305,7 +349,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   Text(
                     "Scheduled Time: ",
                     style: TextStyle(
-                      fontSize: screenHeight * 0.016, // Reduced size
+                      fontSize: screenHeight * 0.016,
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
                     ),
@@ -336,26 +380,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
               ),
             ],
-
             if (selectedTime == false && scheduleTime != null)
               SizedBox(height: screenHeight * 0.015),
-
             const Text('Pay With',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 16)), // Reduced
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             SizedBox(height: screenHeight * 0.008),
             buildPaymentMethodTile(
                 0, 'XXXX-1234', '12/25', Icons.credit_card, screenWidth),
             buildPaymentMethodTile(
                 1, 'Benefit Pay', null, Icons.payment, screenWidth),
             buildPaymentMethodTile(2, 'Cash', null, Icons.money, screenWidth),
-
             SizedBox(height: screenHeight * 0.015),
-
             const Divider(thickness: 1, color: Colors.grey),
-
             SizedBox(height: screenHeight * 0.015),
-
             const Text('Coupon',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             SizedBox(height: screenHeight * 0.01),
@@ -363,17 +400,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
               children: [
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.only(
-                        left: screenWidth * 0.04), // Adjust padding
+                    padding: EdgeInsets.only(left: screenWidth * 0.04),
                     decoration: BoxDecoration(
-                      color: Colors.white, // White background
-                      borderRadius:
-                          BorderRadius.circular(14), // Rounded corners
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1), // Light shadow
-                          offset: Offset(0, 4), // Shadow position
-                          blurRadius: 6, // Soft shadow
+                          color: Colors.black.withOpacity(0.1),
+                          offset: Offset(0, 4),
+                          blurRadius: 6,
                         ),
                       ],
                     ),
@@ -399,26 +434,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
               ],
             ),
-
             SizedBox(height: screenHeight * 0.02),
-
             const Divider(thickness: 1, color: Colors.grey),
-
             SizedBox(height: screenHeight * 0.015),
-
             const Text('Payment Summary',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 16)), // Reduced
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             SizedBox(height: screenHeight * 0.008),
             buildSummaryRow(
                 'Subtotal', 'BHD ${widget.subtotal.toStringAsFixed(3)}'),
             buildSummaryRow('Tax', 'BHD ${widget.tax.toStringAsFixed(3)}'),
             Divider(thickness: 1, color: Colors.grey),
+            buildSummaryRow('Total Points', 'Points ${widget.totalPoints}',
+                isBold: true, isPoints: true),
             buildSummaryRow(
                 'Total Amount', 'BHD ${widget.total.toStringAsFixed(3)}',
                 isBold: true),
             SizedBox(height: screenHeight * 0.02),
-
             Center(
               child: ElevatedButton(
                 onPressed: isPayEnabled ? _placeOrder : null,
@@ -427,12 +458,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       isPayEnabled ? Color(0xFFBF0000) : Colors.grey,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(
-                    horizontal: screenWidth * 0.35, // Reduced width
-                    vertical: screenHeight * 0.018, // Slightly smaller height
+                    horizontal: screenWidth * 0.35,
+                    vertical: screenHeight * 0.018,
                   ),
                   textStyle: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.04), // Reduced size
+                      fontSize: screenWidth * 0.04),
                 ),
                 child: const Text('Pay'),
               ),
@@ -495,8 +526,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           foregroundColor:
               useDelivery == isDelivery ? Colors.white : Colors.black,
         ),
-        child: Text(text,
-            style: TextStyle(fontSize: screenWidth * 0.035)), // Reduced
+        child: Text(text, style: TextStyle(fontSize: screenWidth * 0.035)),
       ),
     );
   }
@@ -519,26 +549,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
               selectedTime == isNow ? Color(0xFFBF0000) : Colors.white,
           foregroundColor: selectedTime == isNow ? Colors.white : Colors.black,
         ),
-        child: Text(text,
-            style: TextStyle(fontSize: screenWidth * 0.035)), // Reduced
+        child: Text(text, style: TextStyle(fontSize: screenWidth * 0.035)),
       ),
     );
   }
 
-  Widget buildSummaryRow(String title, String amount, {bool isBold = false}) {
+  Widget buildSummaryRow(String title, String amount,
+      {bool isBold = false, bool isPoints = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.5), // Reduced padding
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title,
               style: TextStyle(
                   fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                  fontSize: isBold ? 18 : 13)), // Reduced size
+                  fontSize: isBold ? 18 : 13,
+                  color: isPoints ? Color(0xFFBF0000) : Colors.black)),
           Text(amount,
               style: TextStyle(
                   fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                  fontSize: isBold ? 18 : 13)), // Reduced size
+                  fontSize: isBold ? 18 : 13,
+                  color: isPoints ? Color(0xFFBF0000) : Colors.black)),
         ],
       ),
     );

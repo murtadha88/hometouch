@@ -24,7 +24,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   String driverName = "Loading...";
   String driverPhone = "Loading...";
-  String driverPhoto = "Loading...";
+  String driverPhoto = "";
   LatLng? driverLocation;
 
   LatLng? customerLocation;
@@ -38,7 +38,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   @override
   void dispose() {
-    _driverLocationSubscription?.cancel(); // Cancel the subscription
+    _driverLocationSubscription?.cancel();
     super.dispose();
   }
 
@@ -76,7 +76,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         }
       }
     } catch (e) {
-      print("❌ Error fetching order: $e");
+      print("Error fetching order: $e");
     }
   }
 
@@ -108,13 +108,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         }
       });
     } catch (e) {
-      print("❌ Error fetching driver details: $e");
+      print("Error fetching driver details: $e");
     }
   }
 
   Future<BitmapDescriptor> _getDriverMarkerIcon() async {
     return await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(50, 50)),
+      const ImageConfiguration(size: Size(100, 100)),
       'assets/car_pin.png',
     );
   }
@@ -136,7 +136,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   Future<BitmapDescriptor> _getCustomerMarkerIcon() async {
     return await BitmapDescriptor.fromAssetImage(
-      const ImageConfiguration(size: Size(50, 50)),
+      const ImageConfiguration(size: Size(100, 100)),
       'assets/customer_pin.png',
     );
   }
@@ -196,7 +196,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Obtain screen dimensions
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -233,8 +232,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: Padding(
-                      padding: EdgeInsets.all(
-                          screenWidth * 0.06), // Adjust as needed
+                      padding: EdgeInsets.all(screenWidth * 0.06),
                       child: GestureDetector(
                         onTap: () => Navigator.pop(context),
                         child: Container(
@@ -298,6 +296,20 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                               height: screenHeight * 0.02,
                               thickness: screenHeight * 0.002,
                             ),
+                            if (orderData?["Total_Points_Used"] != null &&
+                                orderData?["Total_Points_Used"] > 0)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                    bottom: screenHeight * 0.01),
+                                child: Text(
+                                  "Points Used: ${orderData?["Total_Points_Used"]} Points",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryRed, // Display in red
+                                  ),
+                                ),
+                              ),
                             Text(
                               "Total: ${orderData?["Total"].toString()} BHD",
                               style: TextStyle(
@@ -347,7 +359,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             ],
           ),
         ),
-        // Chat icon (white icon, red circle)
         IconButton(
           icon: CircleAvatar(
             backgroundColor: primaryRed,
@@ -358,11 +369,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               size: screenWidth * 0.06,
             ),
           ),
-          onPressed: () {
-            // TODO: Navigate to chat page
-          },
+          onPressed: () {},
         ),
-        // Call icon (white icon, red circle)
         IconButton(
           icon: CircleAvatar(
             backgroundColor: primaryRed,

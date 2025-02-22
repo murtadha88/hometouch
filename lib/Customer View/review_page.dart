@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 
 class ReviewPage extends StatefulWidget {
   final String? vendorId;
@@ -81,7 +82,6 @@ class _ReviewPageState extends State<ReviewPage> {
         Map<String, dynamic>? customerData =
             customerSnapshot.data() as Map<String, dynamic>?;
 
-        // Format date
         String formattedDate = reviewData["Date"] != null
             ? DateFormat('dd MMM yyyy').format(reviewData["Date"].toDate())
             : "Unknown Date";
@@ -91,7 +91,7 @@ class _ReviewPageState extends State<ReviewPage> {
           "customerPhoto": customerData?["Photo"],
           "rating": reviewData["Rating"] ?? 0,
           "review": reviewData["Review"] ?? "No review",
-          "date": formattedDate, // ✅ Updated date format
+          "date": formattedDate,
         });
       }
 
@@ -120,7 +120,6 @@ class _ReviewPageState extends State<ReviewPage> {
     }
 
     try {
-      // Add the new review to Firestore
       await FirebaseFirestore.instance.collection('review').add({
         "Customer_ID":
             FirebaseFirestore.instance.collection('Customer').doc(user.uid),
@@ -131,7 +130,6 @@ class _ReviewPageState extends State<ReviewPage> {
         "Date": FieldValue.serverTimestamp(),
       });
 
-      // Clear the review input and reset the rating
       _reviewController.clear();
       setState(() {
         _rating = 5;
@@ -140,7 +138,6 @@ class _ReviewPageState extends State<ReviewPage> {
 
       _reviewFocusNode.unfocus();
 
-      // Fetch the updated reviews from Firestore
       List<Map<String, dynamic>> updatedReviews = await fetchReviews();
       setState(() {
         _reviews = updatedReviews;
@@ -178,8 +175,7 @@ class _ReviewPageState extends State<ReviewPage> {
       }
       double averageRating = totalRating / snapshot.docs.length;
 
-      averageRating =
-          double.parse(averageRating.toStringAsFixed(1)); // 🔹 One decimal
+      averageRating = double.parse(averageRating.toStringAsFixed(1));
 
       DocumentReference targetRef;
 
@@ -310,7 +306,8 @@ class _ReviewPageState extends State<ReviewPage> {
                                   backgroundImage: (review["customerPhoto"] !=
                                               null &&
                                           review["customerPhoto"]!.isNotEmpty)
-                                      ? NetworkImage(review["customerPhoto"])
+                                      ? MemoryImage(base64Decode(
+                                          review["customerPhoto"]!))
                                       : NetworkImage(
                                           'https://i.imgur.com/OtAn7hT.jpeg',
                                         ),
