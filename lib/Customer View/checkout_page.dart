@@ -9,6 +9,7 @@ class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
   final double subtotal;
   final double tax;
+  final double deliveryCost;
   final int totalPoints;
   final double total;
   final Address selectedAddress;
@@ -17,6 +18,7 @@ class CheckoutPage extends StatefulWidget {
     Key? key,
     required this.cartItems,
     required this.subtotal,
+    required this.deliveryCost,
     required this.tax,
     required this.totalPoints,
     required this.total,
@@ -32,6 +34,59 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool? useDelivery;
   bool? selectedTime;
   DateTime? scheduleTime;
+  String? selectedCoupon;
+  double discount = 0.0;
+  TextEditingController couponController = TextEditingController();
+  bool requireSubscription = false;
+  String hitText = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSubscriptionVoucher();
+  }
+
+  Future<void> _checkSubscriptionVoucher() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    QuerySnapshot subscriptionSnapshot = await FirebaseFirestore.instance
+        .collection('subscription')
+        .where('Customer_ID',
+            isEqualTo:
+                FirebaseFirestore.instance.collection('Customer').doc(user.uid))
+        .get();
+
+    if (subscriptionSnapshot.docs.isNotEmpty) {
+      var subscriptionData =
+          subscriptionSnapshot.docs.first.data() as Map<String, dynamic>;
+      Timestamp startDate = subscriptionData["Start_Date"];
+      Timestamp endDate = subscriptionData["End_Date"];
+      int voucherNo = subscriptionData["Voucher_No"] ?? 0;
+
+      DateTime now = DateTime.now();
+      if (now.isAfter(startDate.toDate()) && now.isBefore(endDate.toDate())) {
+        setState(() {
+          voucherNo > 0
+              ? (requireSubscription = false, hitText = "Select a coupon")
+              : (
+                  requireSubscription = true,
+                  hitText = "You dont have a coupon"
+                );
+        });
+      } else {
+        setState(() {
+          requireSubscription = true;
+          hitText = "Requires Subscription";
+        });
+      }
+    } else {
+      setState(() {
+        requireSubscription = true;
+        hitText = "Requires Subscription";
+      });
+    }
+  }
 
   Future<int> _getNextOrderNumber() async {
     final orderCollection = FirebaseFirestore.instance.collection('order');
@@ -62,6 +117,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
           : "Unknown";
 
       double roundedTotal = double.parse(widget.total.toStringAsFixed(3));
+      double roundedSubTotal = double.parse(widget.subtotal.toStringAsFixed(3));
+      double roundedTax = double.parse(widget.tax.toStringAsFixed(3));
 
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('Customer')
@@ -92,8 +149,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         "Driver_ID": "eJXF01SPCo4QK3UApmpR",
         "Vendor_ID": vendorId,
         "Items": widget.cartItems,
-        "Subtotal": widget.subtotal,
-        "Tax": widget.tax,
+        "Subtotal": roundedSubTotal,
+        "Tax": roundedTax,
         "Total": roundedTotal,
         "Total_Points_Used": widget.totalPoints,
         "Payment_Method": selectedPaymentMethod == 0
@@ -127,6 +184,31 @@ class _CheckoutPageState extends State<CheckoutPage> {
         "Loyalty_Points": FieldValue.increment(100 - widget.totalPoints),
       });
 
+      QuerySnapshot subscriptionSnapshot = await FirebaseFirestore.instance
+          .collection('subscription')
+          .where('Customer_ID',
+              isEqualTo: FirebaseFirestore.instance
+                  .collection('Customer')
+                  .doc(user.uid))
+          .get();
+
+      if (subscriptionSnapshot.docs.isNotEmpty) {
+        final subscriptionDoc = subscriptionSnapshot.docs.first.reference;
+        Map<String, dynamic> updates = {};
+
+        if (selectedCoupon != null && selectedCoupon!.isNotEmpty) {
+          updates["Voucher_No"] = FieldValue.increment(-1);
+        }
+
+        if (useDelivery == true && widget.deliveryCost == 0) {
+          updates["Free_Delivery_No"] = FieldValue.increment(-1);
+        }
+
+        if (updates.isNotEmpty) {
+          await subscriptionDoc.update(updates);
+        }
+      }
+
       _showSuccessDialog();
 
       await _clearCart(user.uid);
@@ -154,8 +236,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       for (var doc in cartItems.docs) {
         await doc.reference.delete();
       }
-
-      print("✅ Cart cleared successfully!");
     } catch (e) {
       print("❌ Error clearing cart: $e");
     }
@@ -219,6 +299,169 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  Future<void> _showCouponBottomSheet() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      QuerySnapshot subscriptionSnapshot = await FirebaseFirestore.instance
+          .collection('subscription')
+          .where('Customer_ID',
+              isEqualTo: FirebaseFirestore.instance
+                  .collection('Customer')
+                  .doc(user.uid))
+          .get();
+
+      if (subscriptionSnapshot.docs.isEmpty) {
+        print("❌ No subscription found");
+        return;
+      }
+
+      var subscriptionData =
+          subscriptionSnapshot.docs.first.data() as Map<String, dynamic>;
+
+      Timestamp startDate = subscriptionData["Start_Date"];
+      Timestamp endDate = subscriptionData["End_Date"];
+      DateTime now = DateTime.now();
+
+      if (!(now.isAfter(startDate.toDate()) &&
+          now.isBefore(endDate.toDate()))) {
+        print("❌ Subscription expired or not active yet");
+        return;
+      }
+
+      QuerySnapshot couponSnapshot =
+          await FirebaseFirestore.instance.collection('coupon').get();
+
+      if (couponSnapshot.docs.isEmpty) {
+        print("❌ No coupons found");
+        return;
+      }
+
+      List<Map<String, dynamic>> coupons = couponSnapshot.docs
+          .map((doc) => {
+                "id": doc.id,
+                "name": doc["Name"],
+                "percentage": doc["Percentage"],
+                "endDate": doc["End_Date"],
+              })
+          .toList();
+
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(55),
+                topRight: Radius.circular(55),
+              ),
+              border: Border(
+                top: BorderSide(color: Color(0xFFBF0000), width: 4),
+              ),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width * 0.05,
+              vertical: MediaQuery.of(context).size.height * 0.03,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Text(
+                    "Available Coupons",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFBF0000),
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                ...coupons.map((coupon) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          offset: Offset(0, 4),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              coupon["name"],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                            Text(
+                              "${coupon["percentage"]}% Discount",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedCoupon = coupon["name"];
+                              couponController.text = selectedCoupon!;
+                              discount = (widget.subtotal *
+                                  coupon["percentage"] /
+                                  100);
+                              discount = (discount * 1000).ceil() / 1000;
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFBF0000),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            "Apply",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 10),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print("❌ Error fetching coupons: $e");
+    }
+  }
+
   Future<void> _selectScheduleTime() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -275,6 +518,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     bool isPayEnabled = useDelivery != null && selectedTime != null;
+
+    double subtotalAfterDiscount = widget.subtotal - discount;
+    double taxAfterDiscount = subtotalAfterDiscount / 10;
+
+    double totalAfterDiscount = subtotalAfterDiscount +
+        taxAfterDiscount +
+        ((useDelivery ?? false) ? widget.deliveryCost : 0.0);
 
     return Scaffold(
       appBar: PreferredSize(
@@ -386,7 +636,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             SizedBox(height: screenHeight * 0.008),
             buildPaymentMethodTile(
-                0, 'XXXX-1234', '12/25', Icons.credit_card, screenWidth),
+                0, 'Card', null, Icons.credit_card, screenWidth),
             buildPaymentMethodTile(
                 1, 'Benefit Pay', null, Icons.payment, screenWidth),
             buildPaymentMethodTile(2, 'Cash', null, Icons.money, screenWidth),
@@ -413,16 +663,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ],
                     ),
                     child: TextField(
+                      controller: couponController,
+                      readOnly: true,
                       decoration: InputDecoration(
-                        hintText: 'Enter your promo code',
+                        hintText: hitText,
+                        hintStyle: TextStyle(
+                          color: requireSubscription
+                              ? Color(0xFFBF0000)
+                              : Colors.grey,
+                        ),
                         border: InputBorder.none,
                         suffixIcon: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Color(0xFFBF0000),
+                            color: requireSubscription
+                                ? Colors.grey
+                                : Color(0xFFBF0000),
                           ),
                           child: IconButton(
-                            onPressed: () {},
+                            onPressed: requireSubscription
+                                ? null
+                                : () {
+                                    _showCouponBottomSheet();
+                                  },
                             icon: const Icon(Icons.arrow_forward_ios,
                                 color: Colors.white),
                             iconSize: screenWidth * 0.06,
@@ -442,13 +705,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
             SizedBox(height: screenHeight * 0.008),
             buildSummaryRow(
                 'Subtotal', 'BHD ${widget.subtotal.toStringAsFixed(3)}'),
-            buildSummaryRow('Tax', 'BHD ${widget.tax.toStringAsFixed(3)}'),
+            if (discount > 0)
+              buildSummaryRow(
+                "Discount",
+                "-BHD ${discount.toStringAsFixed(3)}",
+                isPoints: true,
+              ),
+            buildSummaryRow(
+              'Delivery Cost',
+              (useDelivery ?? false)
+                  ? 'BHD ${widget.deliveryCost.toStringAsFixed(3)}'
+                  : 'BHD 0.000',
+            ),
+            buildSummaryRow(
+                'Tax', 'BHD ${taxAfterDiscount.toStringAsFixed(3)}'),
             Divider(thickness: 1, color: Colors.grey),
             buildSummaryRow('Total Points', 'Points ${widget.totalPoints}',
                 isBold: true, isPoints: true),
             buildSummaryRow(
-                'Total Amount', 'BHD ${widget.total.toStringAsFixed(3)}',
-                isBold: true),
+              'Total Amount',
+              'BHD ${(totalAfterDiscount - ((useDelivery ?? false) ? 0.000 : widget.deliveryCost)).toStringAsFixed(3)}',
+              isBold: true,
+            ),
             SizedBox(height: screenHeight * 0.02),
             Center(
               child: ElevatedButton(

@@ -67,21 +67,24 @@ class _CartPageState extends State<CartPage> {
     if (user == null) return;
 
     try {
+      DocumentReference customerRef =
+          FirebaseFirestore.instance.collection('Customer').doc(user.uid);
+
       QuerySnapshot subscriptionSnapshot = await FirebaseFirestore.instance
           .collection('subscription')
-          .where('Customer_ID',
-              isEqualTo: FirebaseFirestore.instance
-                  .collection('Customer')
-                  .doc(user.uid))
+          .where('Customer_ID', isEqualTo: customerRef)
           .get();
 
       if (subscriptionSnapshot.docs.isNotEmpty) {
+        print(
+            "✅ Subscription found for user: ${subscriptionSnapshot.docs.length}");
         var subscriptionData =
             subscriptionSnapshot.docs.first.data() as Map<String, dynamic>;
 
         Timestamp startDate = subscriptionData["Start_Date"];
         Timestamp endDate = subscriptionData["End_Date"];
         int freeDeliveryNo = subscriptionData["Free_Delivery_No"] ?? 0;
+        print("✅ Free deliveries left: $freeDeliveryNo");
 
         DateTime now = DateTime.now();
 
@@ -89,7 +92,7 @@ class _CartPageState extends State<CartPage> {
             now.isBefore(endDate.toDate()) &&
             freeDeliveryNo > 0) {
           setState(() {
-            deliveryCost = 0.000;
+            deliveryCost = 0.000; // Apply free delivery
           });
         }
       }
@@ -411,6 +414,7 @@ class _CartPageState extends State<CartPage> {
                                       builder: (context) => CheckoutPage(
                                         cartItems: cartItems,
                                         subtotal: subtotal,
+                                        deliveryCost: deliveryCost,
                                         tax: tax,
                                         totalPoints: totalPoints,
                                         total: total,

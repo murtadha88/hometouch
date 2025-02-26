@@ -13,9 +13,11 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isEditable = false;
   String userName = 'Loading...';
   String userEmail = 'Loading...';
+  String userPhone = 'Loading...';
 
   TextEditingController _userNameController = TextEditingController();
   TextEditingController _userEmailController = TextEditingController();
+  TextEditingController _userPhoneController = TextEditingController();
 
   @override
   void initState() {
@@ -34,9 +36,11 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         userName = docSnapshot['Name'] ?? 'Unknown';
         userEmail = docSnapshot['Email'] ?? 'Not Available';
+        userPhone = docSnapshot['Phone'] ?? 'Not Available';
 
         _userNameController.text = userName;
         _userEmailController.text = userEmail;
+        _userPhoneController.text = userPhone;
       });
     }
   }
@@ -51,11 +55,13 @@ class _ProfilePageState extends State<ProfilePage> {
             .update({
           'Name': _userNameController.text,
           'Email': _userEmailController.text,
+          'Phone': _userPhoneController.text
         });
 
         setState(() {
           userName = _userNameController.text;
           userEmail = _userEmailController.text;
+          userPhone = _userPhoneController.text;
           _isEditable = false;
         });
       } catch (e) {
@@ -122,6 +128,8 @@ class _ProfilePageState extends State<ProfilePage> {
             _buildEditableTextField(
                 'Name', _userNameController, true, screenWidth, screenHeight),
             _buildEditableTextField('Email', _userEmailController, false,
+                screenWidth, screenHeight),
+            _buildEditableTextField('Phone', _userPhoneController, false,
                 screenWidth, screenHeight),
             if (!_isEditable) ...[
               _buildListTile(
@@ -195,6 +203,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           setState(() {
                             _userEmailController.text = userEmail;
                             _userNameController.text = userName;
+                            _userPhoneController.text = userPhone;
                             _isEditable = !_isEditable;
                           });
                         },
@@ -285,6 +294,7 @@ class _ProfilePageState extends State<ProfilePage> {
               setState(() {
                 _userEmailController.text = userEmail;
                 _userNameController.text = userName;
+                _userPhoneController.text = userPhone;
                 _isEditable = false;
               });
             },

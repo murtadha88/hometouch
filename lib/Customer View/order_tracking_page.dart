@@ -30,14 +30,25 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   LatLng? customerLocation;
   StreamSubscription<DocumentSnapshot>? _driverLocationSubscription;
 
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
     _fetchOrderDetails();
+
+    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _fetchOrderDetails();
+        _updateDriverMarker(driverLocation!);
+        setState(() {});
+      }
+    });
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _driverLocationSubscription?.cancel();
     super.dispose();
   }
@@ -200,6 +211,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: isLoading
           ? Center(
               child: CircularProgressIndicator(
@@ -209,25 +221,37 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             )
           : Stack(
               children: [
-                driverLocation != null
-                    ? GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: driverLocation ??
-                              customerLocation ??
-                              LatLng(26.0, 50.0),
-                          zoom: 14,
-                        ),
-                        markers: _markers,
-                        onMapCreated: (controller) {
-                          mapController = controller;
-                        },
-                      )
-                    : Center(
-                        child: Text(
-                          "Driver location not available",
-                          style: TextStyle(fontSize: screenWidth * 0.045),
-                        ),
-                      ),
+                orderData?["Status"] != "On The Way"
+                    ? Padding(
+                        padding: EdgeInsets.only(
+                            top: screenWidth * 0.17,
+                            right: screenWidth * 0.1,
+                            bottom: screenWidth * 0.1,
+                            left: screenWidth * 0.1),
+                        child: Image.network(
+                          "https://i.imgur.com/jqcE474.jpeg",
+                          fit: BoxFit.cover,
+                          height: screenHeight * 0.5,
+                        ))
+                    : driverLocation != null
+                        ? GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: driverLocation ??
+                                  customerLocation ??
+                                  LatLng(26.0, 50.0),
+                              zoom: 14,
+                            ),
+                            markers: _markers,
+                            onMapCreated: (controller) {
+                              mapController = controller;
+                            },
+                          )
+                        : Center(
+                            child: Text(
+                              "Driver location not available",
+                              style: TextStyle(fontSize: screenWidth * 0.045),
+                            ),
+                          ),
                 SafeArea(
                   child: Align(
                     alignment: Alignment.topLeft,

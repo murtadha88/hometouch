@@ -159,6 +159,9 @@ class _LoginPageState extends State<LoginPage> {
       'Customer_ID': user.uid,
       'Name': user.displayName ?? 'No Name',
       'Email': user.email ?? 'No Email',
+      'Phone': user.phoneNumber ?? null,
+      'Photo': null,
+      "Loyalty_Points": 0
     });
   }
 

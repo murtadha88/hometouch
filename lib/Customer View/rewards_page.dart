@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hometouch/Customer%20View/product_details_page.dart';
+import 'cart_page.dart';
 
 class RewardsPage extends StatefulWidget {
   const RewardsPage({Key? key}) : super(key: key);
@@ -14,12 +15,14 @@ class _RewardsPageState extends State<RewardsPage> {
   int userPoints = 0;
   List<Map<String, dynamic>> rewardProducts = [];
   bool isLoading = true;
+  int cartItemCount = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchUserPoints();
     _fetchRewardProducts();
+    _fetchCartItemCount();
   }
 
   Future<void> _fetchUserPoints() async {
@@ -93,6 +96,25 @@ class _RewardsPageState extends State<RewardsPage> {
     }
   }
 
+  Future<void> _fetchCartItemCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final cartSnapshot = await FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(user.uid)
+          .collection('cart')
+          .get();
+
+      setState(() {
+        cartItemCount = cartSnapshot.docs.length;
+      });
+    } catch (e) {
+      print("❌ Error fetching cart count: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -134,6 +156,56 @@ class _RewardsPageState extends State<RewardsPage> {
           ),
           centerTitle: true,
           backgroundColor: Colors.white,
+          actions: [
+            Padding(
+              padding: EdgeInsets.only(
+                  top: screenHeight * 0.02, right: screenWidth * 0.02),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CartPage(),
+                    ),
+                  ).then((_) {
+                    _fetchCartItemCount();
+                  });
+                },
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: const Color(0xFFBF0000),
+                      radius: screenHeight * 0.027,
+                      child: Icon(
+                        Icons.shopping_cart_outlined,
+                        color: Colors.white,
+                        size: screenHeight * 0.027,
+                      ),
+                    ),
+                    if (cartItemCount > 0)
+                      Positioned(
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Color.fromARGB(255, 238, 238, 238),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$cartItemCount',
+                            style: TextStyle(
+                              fontSize: screenHeight * 0.018,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFBF0000),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(screenHeight * 0.002),
             child: Divider(
@@ -184,6 +256,7 @@ class _RewardsPageState extends State<RewardsPage> {
     return Column(
       children: rewardProducts.map((product) {
         return Card(
+          color: Colors.white,
           elevation: 3,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -211,15 +284,16 @@ class _RewardsPageState extends State<RewardsPage> {
                 color: Color(0xFFBF0000), size: screenWidth * 0.05),
             onTap: () {
               Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProductDetailsPage(
-                    productId: product["id"],
-                    isFromRewards: true,
-                    points: product["points"],
-                  ),
-                ),
-              );
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetailsPage(
+                      productId: product["id"],
+                      isFromRewards: true,
+                      points: product["points"],
+                    ),
+                  )).then((_) {
+                _fetchCartItemCount();
+              });
             },
           ),
         );

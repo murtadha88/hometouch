@@ -224,9 +224,12 @@ class _AccountPageState extends State<AccountPage> {
                           return SubscriptionDialog(
                             screenWidth: screenWidth,
                             screenHeight: screenHeight,
+                            isSubscribed: isSubscribed,
                           );
                         },
-                      );
+                      ).then((_) {
+                        _checkSubscriptionStatus();
+                      });
                     },
                   ),
                   _buildMenuItem(

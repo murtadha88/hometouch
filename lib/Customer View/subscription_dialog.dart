@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SubscriptionDialog extends StatefulWidget {
   final double screenWidth;
   final double screenHeight;
+  final bool isSubscribed;
 
-  SubscriptionDialog({required this.screenWidth, required this.screenHeight});
+  SubscriptionDialog(
+      {required this.screenWidth,
+      required this.screenHeight,
+      required this.isSubscribed});
 
   @override
   _SubscriptionDialogState createState() => _SubscriptionDialogState();
@@ -105,7 +111,7 @@ class _SubscriptionDialogState extends State<SubscriptionDialog>
           _buildSubscriptionFeature(
             widget.screenHeight,
             widget.screenWidth,
-            '3 Vouchers (10%)',
+            '3 Discount Vouchers',
           ),
           SizedBox(height: widget.screenHeight * 0.006),
           _buildSubscriptionFeature(
@@ -114,7 +120,7 @@ class _SubscriptionDialogState extends State<SubscriptionDialog>
             'Data Analysis Feature',
           ),
           SizedBox(height: widget.screenHeight * 0.02),
-          _buildSubscribeButton(),
+          if (!widget.isSubscribed) _buildSubscribeButton(),
         ],
       ),
     );
@@ -163,7 +169,7 @@ class _SubscriptionDialogState extends State<SubscriptionDialog>
           return Transform.scale(
             scale: _scaleAnimation.value,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _subscribeUser,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFBF0000),
                 shape: RoundedRectangleBorder(
@@ -188,5 +194,97 @@ class _SubscriptionDialogState extends State<SubscriptionDialog>
         },
       ),
     );
+  }
+
+  Future<void> _subscribeUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final subscriptionCollection =
+        FirebaseFirestore.instance.collection('subscription');
+
+    final today = DateTime.now();
+    final endDate = today.add(Duration(days: 30));
+
+    await subscriptionCollection.add({
+      'Customer_ID':
+          FirebaseFirestore.instance.collection('Customer').doc(user.uid),
+      'Duration': 30,
+      'Start_Date': Timestamp.fromDate(today),
+      'End_Date': Timestamp.fromDate(endDate),
+      'Free_Delivery_No': 3,
+      'Voucher_No': 3,
+      'price': 3.5,
+    });
+
+    if (mounted) {
+      Navigator.pop(context);
+      _showSubscriptionSuccessDialog();
+    }
+  }
+
+  void _showSubscriptionSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+              vertical: screenHeight * 0.03, horizontal: screenWidth * 0.05),
+          title: Container(
+            padding: EdgeInsets.all(screenWidth * 0.05),
+            decoration: const BoxDecoration(
+              color: Color(0xFFBF0000),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check,
+              color: Colors.white,
+              size: screenWidth * 0.12,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Subscribed Successfully!',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              Container(
+                alignment: Alignment.center,
+                child: Text(
+                  'You can now enjoy premium features!',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: screenWidth * 0.035,
+                    fontWeight: FontWeight.w300,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFFBF0000),
+                ),
+                child: Text('OK', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+      },
+    ).then((_) {
+      Navigator.pop(context, true);
+    });
   }
 }
