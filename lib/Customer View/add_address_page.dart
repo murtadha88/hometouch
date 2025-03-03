@@ -126,8 +126,6 @@ class _AddAddressPageState extends State<AddAddressPage> {
             GeoPoint(_currentLocation.latitude, _currentLocation.longitude),
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Address added successfully")));
       Navigator.pop(context);
     }
   }
@@ -186,7 +184,7 @@ class _AddAddressPageState extends State<AddAddressPage> {
           padding: EdgeInsets.only(bottom: keyboardHeight),
           child: Column(
             children: [
-              Container(
+              SizedBox(
                 height: screenHeight * 0.4,
                 width: double.infinity,
                 child: GoogleMap(

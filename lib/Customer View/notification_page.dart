@@ -7,6 +7,8 @@ class NotificationPage extends StatelessWidget {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  NotificationPage({super.key});
+
   String formatDate(String dateString) {
     DateTime date = DateTime.parse(dateString);
     DateTime today = DateTime.now();

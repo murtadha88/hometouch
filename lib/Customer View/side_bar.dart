@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -7,17 +6,17 @@ import 'package:hometouch/Customer%20View/account_page.dart';
 import 'package:hometouch/Customer%20View/faq_page.dart';
 import 'package:hometouch/Customer%20View/favorite_page.dart';
 import 'package:hometouch/Customer%20View/notification_page.dart';
-import 'package:hometouch/Customer%20View/setting_page.dart';
+import 'package:hometouch/Common%20Pages/setting_page.dart';
 
 class DrawerScreen extends StatefulWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
 
   const DrawerScreen({
-    Key? key,
+    super.key,
     required this.selectedIndex,
     required this.onItemTapped,
-  }) : super(key: key);
+  });
 
   @override
   _DrawerScreenState createState() => _DrawerScreenState();
@@ -43,7 +42,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
           .get();
 
       setState(() {
-        userPhotoUrl = docSnapshot['Photo'] ?? null;
+        userPhotoUrl = docSnapshot['Photo'];
         userPhotoUrl == "" ? userPhotoUrl = null : userPhotoUrl = userPhotoUrl;
       });
     }
@@ -54,7 +53,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return Container(
+    return SizedBox(
       width: screenWidth * 0.7,
       child: Drawer(
         child: Stack(
@@ -253,7 +252,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                 child: CircleAvatar(
                   radius: screenWidth * 0.125,
                   backgroundImage: userPhotoUrl != null
-                      ? MemoryImage(base64Decode(userPhotoUrl!))
+                      ? NetworkImage(userPhotoUrl!)
                       : NetworkImage(
                           'https://i.imgur.com/OtAn7hT.jpeg',
                         ),

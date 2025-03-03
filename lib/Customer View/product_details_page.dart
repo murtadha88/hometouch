@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,11 +9,11 @@ class ProductDetailsPage extends StatefulWidget {
   final int points;
 
   const ProductDetailsPage({
-    Key? key,
+    super.key,
     required this.productId,
     this.isFromRewards = false,
     this.points = 0,
-  }) : super(key: key);
+  });
 
   @override
   State<ProductDetailsPage> createState() => _ProductDetailsPageState();
@@ -602,8 +601,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
     return Column(
       children: reviews.map((review) {
-        String? userPhotoBase64 =
-            review["photo"] == "" ? null : review["photo"];
+        String? productPhoto = review["photo"] == "" ? null : review["photo"];
         return Container(
           padding: const EdgeInsets.all(12),
           margin: const EdgeInsets.only(bottom: 12),
@@ -612,8 +610,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundImage: userPhotoBase64 != null
-                    ? MemoryImage(base64Decode(userPhotoBase64))
+                backgroundImage: productPhoto != null
+                    ? NetworkImage(productPhoto)
                     : const NetworkImage('https://i.imgur.com/OtAn7hT.jpeg')
                         as ImageProvider,
               ),

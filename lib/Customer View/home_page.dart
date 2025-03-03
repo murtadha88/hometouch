@@ -28,14 +28,14 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
   String _searchQuery = "";
   bool _isSearching = false;
-  TextEditingController _searchController = TextEditingController();
-  FocusNode _searchFocusNode = FocusNode();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   final Set<String> favoriteVendors = {};
 
   bool isHomeVendorSelected = false;
   bool isFoodTruckSelected = false;
-  PageController _pageController = PageController();
+  final PageController _pageController = PageController();
   int _currentIndex = 0;
   int currentMenuIndex = 0;
   int _selectedIndex = 0;
@@ -120,7 +120,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
       return _firestore
           .collection('vendor')
           .where('Name', isGreaterThanOrEqualTo: formattedQuery)
-          .where('Name', isLessThanOrEqualTo: formattedQuery + '\uf8ff')
+          .where('Name', isLessThanOrEqualTo: '$formattedQuery\uf8ff')
           .snapshots()
           .map((snapshot) {
         List<Map<String, dynamic>> vendorList = snapshot.docs.map((doc) {
@@ -667,7 +667,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
             onItemTapped: _onItemTapped,
           ),
           bottomNavigationBar: BottomNavBar(selectedIndex: 0),
-          floatingActionButton: Container(
+          floatingActionButton: SizedBox(
             height: 58,
             width: 58,
             child: FloatingActionButton(

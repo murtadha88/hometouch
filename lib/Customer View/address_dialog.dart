@@ -30,11 +30,13 @@ class Address {
     String address = "$name, Building $building, Road $road, Block $block";
 
     if (floor != null && floor != 0) address += ", Floor $floor";
-    if (apartment != null && apartment != 0)
+    if (apartment != null && apartment != 0) {
       address += ", Apartment $apartment";
+    }
     if (office != null && office != 0) address += ", Office $office";
-    if (companyName != null && companyName != '0')
+    if (companyName != null && companyName != '0') {
       address += ", Company: $companyName";
+    }
 
     return address;
   }
@@ -65,11 +67,11 @@ class AddressDialog extends StatefulWidget {
   final VoidCallback onClose;
 
   const AddressDialog({
-    Key? key,
+    super.key,
     required this.screenWidth,
     required this.screenHeight,
     required this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   _AddressDialogState createState() => _AddressDialogState();
@@ -180,7 +182,9 @@ class _AddressDialogState extends State<AddressDialog> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) => AddAddressPage()),
-                            );
+                            ).then((_) {
+                              fetchAddresses();
+                            });
                           }
                         },
                         child: Icon(Icons.add,

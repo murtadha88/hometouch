@@ -24,7 +24,7 @@ class _FavoritesPageState extends State<FavoritesPage>
   List<Map<String, dynamic>> favoriteProducts = [];
   bool isLoading = true;
   int trackNavBarIcons = 1;
-  int _selectedIndex = 1;
+  final int _selectedIndex = 1;
 
   @override
   void initState() {
@@ -307,7 +307,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                 ),
         ),
         bottomNavigationBar: BottomNavBar(selectedIndex: 1),
-        floatingActionButton: Container(
+        floatingActionButton: SizedBox(
           height: 58,
           width: 58,
           child: FloatingActionButton(

@@ -5,7 +5,7 @@ import 'package:hometouch/Customer%20View/product_details_page.dart';
 import 'cart_page.dart';
 
 class RewardsPage extends StatefulWidget {
-  const RewardsPage({Key? key}) : super(key: key);
+  const RewardsPage({super.key});
 
   @override
   State<RewardsPage> createState() => _RewardsPageState();

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'dart:convert';
 
 class ReviewPage extends StatefulWidget {
   final String? vendorId;
@@ -306,8 +305,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                   backgroundImage: (review["customerPhoto"] !=
                                               null &&
                                           review["customerPhoto"]!.isNotEmpty)
-                                      ? MemoryImage(base64Decode(
-                                          review["customerPhoto"]!))
+                                      ? NetworkImage(review["customerPhoto"])
                                       : NetworkImage(
                                           'https://i.imgur.com/OtAn7hT.jpeg',
                                         ),

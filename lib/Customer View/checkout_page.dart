@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hometouch/Customer%20View/home_page.dart';
 import 'package:hometouch/Customer%20View/order_history_page.dart';
 import 'package:intl/intl.dart';
 import 'package:hometouch/Customer View/address_dialog.dart';
+import 'dart:async';
 
 class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
@@ -15,7 +17,7 @@ class CheckoutPage extends StatefulWidget {
   final Address selectedAddress;
 
   const CheckoutPage({
-    Key? key,
+    super.key,
     required this.cartItems,
     required this.subtotal,
     required this.deliveryCost,
@@ -23,7 +25,7 @@ class CheckoutPage extends StatefulWidget {
     required this.totalPoints,
     required this.total,
     required this.selectedAddress,
-  }) : super(key: key);
+  });
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
@@ -39,11 +41,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
   TextEditingController couponController = TextEditingController();
   bool requireSubscription = false;
   String hitText = "";
+  Timer? timer;
 
   @override
   void initState() {
     super.initState();
     _checkSubscriptionVoucher();
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _checkSubscriptionVoucher() async {
@@ -90,19 +99,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<int> _getNextOrderNumber() async {
     final orderCollection = FirebaseFirestore.instance.collection('order');
-    final querySnapshot = await orderCollection
-        .orderBy('Order_Number', descending: true)
-        .limit(1)
-        .get();
+    final querySnapshot = await orderCollection.get();
 
-    if (querySnapshot.docs.isNotEmpty) {
-      String lastOrderNumber = querySnapshot.docs.first['Order_Number'] ?? "#0";
+    int maxOrderNumber = 0;
+    for (var doc in querySnapshot.docs) {
+      String orderNumberStr = doc.get("Order_Number") as String;
+      orderNumberStr = orderNumberStr.substring(1);
 
-      int numericOrder = int.tryParse(lastOrderNumber.replaceAll("#", "")) ?? 0;
-
-      return numericOrder + 1;
+      int orderNumberInt = int.tryParse(orderNumberStr) ?? 0;
+      if (orderNumberInt > maxOrderNumber) {
+        maxOrderNumber = orderNumberInt;
+      }
     }
-    return 1;
+    return maxOrderNumber + 1;
   }
 
   Future<void> _placeOrder() async {
@@ -120,30 +129,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       double roundedSubTotal = double.parse(widget.subtotal.toStringAsFixed(3));
       double roundedTax = double.parse(widget.tax.toStringAsFixed(3));
 
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('Customer')
-          .doc(user.uid)
-          .get();
-
-      int currentPoints = userDoc["Loyalty_Points"] ?? 0;
-
-      if (widget.totalPoints > currentPoints) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "You dont have the requried loyalty points!",
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(8),
-          ),
-        );
-
-        return;
-      }
-
-      await FirebaseFirestore.instance.collection('order').add({
+      DocumentReference orderRef =
+          await FirebaseFirestore.instance.collection('order').add({
         "Customer_ID": user.uid,
         "Order_Number": "#$orderNumber",
         "Driver_ID": "eJXF01SPCo4QK3UApmpR",
@@ -164,6 +151,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             scheduleTime != null ? Timestamp.fromDate(scheduleTime!) : null,
         "Status": "Preparing",
         "Order_Date": FieldValue.serverTimestamp(),
+        "Accepted": null,
         "Customer_Address": {
           "Name": widget.selectedAddress.name,
           "Building": widget.selectedAddress.building,
@@ -177,51 +165,197 @@ class _CheckoutPageState extends State<CheckoutPage> {
         }
       });
 
-      await FirebaseFirestore.instance
-          .collection('Customer')
-          .doc(user.uid)
-          .update({
-        "Loyalty_Points": FieldValue.increment(100 - widget.totalPoints),
-      });
-
-      QuerySnapshot subscriptionSnapshot = await FirebaseFirestore.instance
-          .collection('subscription')
-          .where('Customer_ID',
-              isEqualTo: FirebaseFirestore.instance
-                  .collection('Customer')
-                  .doc(user.uid))
-          .get();
-
-      if (subscriptionSnapshot.docs.isNotEmpty) {
-        final subscriptionDoc = subscriptionSnapshot.docs.first.reference;
-        Map<String, dynamic> updates = {};
-
-        if (selectedCoupon != null && selectedCoupon!.isNotEmpty) {
-          updates["Voucher_No"] = FieldValue.increment(-1);
-        }
-
-        if (useDelivery == true && widget.deliveryCost == 0) {
-          updates["Free_Delivery_No"] = FieldValue.increment(-1);
-        }
-
-        if (updates.isNotEmpty) {
-          await subscriptionDoc.update(updates);
-        }
-      }
-
-      _showSuccessDialog();
-
-      await _clearCart(user.uid);
-
-      Future.delayed(const Duration(seconds: 3), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => OrdersPage()),
-        );
-      });
+      _waitForOrderAcceptance(orderRef.id);
     } catch (e) {
-      print("❌ Error placing order: $e");
+      print("Error placing order: $e");
     }
+  }
+
+  Future<void> _waitForOrderAcceptance(String orderId) async {
+    int secondsRemaining = 300;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            timer ??= Timer.periodic(Duration(seconds: 1), (t) async {
+              if (!mounted) {
+                t.cancel();
+                return;
+              }
+
+              DocumentSnapshot orderSnapshot = await FirebaseFirestore.instance
+                  .collection("order")
+                  .doc(orderId)
+                  .get();
+
+              if (!orderSnapshot.exists) {
+                t.cancel();
+                Navigator.pop(context);
+                return;
+              }
+
+              dynamic acceptedStatus = orderSnapshot["Accepted"];
+              final user = FirebaseAuth.instance.currentUser;
+              if (user == null) return;
+
+              if (acceptedStatus == true) {
+                print("Order accepted");
+                t.cancel();
+                Navigator.pop(context);
+                _clearCart(user.uid);
+
+                await FirebaseFirestore.instance
+                    .collection('Customer')
+                    .doc(user.uid)
+                    .update({
+                  'Loyalty_Points': FieldValue.increment(100),
+                });
+
+                _showSuccessDialog();
+
+                return;
+              }
+
+              if (acceptedStatus == false) {
+                print("Order rejected");
+                t.cancel();
+                Navigator.pop(context);
+                _clearCart(user.uid);
+
+                await FirebaseFirestore.instance
+                    .collection("order")
+                    .doc(orderId)
+                    .update({"Status": "Rejected"});
+
+                _showFailedDialog();
+                return;
+              }
+
+              if (secondsRemaining <= 0) {
+                print("Order not accepted in time");
+                t.cancel();
+                Navigator.pop(context);
+                _clearCart(user.uid);
+
+                await FirebaseFirestore.instance
+                    .collection("order")
+                    .doc(orderId)
+                    .update({"Status": "Cancelled"});
+
+                _showFailedDialog();
+                return;
+              } else {
+                setState(() {
+                  secondsRemaining -= 1;
+                });
+              }
+            });
+
+            double progressValue = 1 - (secondsRemaining / 300);
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 50),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Order Acceptance",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () async {
+                              timer?.cancel();
+                              timer = null;
+                              Navigator.pop(context);
+
+                              await FirebaseFirestore.instance
+                                  .collection("order")
+                                  .doc(orderId)
+                                  .delete();
+                            },
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFFBF0000),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 25, top: 25),
+                      child: Center(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Transform.scale(
+                              scale: 4,
+                              child: CircularProgressIndicator(
+                                value: progressValue,
+                                strokeWidth: 6,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xFFBF0000),
+                                ),
+                                backgroundColor: Colors.grey.shade300,
+                              ),
+                            ),
+                            Text(
+                              "${(secondsRemaining ~/ 60).toString().padLeft(2, '0')}:${(secondsRemaining % 60).toString().padLeft(2, '0')}",
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFBF0000),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 50),
+                      child: Text(
+                        "Waiting for vendor to accept your order...",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      timer?.cancel();
+      timer = null;
+    });
   }
 
   Future<void> _clearCart(String userId) async {
@@ -237,16 +371,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
         await doc.reference.delete();
       }
     } catch (e) {
-      print("❌ Error clearing cart: $e");
+      print("Error clearing cart: $e");
     }
   }
 
-  void _showSuccessDialog() {
+  Future<void> _showSuccessDialog() async {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         final screenWidth = MediaQuery.of(context).size.width;
         final screenHeight = MediaQuery.of(context).size.height;
+        Future.delayed(const Duration(seconds: 3), () {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => OrdersPage()),
+            (route) => false,
+          );
+        });
         return AlertDialog(
           backgroundColor: Colors.white,
           contentPadding: EdgeInsets.symmetric(
@@ -299,6 +440,72 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  Future<void> _showFailedDialog() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        Future.delayed(const Duration(seconds: 3), () {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => HomeTouchScreen()),
+            (route) => false,
+          );
+        });
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+              vertical: screenHeight * 0.03, horizontal: screenWidth * 0.05),
+          title: Container(
+            padding: EdgeInsets.all(screenWidth * 0.05),
+            decoration: const BoxDecoration(
+              color: Color(0xFFBF0000),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.close,
+              color: Colors.white,
+              size: screenWidth * 0.12,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Order Rejected',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFBF0000),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              Container(
+                alignment: Alignment.center,
+                child: Text(
+                  'Your order was not accepted. You will be redirected to the home page.',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: screenWidth * 0.035,
+                    fontWeight: FontWeight.w300,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              CircularProgressIndicator(
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showCouponBottomSheet() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -313,7 +520,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           .get();
 
       if (subscriptionSnapshot.docs.isEmpty) {
-        print("❌ No subscription found");
+        print("No subscription found");
         return;
       }
 
@@ -326,7 +533,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
       if (!(now.isAfter(startDate.toDate()) &&
           now.isBefore(endDate.toDate()))) {
-        print("❌ Subscription expired or not active yet");
         return;
       }
 
@@ -334,7 +540,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
           await FirebaseFirestore.instance.collection('coupon').get();
 
       if (couponSnapshot.docs.isEmpty) {
-        print("❌ No coupons found");
         return;
       }
 
@@ -450,7 +655,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
                 SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 10),
               ],
             ),
@@ -458,7 +663,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         },
       );
     } catch (e) {
-      print("❌ Error fetching coupons: $e");
+      print("Error fetching coupons: $e");
     }
   }
 

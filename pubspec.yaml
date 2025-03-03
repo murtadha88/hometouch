@@ -53,6 +53,7 @@ dependencies:
   location: ^8.0.0
   flutter_background_service: ^5.1.0
   flutter_braintree: ^4.0.0
+  timeago: ^3.2.2
 
 dev_dependencies:
   flutter_test:

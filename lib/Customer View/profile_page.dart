@@ -5,6 +5,8 @@ import 'package:hometouch/Customer%20View/address_dialog.dart';
 import 'package:hometouch/Common%20Pages/reset_password_page.dart';
 
 class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
@@ -13,11 +15,11 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isEditable = false;
   String userName = 'Loading...';
   String userEmail = 'Loading...';
-  String userPhone = 'Loading...';
+  String userPhone = 'Not Available';
 
-  TextEditingController _userNameController = TextEditingController();
-  TextEditingController _userEmailController = TextEditingController();
-  TextEditingController _userPhoneController = TextEditingController();
+  final TextEditingController _userNameController = TextEditingController();
+  final TextEditingController _userEmailController = TextEditingController();
+  final TextEditingController _userPhoneController = TextEditingController();
 
   @override
   void initState() {
@@ -229,29 +231,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: _isEditable
-                            ? TextField(
-                                controller: controller,
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: label,
-                                  hintStyle: TextStyle(
-                                    color: Color.fromARGB(255, 127, 127, 127),
-                                    fontSize: screenWidth * 0.04,
-                                  ),
-                                ),
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.04,
-                                  color: Colors.black,
-                                ),
-                              )
-                            : Text(
-                                controller.text,
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 127, 127, 127),
-                                  fontSize: screenWidth * 0.04,
-                                ),
-                              ),
+                        child: TextField(
+                          controller: controller,
+                          readOnly: !_isEditable,
+                          decoration: InputDecoration(border: InputBorder.none),
+                          style: TextStyle(
+                              fontSize: screenWidth * 0.04,
+                              color: _isEditable ? Colors.black : Colors.grey),
+                        ),
                       ),
                     ],
                   ),

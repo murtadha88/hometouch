@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
+import 'package:hometouch/Common%20Pages/chat_page.dart';
 import 'package:hometouch/Customer%20View/product_details_page.dart';
 import 'package:hometouch/Customer%20View/review_page.dart';
 
 class FoodMenuPage extends StatefulWidget {
   final String vendorId;
 
-  const FoodMenuPage({required this.vendorId, Key? key}) : super(key: key);
+  const FoodMenuPage({required this.vendorId, super.key});
 
   @override
   State<FoodMenuPage> createState() => _FoodMenuPageState();
@@ -145,7 +146,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     double imageHeight = screenHeight * 0.135;
 
     if (image == null || image.isEmpty) {
-      return Container(
+      return SizedBox(
         width: imageWidth,
         height: imageHeight,
         child: Image.asset(
@@ -158,7 +159,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     try {
       Uri.parse(image);
 
-      return Container(
+      return SizedBox(
         width: imageWidth,
         height: imageHeight,
         child: Image.network(
@@ -173,7 +174,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
         ),
       );
     } catch (e) {
-      return Container(
+      return SizedBox(
         width: imageWidth,
         height: imageHeight,
         child: Image.asset(
@@ -411,7 +412,59 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () async {
+          if (customerId == null) return;
+
+          QuerySnapshot chatQuery = await FirebaseFirestore.instance
+              .collection("chat")
+              .where("participants", arrayContains: customerId)
+              .get();
+
+          String? existingChatId;
+
+          for (var doc in chatQuery.docs) {
+            List<dynamic> participants = doc["participants"];
+            if (participants.contains(widget.vendorId)) {
+              existingChatId = doc.id;
+              break;
+            }
+          }
+
+          if (existingChatId != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatPage(
+                  chatId: existingChatId!,
+                  currentUserId: customerId!,
+                ),
+              ),
+            );
+          } else {
+            DocumentReference newChatRef =
+                FirebaseFirestore.instance.collection("chat").doc();
+
+            await newChatRef.set({
+              "Last_Message": "",
+              "Last_Message_Time": FieldValue.serverTimestamp(),
+              "Seen": false,
+              "Unread_Count": 0,
+              "User1": customerId,
+              "User2": widget.vendorId,
+              "participants": [customerId, widget.vendorId],
+            });
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatPage(
+                  chatId: newChatRef.id,
+                  currentUserId: customerId!,
+                ),
+              ),
+            );
+          }
+        },
         backgroundColor: const Color(0xFFBF0000),
         child: const Icon(Icons.message, color: Colors.white),
       ),
@@ -478,7 +531,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                   children: [
                                     const Icon(
                                       Icons.delivery_dining,
-                                      color: const Color(0xFFBF0000),
+                                      color: Color(0xFFBF0000),
                                       size: 16,
                                     ),
                                     SizedBox(width: screenWidth * 0.01),

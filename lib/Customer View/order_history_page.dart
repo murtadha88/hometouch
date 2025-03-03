@@ -55,7 +55,7 @@ class _OrdersPageState extends State<OrdersPage>
   List<Map<String, dynamic>> ongoingOrders = [];
   List<Map<String, dynamic>> historyOrders = [];
   bool isLoading = true;
-  int _selectedIndex = 3;
+  final int _selectedIndex = 3;
 
   @override
   void initState() {
@@ -67,30 +67,24 @@ class _OrdersPageState extends State<OrdersPage>
   Future<void> _fetchOrders() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("❌ No user logged in");
       return;
     }
 
     try {
-      print("🔍 Fetching orders for Customer_ID: ${user.uid}");
-
       QuerySnapshot orderSnapshot = await FirebaseFirestore.instance
           .collection('order')
           .where("Customer_ID", isEqualTo: user.uid)
           .orderBy("Order_Date", descending: true)
           .get();
 
-      if (orderSnapshot.docs.isEmpty) {
-        print("⚠️ No orders found for user: ${user.uid}");
-      } else {
-        print("✅ Found ${orderSnapshot.docs.length} orders");
-      }
-
       List<Map<String, dynamic>> ongoing = [];
       List<Map<String, dynamic>> history = [];
 
       for (var doc in orderSnapshot.docs) {
         var order = doc.data() as Map<String, dynamic>;
+
+        if (order["Accepted"] == null) continue;
+
         order["orderId"] = doc.id;
 
         String vendorId = order["Vendor_ID"];
@@ -122,7 +116,7 @@ class _OrdersPageState extends State<OrdersPage>
         isLoading = false;
       });
     } catch (e) {
-      print("❌ Error fetching orders: $e");
+      print("Error fetching orders: $e");
       setState(() => isLoading = false);
     }
   }
@@ -139,7 +133,7 @@ class _OrdersPageState extends State<OrdersPage>
         const SnackBar(content: Text("Order cancelled successfully!")),
       );
     } catch (e) {
-      print("❌ Error cancelling order: $e");
+      print("Error cancelling order: $e");
     }
   }
 
@@ -174,7 +168,7 @@ class _OrdersPageState extends State<OrdersPage>
         MaterialPageRoute(builder: (context) => const CartPage()),
       );
     } catch (e) {
-      print("❌ Error reordering items: $e");
+      print("Error reordering items: $e");
     }
   }
 
@@ -469,7 +463,7 @@ class _OrdersPageState extends State<OrdersPage>
           ],
         ),
         bottomNavigationBar: BottomNavBar(selectedIndex: 3),
-        floatingActionButton: Container(
+        floatingActionButton: SizedBox(
           height: 58,
           width: 58,
           child: FloatingActionButton(

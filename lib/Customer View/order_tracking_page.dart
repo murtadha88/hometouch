@@ -2,14 +2,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:hometouch/Common%20Pages/chat_page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 const Color primaryRed = Color(0xFFBF0000);
 
 class OrderTrackingPage extends StatefulWidget {
   final String orderId;
 
-  const OrderTrackingPage({Key? key, required this.orderId}) : super(key: key);
+  const OrderTrackingPage({super.key, required this.orderId});
 
   @override
   _OrderTrackingPageState createState() => _OrderTrackingPageState();
@@ -20,7 +22,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   Map<String, dynamic>? orderData;
   Map<String, dynamic>? driverData;
   bool isLoading = true;
-  Set<Marker> _markers = {};
+  final Set<Marker> _markers = {};
 
   String driverName = "Loading...";
   String driverPhone = "Loading...";
@@ -166,6 +168,71 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         ),
       );
     });
+  }
+
+  Future<void> _handleChatWithDriver() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || driverData == null) return;
+
+    String customerId = user.uid;
+    String driverId = orderData?["Driver_ID"] ?? "";
+
+    if (driverId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Driver not assigned yet.")),
+      );
+      return;
+    }
+
+    QuerySnapshot chatQuery = await FirebaseFirestore.instance
+        .collection("chat")
+        .where("participants", arrayContains: customerId)
+        .get();
+
+    String? existingChatId;
+
+    for (var doc in chatQuery.docs) {
+      List<dynamic> participants = doc["participants"];
+      if (participants.contains(driverId)) {
+        existingChatId = doc.id;
+        break;
+      }
+    }
+
+    if (existingChatId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatPage(
+            chatId: existingChatId!,
+            currentUserId: customerId,
+          ),
+        ),
+      );
+    } else {
+      DocumentReference newChatRef =
+          FirebaseFirestore.instance.collection("chat").doc();
+
+      await newChatRef.set({
+        "Last_Message": "",
+        "Last_Message_Time": FieldValue.serverTimestamp(),
+        "Seen": false,
+        "Unread_Count": 0,
+        "User1": customerId,
+        "User2": driverId,
+        "participants": [customerId, driverId],
+      });
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatPage(
+            chatId: newChatRef.id,
+            currentUserId: customerId,
+          ),
+        ),
+      );
+    }
   }
 
 //   void updateDriverLocation() async {
@@ -393,7 +460,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               size: screenWidth * 0.06,
             ),
           ),
-          onPressed: () {},
+          onPressed: _handleChatWithDriver,
         ),
         IconButton(
           icon: CircleAvatar(

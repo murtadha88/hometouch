@@ -6,14 +6,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/login_page.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
+import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
 import 'package:hometouch/Customer%20View/favorite_page.dart';
 import 'package:hometouch/Customer%20View/profile_page.dart';
-import 'package:hometouch/Customer%20View/setting_page.dart';
+import 'package:hometouch/Common%20Pages/setting_page.dart';
 import 'package:hometouch/Customer%20View/rewards_page.dart';
 import 'package:hometouch/Customer%20View/subscription_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class AccountPage extends StatefulWidget {
   final bool isFromNavBar;
@@ -29,9 +31,10 @@ class _AccountPageState extends State<AccountPage> {
   String? userPhotoUrl;
   String userName = 'Loading...';
   String userEmail = 'Loading...';
+  String userId = "";
   int loyaltyPoints = 0;
   bool isSubscribed = false;
-  int _selectedIndex = 4;
+  final int _selectedIndex = 4;
 
   @override
   void initState() {
@@ -43,6 +46,7 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _getUserInfo() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      userId = user.uid;
       final docSnapshot = await FirebaseFirestore.instance
           .collection('Customer')
           .doc(user.uid)
@@ -79,45 +83,46 @@ class _AccountPageState extends State<AccountPage> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-    if (pickedFile != null) {
-      File file = File(pickedFile.path);
+    if (pickedFile == null) return;
 
-      int fileSize = await file.length();
-      if (fileSize > 1048576) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Image is too large. Please select a smaller image.',
-              style: TextStyle(color: Colors.white),
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-            margin: EdgeInsets.only(
-              bottom: 16,
-              left: 16,
-              right: 16,
-            ),
-          ),
-        );
+    File file = File(pickedFile.path);
 
-        return;
-      }
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse("https://api.imgur.com/3/upload"),
+      );
 
-      List<int> imageBytes = await file.readAsBytes();
-      String base64String = base64Encode(imageBytes);
+      request.headers['Authorization'] = 'Client-ID ca25aec45d48f73';
+      request.files.add(await http.MultipartFile.fromPath('image', file.path));
 
-      try {
+      var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+      var jsonResponse = jsonDecode(responseData);
+
+      if (jsonResponse['success'] == true) {
+        String imageUrl = jsonResponse['data']['link'];
+
+        // Save Imgur URL to Firestore
         await FirebaseFirestore.instance
             .collection('Customer')
             .doc(FirebaseAuth.instance.currentUser!.uid)
-            .update({'Photo': base64String});
+            .update({'Photo': imageUrl});
 
         setState(() {
-          userPhotoUrl = base64String;
+          userPhotoUrl = imageUrl;
         });
-      } catch (e) {
-        print('Error uploading photo: $e');
+      } else {
+        throw Exception("Failed to upload image");
       }
+    } catch (e) {
+      print("Error uploading image: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to upload image. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -196,18 +201,13 @@ class _AccountPageState extends State<AccountPage> {
                     Icons.person,
                     screenWidth,
                     screenHeight,
-                    onTap: () async {
-                      final updatedUserInfo = await Navigator.push(
+                    onTap: () {
+                      Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => ProfilePage()),
-                      );
-
-                      if (updatedUserInfo != null) {
-                        setState(() {
-                          userName = updatedUserInfo['name'];
-                          userEmail = updatedUserInfo['email'];
-                        });
-                      }
+                      ).then((_) {
+                        _getUserInfo();
+                      });
                     },
                   ),
                   _buildMenuItem(
@@ -293,7 +293,10 @@ class _AccountPageState extends State<AccountPage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => SettingsPage()),
+                        MaterialPageRoute(
+                            builder: (context) => ChatListPage(
+                                  currentUserId: userId,
+                                )),
                       );
                     },
                   ),
@@ -316,7 +319,7 @@ class _AccountPageState extends State<AccountPage> {
           ],
         ),
         bottomNavigationBar: BottomNavBar(selectedIndex: 4),
-        floatingActionButton: Container(
+        floatingActionButton: SizedBox(
           height: 58,
           width: 58,
           child: FloatingActionButton(
@@ -353,7 +356,7 @@ class _AccountPageState extends State<AccountPage> {
                 radius: screenWidth * 0.2,
                 backgroundColor: Colors.grey[300],
                 backgroundImage: userPhotoUrl != null
-                    ? MemoryImage(base64Decode(userPhotoUrl!))
+                    ? NetworkImage(userPhotoUrl!)
                     : NetworkImage(
                         'https://i.imgur.com/OtAn7hT.jpeg',
                       ),

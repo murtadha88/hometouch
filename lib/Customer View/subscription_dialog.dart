@@ -7,8 +7,9 @@ class SubscriptionDialog extends StatefulWidget {
   final double screenHeight;
   final bool isSubscribed;
 
-  SubscriptionDialog(
-      {required this.screenWidth,
+  const SubscriptionDialog(
+      {super.key,
+      required this.screenWidth,
       required this.screenHeight,
       required this.isSubscribed});
 

@@ -24,7 +24,7 @@ class _CartPageState extends State<CartPage> {
   final double taxPercentage = 10 / 100;
   List<Map<String, dynamic>> cartItems = [];
   bool isLoading = true;
-  int _selectedIndex = 2;
+  final int _selectedIndex = 2;
 
   @override
   void initState() {
@@ -306,7 +306,7 @@ class _CartPageState extends State<CartPage> {
                                                         screenWidth * 0.035,
                                                     color: Colors.black54),
                                               );
-                                            }).toList(),
+                                            }),
                                           SizedBox(
                                               height: screenHeight * 0.005),
                                           Text(
