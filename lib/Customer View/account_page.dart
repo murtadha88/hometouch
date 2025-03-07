@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hometouch/Common%20Pages/login_page.dart';
+import 'package:hometouch/Common%20Pages/role_page.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
@@ -532,7 +532,8 @@ class _AccountPageState extends State<AccountPage> {
                           Navigator.pushAndRemoveUntil(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const LoginPage()),
+                                builder: (context) =>
+                                    const RoleSelectionPage()),
                             (route) => false,
                           );
                         }

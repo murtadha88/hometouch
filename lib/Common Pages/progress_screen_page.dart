@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:hometouch/Common%20Pages/role_page.dart';
 import 'package:hometouch/Customer%20View/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome_page.dart';
-import 'login_page.dart';
 import 'network_error_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -108,7 +108,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
+          MaterialPageRoute(builder: (context) => const RoleSelectionPage()),
         );
       }
     } else {

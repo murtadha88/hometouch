@@ -54,6 +54,9 @@ dependencies:
   flutter_background_service: ^5.1.0
   flutter_braintree: ^4.0.0
   timeago: ^3.2.2
+  pdf_render: ^1.4.12
+  path_provider: ^2.1.5
+  file_picker: ^9.0.2
 
 dev_dependencies:
   flutter_test:
@@ -96,7 +99,9 @@ flutter:
     - assets/placeholder_image.jpg
     - assets/customer_pin.png
     - assets/car_pin.png
-
+    - assets/customer.png
+    - assets/homeFoodTruck.png
+    - assets/driver.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

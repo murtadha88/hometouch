@@ -4,12 +4,16 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/reset_password_page.dart';
-import '../Customer View/sign_up_page.dart';
+import 'package:hometouch/Driver%20View/driver_dashboard_page.dart';
+import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
+import 'sign_up_page.dart';
 import '../Customer View/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final String role;
+
+  const LoginPage({super.key, this.role = 'customer'});
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -19,16 +23,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  bool rememberMe = false;
   bool _obscureText = true;
   bool emailError = false;
   bool passwordError = false;
-
-  void toggleRememberMe() {
-    setState(() {
-      rememberMe = !rememberMe;
-    });
-  }
 
   void _togglePasswordVisibility() {
     setState(() {
@@ -38,10 +35,39 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> loginUserWithEmailAndPassword() async {
     try {
-      await _auth.signInWithEmailAndPassword(
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+      User? user = userCredential.user;
+
+      if (widget.role == 'vendor') {
+        QuerySnapshot qs = await FirebaseFirestore.instance
+            .collection('vendor')
+            .where('Email', isEqualTo: user!.email)
+            .get();
+        if (qs.docs.isEmpty) {
+          await _auth.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text("Your email is not registered as a vendor")),
+          );
+          return;
+        }
+      } else if (widget.role == 'driver') {
+        QuerySnapshot qs = await FirebaseFirestore.instance
+            .collection('driver')
+            .where('Email', isEqualTo: user!.email)
+            .get();
+        if (qs.docs.isEmpty) {
+          await _auth.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text("Your email is not registered as a driver")),
+          );
+          return;
+        }
+      }
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
@@ -49,10 +75,22 @@ class _LoginPageState extends State<LoginPage> {
       _showSuccessDialog();
 
       Future.delayed(const Duration(seconds: 3), () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeTouchScreen()),
-        );
+        if (widget.role == 'vendor') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const VendorDashboard()),
+          );
+        } else if (widget.role == 'driver') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DriverDashboard()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeTouchScreen()),
+          );
+        }
       });
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -80,6 +118,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> signInWithGoogle() async {
+    // Only allow Google sign in for customers.
+    if (widget.role != 'customer') return;
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
@@ -118,6 +158,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> signInWithFacebook() async {
+    // Only allow Facebook sign in for customers.
+    if (widget.role != 'customer') return;
     try {
       final LoginResult loginResult = await FacebookAuth.instance.login();
       if (loginResult.status != LoginStatus.success) return;
@@ -153,16 +195,18 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _saveUserToFirestore(User? user) async {
     if (user == null) return;
 
-    final userRef =
-        FirebaseFirestore.instance.collection('Customer').doc(user.uid);
-    await userRef.set({
-      'Customer_ID': user.uid,
-      'Name': user.displayName ?? 'No Name',
-      'Email': user.email ?? 'No Email',
-      'Phone': user.phoneNumber,
-      'Photo': null,
-      "Loyalty_Points": 0
-    });
+    if (widget.role == 'customer') {
+      final userRef =
+          FirebaseFirestore.instance.collection('Customer').doc(user.uid);
+      await userRef.set({
+        'Customer_ID': user.uid,
+        'Name': user.displayName ?? 'No Name',
+        'Email': user.email ?? 'No Email',
+        'Phone': user.phoneNumber,
+        'Photo': null,
+        "Loyalty_Points": 0
+      });
+    }
   }
 
   void _showSuccessDialog() {
@@ -237,7 +281,16 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(height: screenHeight * 0.12),
+              SizedBox(height: screenHeight * 0.08),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context),
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.04),
               Text(
                 'Login',
                 style: TextStyle(
@@ -317,76 +370,114 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
               SizedBox(height: screenHeight * 0.03),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Don't have an account? ",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: screenWidth * 0.035,
-                      color: Colors.black,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CreateAccountPage(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'SIGN UP',
+              // Sign-up or Join Us text with role passed to sign up page.
+              if (widget.role == 'customer') ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: screenWidth * 0.035,
-                        color: const Color(0xFFBF0000),
-                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.05),
-              Row(
-                children: [
-                  Expanded(
-                    child: Divider(
-                      thickness: 1,
-                      color: Colors.black,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CreateAccountPage(role: widget.role),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'SIGN UP',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: screenWidth * 0.035,
+                          color: const Color(0xFFBF0000),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
-                    child: Text(
-                      'OR',
+                  ],
+                ),
+                SizedBox(height: screenHeight * 0.05),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        thickness: 1,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: screenWidth * 0.03,
+                          color: const Color(0xFFBF0000),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        thickness: 1,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: screenHeight * 0.03),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: screenWidth * 0.05,
+                  children: [
+                    _buildSocialIcon('assets/google.png', screenWidth),
+                    _buildSocialIcon('assets/facebock.png', screenWidth),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: screenWidth * 0.03,
-                        color: const Color(0xFFBF0000),
+                        fontSize: screenWidth * 0.035,
+                        color: Colors.black,
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      thickness: 1,
-                      color: Colors.black,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CreateAccountPage(role: widget.role),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'JOIN US',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: screenWidth * 0.035,
+                          color: const Color(0xFFBF0000),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.03),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: screenWidth * 0.05,
-                children: [
-                  _buildSocialIcon('assets/google.png', screenWidth),
-                  _buildSocialIcon('assets/facebock.png', screenWidth),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

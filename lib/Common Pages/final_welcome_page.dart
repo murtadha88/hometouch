@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import 'package:hometouch/Common%20Pages/role_page.dart';
 
 class FinalPage extends StatelessWidget {
   const FinalPage({super.key});
@@ -55,7 +55,8 @@ class FinalPage extends StatelessWidget {
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const RoleSelectionPage()),
                 );
               },
               style: ElevatedButton.styleFrom(
