@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hometouch/Admin%20View/admin_requests_page.dart';
 import 'package:hometouch/Common%20Pages/reset_password_page.dart';
 import 'package:hometouch/Driver%20View/driver_dashboard_page.dart';
 import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
@@ -41,10 +42,22 @@ class _LoginPageState extends State<LoginPage> {
       );
       User? user = userCredential.user;
 
+      QuerySnapshot adminSnapshot = await FirebaseFirestore.instance
+          .collection('admin')
+          .where('Email', isEqualTo: user!.email)
+          .get();
+      if (adminSnapshot.docs.isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminRequestsPage()),
+        );
+        return;
+      }
+
       if (widget.role == 'vendor') {
         QuerySnapshot qs = await FirebaseFirestore.instance
             .collection('vendor')
-            .where('Email', isEqualTo: user!.email)
+            .where('Email', isEqualTo: user.email)
             .get();
         if (qs.docs.isEmpty) {
           await _auth.signOut();
@@ -57,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
       } else if (widget.role == 'driver') {
         QuerySnapshot qs = await FirebaseFirestore.instance
             .collection('driver')
-            .where('Email', isEqualTo: user!.email)
+            .where('Email', isEqualTo: user.email)
             .get();
         if (qs.docs.isEmpty) {
           await _auth.signOut();
@@ -118,7 +131,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> signInWithGoogle() async {
-    // Only allow Google sign in for customers.
     if (widget.role != 'customer') return;
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
@@ -158,7 +170,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> signInWithFacebook() async {
-    // Only allow Facebook sign in for customers.
     if (widget.role != 'customer') return;
     try {
       final LoginResult loginResult = await FacebookAuth.instance.login();
@@ -370,7 +381,6 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
               SizedBox(height: screenHeight * 0.03),
-              // Sign-up or Join Us text with role passed to sign up page.
               if (widget.role == 'customer') ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

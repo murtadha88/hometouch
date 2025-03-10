@@ -57,6 +57,7 @@ dependencies:
   pdf_render: ^1.4.12
   path_provider: ^2.1.5
   file_picker: ^9.0.2
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
