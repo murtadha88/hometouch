@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hometouch/Common%20Pages/role_page.dart';
 import 'third_welcome_page.dart';
 
 class FoodTruckPage extends StatelessWidget {
@@ -79,7 +80,14 @@ class FoodTruckPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RoleSelectionPage(),
+                      ),
+                    );
+                  },
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(

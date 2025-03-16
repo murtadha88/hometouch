@@ -58,6 +58,8 @@ dependencies:
   path_provider: ^2.1.5
   file_picker: ^9.0.2
   geocoding: ^3.0.0
+  syncfusion_flutter_charts: ^28.2.9
+  syncfusion_flutter_gauges: ^28.2.9
 
 dev_dependencies:
   flutter_test:

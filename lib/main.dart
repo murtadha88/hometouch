@@ -25,10 +25,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey, // ✅ Assign navigator key
+      navigatorKey: navigatorKey,
       home: const ProgressScreen(),
       builder: (context, child) {
-        NetworkManager().startListening(); // ✅ Start monitoring globally
+        NetworkManager().startListening();
         return child!;
       },
     );

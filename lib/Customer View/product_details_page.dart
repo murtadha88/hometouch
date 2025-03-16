@@ -562,6 +562,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
               ),
             ),
+            SizedBox(
+              height: screenHeight * 0.03,
+            )
           ],
         ),
       ),

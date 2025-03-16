@@ -405,10 +405,7 @@ class _OrdersPageState extends State<OrdersPage>
               ? const SizedBox()
               : Padding(
                   padding: EdgeInsets.only(
-                    top: screenHeight * 0.03,
-                    left: screenWidth * 0.02,
-                    right: screenWidth * 0.02,
-                  ),
+                      top: screenHeight * 0.025, left: screenWidth * 0.02),
                   child: GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
@@ -419,9 +416,10 @@ class _OrdersPageState extends State<OrdersPage>
                         color: const Color(0xFFBF0000),
                       ),
                       alignment: Alignment.center,
-                      padding: EdgeInsets.all(screenHeight * 0.01),
                       child: Padding(
-                        padding: EdgeInsets.only(left: screenWidth * 0.02),
+                        padding: EdgeInsets.only(
+                            top: screenHeight * 0.001,
+                            left: screenWidth * 0.02),
                         child: Icon(
                           Icons.arrow_back_ios,
                           color: Colors.white,

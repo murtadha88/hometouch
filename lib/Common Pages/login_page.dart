@@ -42,11 +42,14 @@ class _LoginPageState extends State<LoginPage> {
       );
       User? user = userCredential.user;
 
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
       QuerySnapshot adminSnapshot = await FirebaseFirestore.instance
           .collection('admin')
           .where('Email', isEqualTo: user!.email)
           .get();
       if (adminSnapshot.docs.isNotEmpty) {
+        await prefs.setString('role', 'admin');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const AdminRequestsPage()),
@@ -67,6 +70,7 @@ class _LoginPageState extends State<LoginPage> {
           );
           return;
         }
+        await prefs.setString('role', 'vendor');
       } else if (widget.role == 'driver') {
         QuerySnapshot qs = await FirebaseFirestore.instance
             .collection('driver')
@@ -80,20 +84,23 @@ class _LoginPageState extends State<LoginPage> {
           );
           return;
         }
+        await prefs.setString('role', 'driver');
+      } else {
+        await prefs.setString('role', 'customer');
       }
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
 
       _showSuccessDialog();
 
       Future.delayed(const Duration(seconds: 3), () {
-        if (widget.role == 'vendor') {
+        String role = prefs.getString('role') ?? 'customer';
+        if (role == 'vendor') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const VendorDashboard()),
           );
-        } else if (widget.role == 'driver') {
+        } else if (role == 'driver') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const DriverDashboard()),

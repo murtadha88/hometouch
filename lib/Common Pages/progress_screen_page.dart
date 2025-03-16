@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:hometouch/Admin%20View/admin_requests_page.dart';
 import 'package:hometouch/Common%20Pages/role_page.dart';
 import 'package:hometouch/Customer%20View/home_page.dart';
+import 'package:hometouch/Driver%20View/driver_dashboard_page.dart';
+import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome_page.dart';
 import 'network_error_page.dart';
@@ -89,6 +92,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isFirstTime = prefs.getBool('isFirstTime') ?? true;
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    String? role = prefs.getString('role');
     User? user = FirebaseAuth.instance.currentUser;
 
     setState(() {
@@ -112,10 +116,25 @@ class _ProgressScreenState extends State<ProgressScreen> {
         );
       }
     } else {
-      if (mounted) {
+      if (role == 'vendor') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeTouchScreen()),
+          MaterialPageRoute(builder: (context) => const VendorDashboard()),
+        );
+      } else if (role == 'driver') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DriverDashboard()),
+        );
+      } else if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminRequestsPage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeTouchScreen()),
         );
       }
     }

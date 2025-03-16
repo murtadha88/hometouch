@@ -43,6 +43,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
   String hitText = "";
   Timer? timer;
 
+  double vendorRevenue = 0;
+  double homeTouchCut = 0;
+  double roundedVendorRevenue = 0;
+
   @override
   void initState() {
     super.initState();
@@ -125,12 +129,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ? widget.cartItems.first["vendorId"].toString()
           : "Unknown";
 
+      homeTouchCut = widget.subtotal * 0.15;
+      vendorRevenue = widget.subtotal - homeTouchCut;
+      roundedVendorRevenue = double.parse(vendorRevenue.toStringAsFixed(3));
       double roundedTotal = double.parse(widget.total.toStringAsFixed(3));
       double roundedSubTotal = double.parse(widget.subtotal.toStringAsFixed(3));
       double roundedTax = double.parse(widget.tax.toStringAsFixed(3));
 
       DocumentReference orderRef =
-          await FirebaseFirestore.instance.collection('order').add({
+          FirebaseFirestore.instance.collection('order').doc("#$orderNumber");
+
+      await orderRef.set({
         "Customer_ID": user.uid,
         "Order_Number": "#$orderNumber",
         "Driver_ID": "eJXF01SPCo4QK3UApmpR",
@@ -161,17 +170,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           "Apartment": widget.selectedAddress.apartment,
           "Office": widget.selectedAddress.office,
           "Company_Name": widget.selectedAddress.companyName,
-          "Location": widget.selectedAddress.location
+          "Location": widget.selectedAddress.location,
         }
       });
 
-      _waitForOrderAcceptance(orderRef.id);
+      _waitForOrderAcceptance(orderRef.id, vendorId);
     } catch (e) {
       print("Error placing order: $e");
     }
   }
 
-  Future<void> _waitForOrderAcceptance(String orderId) async {
+  Future<void> _waitForOrderAcceptance(String orderId, String vendorId) async {
     int secondsRemaining = 300;
 
     showDialog(
@@ -213,6 +222,41 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     .update({
                   'Loyalty_Points': FieldValue.increment(100),
                 });
+
+                final vendorRef = FirebaseFirestore.instance
+                    .collection('vendor')
+                    .doc(vendorId);
+                await vendorRef.update({
+                  'Total_Orders': FieldValue.increment(1),
+                  'Total_Revenue': FieldValue.increment(roundedVendorRevenue),
+                });
+
+                final now = DateTime.now();
+                final firstDayOfMonth = DateTime(now.year, now.month, 1);
+                final monthlySalesRef = vendorRef
+                    .collection('Monthly_Sales')
+                    .doc(DateFormat('yyyy-MM').format(firstDayOfMonth));
+
+                await monthlySalesRef.set({
+                  'Orders': FieldValue.increment(1),
+                  'Sales': FieldValue.increment(roundedVendorRevenue),
+                  'Month': now.month.toString(),
+                  'Year': now.year.toString(),
+                  'Date': Timestamp.fromDate(firstDayOfMonth),
+                }, SetOptions(merge: true));
+
+                final today = DateTime(now.year, now.month, now.day);
+                final salesDataRef = vendorRef
+                    .collection('Sales_Data')
+                    .doc(DateFormat('yyyy-MM-dd').format(today));
+
+                await salesDataRef.set({
+                  'Orders': FieldValue.increment(1),
+                  'Sales': FieldValue.increment(roundedVendorRevenue),
+                  'Day': now.day.toString(),
+                  'Label': DateFormat('E').format(now),
+                  'Date': Timestamp.fromDate(today),
+                }, SetOptions(merge: true));
 
                 _showSuccessDialog();
 
@@ -271,7 +315,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 50),
+                      padding: const EdgeInsets.only(bottom: 70),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -335,7 +379,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 50),
+                      padding: const EdgeInsets.only(top: 75),
                       child: Text(
                         "Waiting for vendor to accept your order...",
                         textAlign: TextAlign.center,
