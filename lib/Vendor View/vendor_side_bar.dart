@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hometouch/Vendor%20View/orders_management_page.dart';
+import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hometouch/Common%20Pages/role_page.dart';
 
@@ -150,7 +152,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return SizedBox(
-      width: screenWidth * 0.7, // Match drawer width
+      width: screenWidth * 0.7,
       child: Drawer(
         child: Stack(
           children: [
@@ -159,7 +161,6 @@ class _DrawerScreenState extends State<DrawerScreen> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // Header Section
                   Container(
                     height: screenHeight * 0.181,
                     decoration: const BoxDecoration(
@@ -191,7 +192,6 @@ class _DrawerScreenState extends State<DrawerScreen> {
                       ),
                     ),
                   ),
-
                   Padding(
                     padding: EdgeInsets.only(top: screenHeight * 0.06),
                     child: Column(
@@ -203,7 +203,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Dashboard',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(0),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VendorDashboard()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -212,7 +218,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Orders',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(1),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -221,7 +233,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Menu Management',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(2),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -230,7 +248,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Delivery Management',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(3),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -239,7 +263,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Promotions & Discounts',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(4),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -248,7 +278,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Messages',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(5),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -257,7 +293,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Settings',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(6),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -266,7 +308,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Reviews and Rating',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(7),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildDrawerItem(
                           context,
@@ -275,7 +323,13 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           label: 'Poll Management',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
-                          onTap: () => widget.onItemTapped(8),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => OrderManagementPage()),
+                            );
+                          },
                         ),
                         _buildSignOutButton(context, screenWidth, screenHeight),
                       ],
@@ -336,7 +390,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
               ),
               selected: widget.selectedIndex == index,
               selectedTileColor: const Color(0xFFBF0000),
-              onTap: onTap,
+              onTap: () {
+                if (onTap != null) {
+                  onTap();
+                  widget.onItemTapped(index);
+                } else {
+                  Navigator.pop(context);
+                }
+              },
             ),
           ],
         ),

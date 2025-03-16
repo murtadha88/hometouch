@@ -103,7 +103,6 @@ class _VendorDashboardState extends State<VendorDashboard> {
             .orderBy('Date', descending: true)
             .get();
 
-        // Fetch monthly sales data
         QuerySnapshot monthlySnapshot = await FirebaseFirestore.instance
             .collection('vendor')
             .doc(vendorId)

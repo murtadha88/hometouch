@@ -28,6 +28,23 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _fetchChatParticipants();
+
+    FirebaseFirestore.instance.collection("chat").doc(widget.chatId).update({
+      "Seen": true,
+      "Unread_Count": 0,
+    });
+
+    FirebaseFirestore.instance
+        .collection("chat")
+        .doc(widget.chatId)
+        .collection("message")
+        .where("Sender_ID", isNotEqualTo: widget.currentUserId)
+        .get()
+        .then((querySnapshot) {
+      for (var doc in querySnapshot.docs) {
+        doc.reference.update({"Seen": true});
+      }
+    });
   }
 
   @override
@@ -106,11 +123,18 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     String message = _messageController.text.trim();
     if (message.isEmpty) return;
 
-    FirebaseFirestore.instance
+    DocumentSnapshot chatSnapshot = await FirebaseFirestore.instance
+        .collection("chat")
+        .doc(widget.chatId)
+        .get();
+
+    if (!chatSnapshot.exists) return;
+
+    await FirebaseFirestore.instance
         .collection("chat")
         .doc(widget.chatId)
         .collection("message")
@@ -121,9 +145,15 @@ class _ChatPageState extends State<ChatPage> {
       "Seen": false,
     });
 
-    FirebaseFirestore.instance.collection("chat").doc(widget.chatId).update({
+    await FirebaseFirestore.instance
+        .collection("chat")
+        .doc(widget.chatId)
+        .update({
       "Last_Message": message,
       "Last_Message_Time": FieldValue.serverTimestamp(),
+      "Seen": false,
+      "Unread_Count": FieldValue.increment(1),
+      "Last_Sender_ID": widget.currentUserId,
     });
 
     _messageController.clear();

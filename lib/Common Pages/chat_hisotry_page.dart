@@ -108,7 +108,6 @@ class ChatListPage extends StatelessWidget {
               var chatData =
                   snapshot.data!.docs[index].data() as Map<String, dynamic>;
 
-              // Extract chat details
               String chatId = snapshot.data!.docs[index].id;
               String lastMessage =
                   chatData["Last_Message"] ?? "No messages yet";
@@ -149,7 +148,6 @@ class ChatListPage extends StatelessWidget {
                         ),
                       );
 
-                      // Mark messages as seen when opening the chat
                       FirebaseFirestore.instance
                           .collection("chat")
                           .doc(chatId)
@@ -169,13 +167,11 @@ class ChatListPage extends StatelessWidget {
                         padding: EdgeInsets.all(screenWidth * 0.04),
                         child: Row(
                           children: [
-                            // Profile Picture
                             CircleAvatar(
                               backgroundImage: NetworkImage(otherUserImage),
                               radius: screenWidth * 0.08,
                             ),
                             SizedBox(width: screenWidth * 0.03),
-                            // Name and Message
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +194,6 @@ class ChatListPage extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            // Time and Status indicator
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [

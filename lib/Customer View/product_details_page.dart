@@ -394,11 +394,24 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               height: screenHeight * 0.25,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                image: DecorationImage(
-                  image: NetworkImage(productData?["Image"] ?? ""),
-                  fit: BoxFit.cover,
-                ),
               ),
+              child: (productData?['Image'] is String &&
+                      (productData?['Image'] as String).isNotEmpty)
+                  ? Image.network(
+                      productData?['Image'] as String,
+                      width: double.infinity,
+                      height: screenHeight * 0.25,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Center(
+                        child:
+                            Icon(Icons.fastfood, size: 100, color: Colors.grey),
+                      ),
+                    )
+                  : const Center(
+                      child:
+                          Icon(Icons.fastfood, size: 100, color: Colors.grey),
+                    ),
             ),
             SizedBox(height: screenHeight * 0.01),
             Row(
