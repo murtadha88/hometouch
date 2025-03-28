@@ -232,7 +232,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
             Text(
               "Dashboard",
               style: TextStyle(
-                fontSize: screenWidth * 0.05,
+                fontSize: screenWidth * 0.06,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -240,6 +240,7 @@ class _VendorDashboardState extends State<VendorDashboard> {
             SizedBox(height: screenHeight * 0.01),
           ],
         ),
+        centerTitle: true,
         leading: Builder(
           builder: (context) => Padding(
             padding: EdgeInsets.only(bottom: screenHeight * 0.008),

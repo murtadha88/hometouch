@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../Customer View/pravicy_policy_page.dart';
 import '../Customer View/term_of_services_page.dart';
-import '../Customer View/about_us_page.dart';
+import 'about_us_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

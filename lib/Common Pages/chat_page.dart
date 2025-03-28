@@ -24,27 +24,14 @@ class _ChatPageState extends State<ChatPage> {
   String receiverPhone = "";
   String senderPhoto = "";
 
+  late final ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _fetchChatParticipants();
-
-    FirebaseFirestore.instance.collection("chat").doc(widget.chatId).update({
-      "Seen": true,
-      "Unread_Count": 0,
-    });
-
-    FirebaseFirestore.instance
-        .collection("chat")
-        .doc(widget.chatId)
-        .collection("message")
-        .where("Sender_ID", isNotEqualTo: widget.currentUserId)
-        .get()
-        .then((querySnapshot) {
-      for (var doc in querySnapshot.docs) {
-        doc.reference.update({"Seen": true});
-      }
-    });
+    _markMessagesAsSeenAndResetUnread();
   }
 
   @override
@@ -52,6 +39,29 @@ class _ChatPageState extends State<ChatPage> {
     _focusNode.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _markMessagesAsSeenAndResetUnread() async {
+    final chatRef =
+        FirebaseFirestore.instance.collection("chat").doc(widget.chatId);
+    final messageRef = chatRef.collection("message");
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    batch.update(chatRef, {
+      "Unread_Counts.${widget.currentUserId}": 0,
+    });
+
+    final unseenMessages = await messageRef
+        .where("Sender_ID", isNotEqualTo: widget.currentUserId)
+        .where("Seen", isEqualTo: false)
+        .get();
+
+    for (var doc in unseenMessages.docs) {
+      batch.update(doc.reference, {"Seen": true});
+    }
+
+    await batch.commit();
   }
 
   Future<void> _fetchChatParticipants() async {
@@ -127,36 +137,53 @@ class _ChatPageState extends State<ChatPage> {
     String message = _messageController.text.trim();
     if (message.isEmpty) return;
 
-    DocumentSnapshot chatSnapshot = await FirebaseFirestore.instance
-        .collection("chat")
-        .doc(widget.chatId)
-        .get();
+    try {
+      DocumentSnapshot chatSnapshot = await FirebaseFirestore.instance
+          .collection("chat")
+          .doc(widget.chatId)
+          .get();
 
-    if (!chatSnapshot.exists) return;
+      if (!chatSnapshot.exists) return;
 
-    await FirebaseFirestore.instance
-        .collection("chat")
-        .doc(widget.chatId)
-        .collection("message")
-        .add({
-      "Sender_ID": widget.currentUserId,
-      "Text": message,
-      "Time": FieldValue.serverTimestamp(),
-      "Seen": false,
-    });
+      Map<String, dynamic> chatData =
+          chatSnapshot.data() as Map<String, dynamic>;
 
-    await FirebaseFirestore.instance
-        .collection("chat")
-        .doc(widget.chatId)
-        .update({
-      "Last_Message": message,
-      "Last_Message_Time": FieldValue.serverTimestamp(),
-      "Seen": false,
-      "Unread_Count": FieldValue.increment(1),
-      "Last_Sender_ID": widget.currentUserId,
-    });
+      Map<String, dynamic> unreadCounts =
+          (chatData["Unread_Counts"] as Map<String, dynamic>?) ?? {};
 
-    _messageController.clear();
+      String receiverId = chatData["User1"] == widget.currentUserId
+          ? chatData["User2"]
+          : chatData["User1"];
+
+      if (!unreadCounts.containsKey(receiverId)) {
+        unreadCounts[receiverId] = 0;
+      }
+
+      await FirebaseFirestore.instance
+          .collection("chat")
+          .doc(widget.chatId)
+          .collection("message")
+          .add({
+        "Sender_ID": widget.currentUserId,
+        "Text": message,
+        "Time": FieldValue.serverTimestamp(),
+        "Seen": false,
+      });
+
+      await FirebaseFirestore.instance
+          .collection("chat")
+          .doc(widget.chatId)
+          .update({
+        "Last_Message": message,
+        "Last_Message_Time": FieldValue.serverTimestamp(),
+        "Unread_Counts.$receiverId": FieldValue.increment(1),
+        "Seen": false,
+      });
+
+      _messageController.clear();
+    } catch (e) {
+      print("Error sending message: $e");
+    }
   }
 
   @override
@@ -227,18 +254,14 @@ class _ChatPageState extends State<ChatPage> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder(
+            child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection("chat")
                   .doc(widget.chatId)
                   .collection("message")
                   .orderBy("Time", descending: false)
                   .snapshots(),
-              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
+              builder: (context, snapshot) {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Text(
@@ -248,12 +271,22 @@ class _ChatPageState extends State<ChatPage> {
                   );
                 }
 
+                final messages = snapshot.data!.docs;
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController
+                        .jumpTo(_scrollController.position.maxScrollExtent);
+                  }
+                });
+
                 return ListView.builder(
+                  controller: _scrollController,
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                  itemCount: snapshot.data!.docs.length,
+                  itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    var message = snapshot.data!.docs[index].data()
-                        as Map<String, dynamic>;
+                    var message =
+                        messages[index].data() as Map<String, dynamic>;
                     bool isMe = message["Sender_ID"] == widget.currentUserId;
 
                     return Row(
@@ -285,7 +318,6 @@ class _ChatPageState extends State<ChatPage> {
                               fontSize: screenWidth * 0.04,
                               color: isMe ? Colors.white : Colors.black,
                             ),
-                            softWrap: true,
                           ),
                         ),
                         SizedBox(width: screenWidth * 0.02),

@@ -113,8 +113,9 @@ class ChatListPage extends StatelessWidget {
                   chatData["Last_Message"] ?? "No messages yet";
               Timestamp? lastMessageTime =
                   chatData["Last_Message_Time"] as Timestamp?;
-              bool seen = chatData["Seen"] ?? false;
-              int unreadCount = chatData["Unread_Count"] ?? 0;
+              int unreadCount = (chatData["Unread_Counts"]
+                      as Map<String, dynamic>)[currentUserId] ??
+                  0;
 
               bool isUser1 = chatData["User1"] == currentUserId;
               String otherUserId =
@@ -129,6 +130,12 @@ class ChatListPage extends StatelessWidget {
                         "Loading...",
                         style: TextStyle(fontSize: screenWidth * 0.045),
                       ),
+                      trailing: unreadCount > 0
+                          ? CircleAvatar(
+                              backgroundColor: primaryRed,
+                              child: Text(unreadCount.toString()),
+                            )
+                          : null,
                     );
                   }
                   String otherUserName =
@@ -152,8 +159,7 @@ class ChatListPage extends StatelessWidget {
                           .collection("chat")
                           .doc(chatId)
                           .update({
-                        "Seen": true,
-                        "Unread_Count": 0,
+                        "Unread_Counts.$currentUserId": 0,
                       });
                     },
                     child: Card(
@@ -206,24 +212,20 @@ class ChatListPage extends StatelessWidget {
                                       color: Colors.black54),
                                 ),
                                 SizedBox(height: screenHeight * 0.005),
-                                seen
-                                    ? Icon(Icons.done_all,
-                                        color: primaryRed,
-                                        size: screenWidth * 0.045)
-                                    : (unreadCount > 0
-                                        ? CircleAvatar(
-                                            radius: screenWidth * 0.04,
-                                            backgroundColor: primaryRed,
-                                            child: Text(
-                                              unreadCount.toString(),
-                                              style: TextStyle(
-                                                fontSize: screenWidth * 0.035,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          )
-                                        : const SizedBox()),
+                                unreadCount > 0
+                                    ? CircleAvatar(
+                                        radius: screenWidth * 0.04,
+                                        backgroundColor: primaryRed,
+                                        child: Text(
+                                          unreadCount.toString(),
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.035,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      )
+                                    : Icon(Icons.done_all, color: Colors.grey),
                               ],
                             ),
                           ],

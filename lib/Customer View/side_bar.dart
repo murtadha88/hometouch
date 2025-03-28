@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:hometouch/Customer%20View/about_us_page.dart';
+import 'package:hometouch/Common%20Pages/about_us_page.dart';
 import 'package:hometouch/Customer%20View/account_page.dart';
 import 'package:hometouch/Customer%20View/faq_page.dart';
 import 'package:hometouch/Customer%20View/favorite_page.dart';

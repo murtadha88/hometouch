@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
+import 'package:hometouch/Vendor%20View/add_discount_page.dart';
+import 'package:hometouch/Vendor%20View/promotions_page.dart';
 import 'package:hometouch/Vendor%20View/orders_management_page.dart';
 import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,6 +27,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
   bool isHelpExpanded = false;
   int? selectedSubItemIndex;
   String? userPhotoUrl;
+  String userId = "";
 
   @override
   void initState() {
@@ -34,9 +38,10 @@ class _DrawerScreenState extends State<DrawerScreen> {
   Future<void> _getUserInfo() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
+      userId = user.uid;
       final docSnapshot = await FirebaseFirestore.instance
           .collection('vendor')
-          .doc(user.uid)
+          .doc(userId)
           .get();
 
       setState(() {
@@ -237,7 +242,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => OrderManagementPage()),
+                                  builder: (context) => AddDiscountPage()),
                             );
                           },
                         ),
@@ -267,7 +272,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => OrderManagementPage()),
+                                  builder: (context) => PromotionsPage()),
                             );
                           },
                         ),
@@ -282,7 +287,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => OrderManagementPage()),
+                                  builder: (context) =>
+                                      ChatListPage(currentUserId: userId)),
                             );
                           },
                         ),
