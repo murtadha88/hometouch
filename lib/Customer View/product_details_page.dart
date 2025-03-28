@@ -414,66 +414,77 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     ),
             ),
             SizedBox(height: screenHeight * 0.01),
+            // Replace the existing Row widget with this code
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      productData?["Name"] ?? "Unknown Product",
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.07,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          children: _buildProductNameSpans(
+                              productData?["Name"] ?? "Unknown Product"),
+                        ),
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.07,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(width: screenWidth * 0.03),
+                      SizedBox(height: screenHeight * 0.01),
+                    ],
+                  ),
+                ),
+                Column(
+                  children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(Icons.star,
-                            color: Color(0xFFBF0000),
-                            size: screenWidth * 0.065),
-                        SizedBox(width: 2),
+                        Icon(
+                          Icons.star,
+                          color: Color(0xFFBF0000),
+                        ),
+                        SizedBox(width: 4),
                         Text(
                           (productData?["Rating"] ?? 0.0).toStringAsFixed(1),
                           style: TextStyle(
                             fontSize: screenWidth * 0.065,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
                           ),
+                        ),
+                        SizedBox(width: screenWidth * 0.03),
+                        IconButton(
+                          icon: CircleAvatar(
+                            backgroundColor: Color(0xFFBF0000),
+                            child: Icon(Icons.rate_review, color: Colors.white),
+                          ),
+                          onPressed: () {
+                            if (productData?["categoryId"] == null) {
+                              print(
+                                  "ERROR: categoryId is required to rate this product.");
+                              return;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReviewPage(
+                                  productId: widget.productId,
+                                  categoryId: productData?["categoryId"],
+                                ),
+                              ),
+                            ).then((_) {
+                              _fetchRecentReviews();
+                              _fetchProductDetails();
+                            });
+                          },
                         ),
                       ],
                     ),
                   ],
-                ),
-                IconButton(
-                  icon: CircleAvatar(
-                    backgroundColor: const Color(0xFFBF0000),
-                    child: Icon(Icons.rate_review,
-                        color: Colors.white, size: screenHeight * 0.03),
-                  ),
-                  onPressed: () {
-                    if (productData?["categoryId"] == null) {
-                      print(
-                          "ERROR: categoryId is required to rate this product.");
-                      return;
-                    }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ReviewPage(
-                          productId: widget.productId,
-                          categoryId: productData?["categoryId"],
-                        ),
-                      ),
-                    ).then((_) {
-                      _fetchRecentReviews();
-                      _fetchProductDetails();
-                    });
-                  },
                 ),
               ],
             ),
@@ -667,6 +678,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         );
       }).toList(),
     );
+  }
+
+  List<TextSpan> _buildProductNameSpans(String productName) {
+    final words = productName.trim().split(RegExp(r'\s+'));
+    if (words.length == 3) {
+      return [
+        TextSpan(text: '${words[0]} ${words[1]}\n'),
+        TextSpan(text: words[2]),
+      ];
+    }
+    return [TextSpan(text: productName)];
   }
 
   Widget _buildAddOns() {

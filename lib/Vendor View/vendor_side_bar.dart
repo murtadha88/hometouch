@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
-import 'package:hometouch/Vendor%20View/add_discount_page.dart';
+import 'package:hometouch/Vendor%20View/menu_management_page.dart';
 import 'package:hometouch/Vendor%20View/promotions_page.dart';
 import 'package:hometouch/Vendor%20View/orders_management_page.dart';
 import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
@@ -220,7 +220,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           context,
                           index: 1,
                           icon: Icons.assignment,
-                          label: 'Orders',
+                          label: 'Orders Management',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
                           onTap: () {
@@ -242,22 +242,9 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => AddDiscountPage()),
-                            );
-                          },
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          index: 3,
-                          icon: Icons.delivery_dining,
-                          label: 'Delivery Management',
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => OrderManagementPage()),
+                                  builder: (context) => FoodMenuPage(
+                                        vendorId: userId,
+                                      )),
                             );
                           },
                         ),
