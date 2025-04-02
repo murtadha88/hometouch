@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
+import 'package:hometouch/Common%20Pages/setting_page.dart';
+import 'package:hometouch/Vendor%20View/discount_promotion_page.dart';
 import 'package:hometouch/Vendor%20View/menu_management_page.dart';
-import 'package:hometouch/Vendor%20View/promotions_page.dart';
 import 'package:hometouch/Vendor%20View/orders_management_page.dart';
 import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -259,7 +260,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => PromotionsPage()),
+                                  builder: (context) =>
+                                      PromotionDiscountPage()),
                             );
                           },
                         ),
@@ -290,7 +292,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => OrderManagementPage()),
+                                  builder: (context) => SettingsPage()),
                             );
                           },
                         ),

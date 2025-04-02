@@ -151,9 +151,11 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
 
       List<Map<String, dynamic>> products = [];
       for (var doc in productSnapshot.docs) {
-        String name = doc['Name'] ?? '';
-        String image = doc['Image'] ?? 'https://via.placeholder.com/150';
-        double price = (doc['Price'] as num?)?.toDouble() ?? 0.0;
+        final data = doc.data() as Map<String, dynamic>? ?? {};
+
+        String name = data['Name'] ?? '';
+        String image = data['Image'] ?? 'https://via.placeholder.com/150';
+        double price = (data['Price'] as num?)?.toDouble() ?? 0.0;
 
         if (name.isNotEmpty && price > 0) {
           products.add({
@@ -162,9 +164,19 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
             'price': price,
             'image': image,
             'categoryId': categoryId,
+            'Discount_Price': data.containsKey('Discount_Price')
+                ? data['Discount_Price']
+                : null,
+            'Discount_Start_Date': data.containsKey('Discount_Start_Date')
+                ? data['Discount_Start_Date']
+                : null,
+            'Discount_End_Date': data.containsKey('Discount_End_Date')
+                ? data['Discount_End_Date']
+                : null,
           });
         }
       }
+
       return products;
     } catch (e) {
       print("Error fetching products for $categoryId: $e");
@@ -372,14 +384,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${item['price'].toStringAsFixed(3)} BHD',
-                            style: TextStyle(
-                              color: const Color(0xFFBF0000),
-                              fontWeight: FontWeight.bold,
-                              fontSize: screenWidth * 0.04,
-                            ),
-                          ),
+                          _buildPriceDisplay(item),
                           Row(
                             children: [
                               IconButton(
@@ -653,5 +658,57 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
               ),
             ),
     );
+  }
+
+  Widget _buildPriceDisplay(Map<String, dynamic> item) {
+    final DateTime now = DateTime.now();
+    final Timestamp? start = item["Discount_Start_Date"];
+    final Timestamp? end = item["Discount_End_Date"];
+
+    bool isDiscountActive = false;
+    if (start != null && end != null) {
+      final DateTime startDate = start.toDate();
+      final DateTime endDate = end.toDate();
+      isDiscountActive = now.isAfter(startDate) && now.isBefore(endDate);
+    }
+
+    final double? price = (item["price"] as num?)?.toDouble();
+    final double? discountPrice = (item["Discount_Price"] as num?)?.toDouble();
+
+    if (price == null) return const Text("N/A");
+
+    if (isDiscountActive && discountPrice != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "${price.toStringAsFixed(3)} BHD",
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+              decoration: TextDecoration.lineThrough,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            "${discountPrice.toStringAsFixed(3)} BHD",
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFFBF0000),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Text(
+        "${price.toStringAsFixed(3)} BHD",
+        style: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFFBF0000),
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
   }
 }

@@ -60,6 +60,7 @@ dependencies:
   geocoding: ^3.0.0
   syncfusion_flutter_charts: ^28.2.9
   syncfusion_flutter_gauges: ^28.2.9
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
