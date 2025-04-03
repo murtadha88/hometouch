@@ -157,6 +157,11 @@ class _PollPageState extends State<PollPage> {
       _endDate = DateTime.now().add(Duration(days: 1));
       setState(() {
         _choiceControllers = [TextEditingController()];
+        fetchActivePoll().then((poll) {
+          setState(() {
+            activePoll = poll;
+          });
+        });
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -424,22 +429,28 @@ class _PollPageState extends State<PollPage> {
       ),
       backgroundColor: Colors.white,
       body: Padding(
-        padding: EdgeInsets.only(bottom: 16, left: 16, right: 16),
+        padding: EdgeInsets.only(
+            bottom: screenHeight * 0.02,
+            left: screenWidth * 0.04,
+            right: screenWidth * 0.04),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: screenHeight * 0.02),
               Text("Current Poll",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 20),
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.045,
+                      fontWeight: FontWeight.bold)),
+              SizedBox(height: screenHeight * 0.02),
               activePoll != null
                   ? Column(
                       children: [
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius:
+                                BorderRadius.circular(screenWidth * 0.03),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.withOpacity(0.3),
@@ -449,12 +460,12 @@ class _PollPageState extends State<PollPage> {
                               ),
                             ],
                           ),
-                          padding: EdgeInsets.all(16),
+                          padding: EdgeInsets.all(screenWidth * 0.04),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               SizedBox(
-                                height: 50,
+                                height: screenHeight * 0.06,
                                 child: Stack(
                                   children: [
                                     Align(
@@ -462,7 +473,7 @@ class _PollPageState extends State<PollPage> {
                                       child: Text(
                                         activePoll!.title,
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: screenWidth * 0.045,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black,
                                         ),
@@ -473,10 +484,9 @@ class _PollPageState extends State<PollPage> {
                                       top: 0,
                                       bottom: 0,
                                       child: IconButton(
-                                        icon: Icon(
-                                          Icons.delete,
-                                          color: Color(0xFFBF0000),
-                                        ),
+                                        icon: Icon(Icons.delete,
+                                            color: Color(0xFFBF0000),
+                                            size: screenWidth * 0.06),
                                         onPressed: _deletePoll,
                                       ),
                                     ),
@@ -486,14 +496,14 @@ class _PollPageState extends State<PollPage> {
                               Text(
                                 activePoll!.question,
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: screenWidth * 0.04,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.grey[800],
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              SizedBox(height: screenHeight * 0.02),
                               SizedBox(
-                                height: 200,
+                                height: screenHeight * 0.3,
                                 child: SfCartesianChart(
                                   plotAreaBorderColor: Colors.white,
                                   primaryXAxis: CategoryAxis(
@@ -518,25 +528,32 @@ class _PollPageState extends State<PollPage> {
                                       dataLabelSettings:
                                           DataLabelSettings(isVisible: true),
                                       color: Color(0xFFBF0000),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.03),
                                       width: 0.2,
                                     ),
                                   ],
                                 ),
                               ),
-                              SizedBox(height: 10),
+                              SizedBox(height: screenHeight * 0.02),
                               ElevatedButton(
                                 onPressed: () => _showPollDialog(context),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Color(0xFFBF0000),
                                   elevation: 5,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(
+                                        screenWidth * 0.03),
                                   ),
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: screenHeight * 0.02,
+                                      horizontal: screenWidth * 0.04),
                                 ),
                                 child: Text(
                                   "Show Poll Structure",
-                                  style: TextStyle(color: Colors.white),
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: screenWidth * 0.04),
                                 ),
                               ),
                             ],
@@ -547,10 +564,13 @@ class _PollPageState extends State<PollPage> {
                   : Text("No active poll available.",
                       style: TextStyle(
                           color: Color(0xFFBF0000),
-                          fontWeight: FontWeight.bold)),
+                          fontWeight: FontWeight.bold,
+                          fontSize: screenWidth * 0.04)),
               SizedBox(height: screenHeight * 0.03),
               Text("Create Poll",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.045,
+                      fontWeight: FontWeight.bold)),
               SizedBox(height: screenHeight * 0.02),
               activePoll == null
                   ? Column(
@@ -568,7 +588,8 @@ class _PollPageState extends State<PollPage> {
                           TextEditingController controller = entry.value;
 
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
+                            padding:
+                                EdgeInsets.only(bottom: screenHeight * 0.02),
                             child: Row(
                               children: [
                                 Expanded(
@@ -579,10 +600,14 @@ class _PollPageState extends State<PollPage> {
                                 ),
                                 if (_choiceControllers.length > 1)
                                   Padding(
-                                    padding: const EdgeInsets.only(left: 8),
+                                    padding: EdgeInsets.only(
+                                        left: screenWidth * 0.02),
                                     child: IconButton(
-                                      icon: Icon(Icons.remove_circle,
-                                          color: Color(0xFFBF0000)),
+                                      icon: Icon(
+                                        Icons.remove_circle,
+                                        color: Color(0xFFBF0000),
+                                      ),
+                                      iconSize: screenWidth * 0.06,
                                       onPressed: () => _removeChoice(index),
                                     ),
                                   ),
@@ -591,17 +616,22 @@ class _PollPageState extends State<PollPage> {
                           );
                         }).toList(),
                         ElevatedButton.icon(
-                          icon: Icon(Icons.add, color: Colors.white),
+                          icon: Icon(Icons.add,
+                              color: Colors.white, size: screenWidth * 0.06),
                           label: Text(
                             'Add Choice',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.04),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFBF0000),
-                          ),
+                              backgroundColor: Color(0xFFBF0000),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: screenHeight * 0.02,
+                                  horizontal: screenWidth * 0.04)),
                           onPressed: _addChoice,
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: screenHeight * 0.03),
                         Row(
                           children: [
                             Expanded(
@@ -616,15 +646,20 @@ class _PollPageState extends State<PollPage> {
                                   ),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(0xFFBF0000)),
+                                        backgroundColor: Color(0xFFBF0000),
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: screenHeight * 0.02,
+                                            horizontal: screenWidth * 0.04)),
                                     child: Text('Select Start Date',
-                                        style: TextStyle(color: Colors.white)),
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: screenWidth * 0.04)),
                                     onPressed: () => _selectDate(context, true),
                                   ),
                                 ],
                               ),
                             ),
-                            SizedBox(width: 10),
+                            SizedBox(width: screenWidth * 0.03),
                             Expanded(
                               child: Column(
                                 children: [
@@ -637,9 +672,14 @@ class _PollPageState extends State<PollPage> {
                                   ),
                                   ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(0xFFBF0000)),
+                                        backgroundColor: Color(0xFFBF0000),
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: screenHeight * 0.02,
+                                            horizontal: screenWidth * 0.04)),
                                     child: Text('Select End Date',
-                                        style: TextStyle(color: Colors.white)),
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: screenWidth * 0.04)),
                                     onPressed: () =>
                                         _selectDate(context, false),
                                   ),
@@ -648,34 +688,38 @@ class _PollPageState extends State<PollPage> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 30),
+                        SizedBox(height: screenHeight * 0.04),
                         ElevatedButton.icon(
-                          icon: Icon(Icons.poll, color: Colors.white),
+                          icon: Icon(Icons.poll,
+                              color: Colors.white, size: screenWidth * 0.06),
                           label: Text(
                             'Create Poll',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.04),
                           ),
                           style: ElevatedButton.styleFrom(
                               backgroundColor: Color(0xFFBF0000),
                               padding: EdgeInsets.symmetric(
-                                  vertical: 15, horizontal: 15)),
+                                  vertical: screenHeight * 0.02,
+                                  horizontal: screenWidth * 0.04)),
                           onPressed: _createPoll,
                         ),
-                        SizedBox(height: 30),
+                        SizedBox(height: screenHeight * 0.04),
                       ],
                     )
                   : Container(
-                      padding: EdgeInsets.all(16),
+                      padding: EdgeInsets.all(screenWidth * 0.04),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 246, 214, 217),
-                        borderRadius: BorderRadius.circular(10),
+                        color: Color.fromARGB(255, 246, 214, 217),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
                       ),
                       child: Center(
                         child: Text(
                           "Dear user, if you want to create a poll, you need to delete the current poll or wait until the duration period ends.",
                           style: TextStyle(
                               color: Color(0xFFBF0000),
-                              fontSize: 16,
+                              fontSize: screenWidth * 0.04,
                               fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center,
                         ),
@@ -701,15 +745,18 @@ class _PollPageState extends State<PollPage> {
     required TextEditingController controller,
     bool isNumeric = false,
   }) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
+          padding: EdgeInsets.only(bottom: screenHeight * 0.01),
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: screenWidth * 0.04,
               fontWeight: FontWeight.bold,
               color: Color(0xFFBF0000),
             ),
@@ -718,7 +765,7 @@ class _PollPageState extends State<PollPage> {
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(screenWidth * 0.02),
             boxShadow: [
               BoxShadow(
                 color: Colors.grey.withOpacity(0.3),
@@ -735,15 +782,16 @@ class _PollPageState extends State<PollPage> {
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(screenWidth * 0.02),
                 borderSide: BorderSide.none,
               ),
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.04,
+                  vertical: screenHeight * 0.02),
             ),
           ),
         ),
-        SizedBox(height: 16),
+        SizedBox(height: screenHeight * 0.02),
       ],
     );
   }

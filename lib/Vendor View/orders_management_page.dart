@@ -66,18 +66,23 @@ class _OrderManagementPageState extends State<OrderManagementPage>
   }
 
   void _showConfirmationDialog(String orderId, bool isAccept) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+          contentPadding: EdgeInsets.symmetric(
+            vertical: screenHeight * 0.03,
+            horizontal: screenWidth * 0.05,
+          ),
           title: Text(
             isAccept ? 'Accept Order?' : 'Reject Order?',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Poppins',
-              fontSize: 24,
+              fontSize: screenWidth * 0.06,
               fontWeight: FontWeight.bold,
               color: primaryRed,
             ),
@@ -86,22 +91,22 @@ class _OrderManagementPageState extends State<OrderManagementPage>
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 10),
+              SizedBox(height: screenHeight * 0.01),
               Container(
                 alignment: Alignment.center,
                 child: Text(
                   isAccept
                       ? "Are you sure you want to accept this order?"
                       : "Are you sure you want to reject this order?",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 18,
+                    fontSize: screenWidth * 0.045,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 15),
+              SizedBox(height: screenHeight * 0.02),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -111,40 +116,44 @@ class _OrderManagementPageState extends State<OrderManagementPage>
                         backgroundColor: Colors.white,
                         side: const BorderSide(color: primaryRed),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.02),
                         ),
+                        padding:
+                            EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                       ),
                       onPressed: () {
                         Navigator.pop(context);
                         _handleOrderAction(orderId, isAccept);
                       },
-                      child: const Text(
+                      child: Text(
                         'Yes',
                         style: TextStyle(
-                          color: primaryRed,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: primaryRed,
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryRed,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.02),
                         ),
+                        padding:
+                            EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
                         'No',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04),
                       ),
                     ),
                   ),
@@ -236,30 +245,27 @@ class _OrderManagementPageState extends State<OrderManagementPage>
   }
 
   Widget _CustomerInfoWidget(String customerId) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return FutureBuilder<DocumentSnapshot>(
       future: _firestore.collection('Customer').doc(customerId).get(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircleAvatar(
-            radius: 24,
-            backgroundImage: NetworkImage('https://i.imgur.com/OtAn7hT.jpeg'),
-          );
-        }
-
-        final customerData = snapshot.data?.data() as Map<String, dynamic>?;
-        final imageUrl = (customerData?['Photo']?.isNotEmpty ?? false)
-            ? customerData!['Photo']
-            : 'https://i.imgur.com/OtAn7hT.jpeg';
-
         return CircleAvatar(
-          radius: 24,
-          backgroundImage: NetworkImage(imageUrl),
+          radius: screenWidth * 0.06,
+          backgroundImage: NetworkImage(
+              (snapshot.data?.data() as Map<String, dynamic>?)?['Photo']
+                          ?.isNotEmpty ??
+                      false
+                  ? (snapshot.data!.data() as Map<String, dynamic>)['Photo']
+                  : 'https://i.imgur.com/OtAn7hT.jpeg'),
         );
       },
     );
   }
 
   Widget _buildRequestsTab() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return StreamBuilder<QuerySnapshot>(
       stream: requestsStream,
       builder: (context, snapshot) {
@@ -272,9 +278,9 @@ class _OrderManagementPageState extends State<OrderManagementPage>
         final orders = snapshot.data!.docs;
 
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(screenWidth * 0.04),
           itemCount: orders.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 16),
+          separatorBuilder: (_, __) => SizedBox(height: screenHeight * 0.02),
           itemBuilder: (context, index) {
             final order = orders[index];
             final data = order.data() as Map<String, dynamic>;
@@ -282,13 +288,13 @@ class _OrderManagementPageState extends State<OrderManagementPage>
             return Card(
               color: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.03)),
               elevation: 1,
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 onTap: () => _navigateToOrderDetails(context, order, false),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(screenWidth * 0.04),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -298,12 +304,12 @@ class _OrderManagementPageState extends State<OrderManagementPage>
                           if (data['Customer_ID'] != null)
                             _CustomerInfoWidget(data['Customer_ID'] as String)
                           else
-                            const CircleAvatar(
-                              radius: 24,
-                              backgroundImage: NetworkImage(
+                            CircleAvatar(
+                              radius: screenWidth * 0.06,
+                              backgroundImage: const NetworkImage(
                                   'https://i.imgur.com/OtAn7hT.jpeg'),
                             ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: screenWidth * 0.03),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
@@ -311,22 +317,26 @@ class _OrderManagementPageState extends State<OrderManagementPage>
                                 Text(
                                   data['Order_Number'] ?? '',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: screenWidth * 0.03,
                                     color: Colors.grey.shade500,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: screenHeight * 0.01),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     Text(
-                                        "${data['Total']?.toStringAsFixed(3)} BHD"),
-                                    const SizedBox(width: 8),
+                                        "${data['Total']?.toStringAsFixed(3)} BHD",
+                                        style: TextStyle(
+                                            fontSize: screenWidth * 0.035)),
+                                    SizedBox(width: screenWidth * 0.02),
                                     const Text("|",
                                         style: TextStyle(color: Colors.grey)),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: screenWidth * 0.02),
                                     Text(
-                                        "${(data['Items'] as List).length} Items"),
+                                        "${(data['Items'] as List).length} Items",
+                                        style: TextStyle(
+                                            fontSize: screenWidth * 0.035)),
                                   ],
                                 ),
                               ],
@@ -334,7 +344,7 @@ class _OrderManagementPageState extends State<OrderManagementPage>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: screenHeight * 0.02),
                       Row(
                         children: [
                           Expanded(
@@ -345,14 +355,17 @@ class _OrderManagementPageState extends State<OrderManagementPage>
                                 backgroundColor: primaryRed,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                    borderRadius: BorderRadius.circular(
+                                        screenWidth * 0.02)),
+                                padding: EdgeInsets.symmetric(
+                                    vertical: screenHeight * 0.017),
                               ),
-                              child: const Text("Accept"),
+                              child: Text("Accept",
+                                  style:
+                                      TextStyle(fontSize: screenWidth * 0.04)),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: screenWidth * 0.03),
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () =>
@@ -361,11 +374,14 @@ class _OrderManagementPageState extends State<OrderManagementPage>
                                 foregroundColor: primaryRed,
                                 side: const BorderSide(color: primaryRed),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                    borderRadius: BorderRadius.circular(
+                                        screenWidth * 0.02)),
+                                padding: EdgeInsets.symmetric(
+                                    vertical: screenHeight * 0.017),
                               ),
-                              child: const Text("Reject"),
+                              child: Text("Reject",
+                                  style:
+                                      TextStyle(fontSize: screenWidth * 0.04)),
                             ),
                           ),
                         ],
@@ -382,6 +398,9 @@ class _OrderManagementPageState extends State<OrderManagementPage>
   }
 
   Widget _buildHistoryTab() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return StreamBuilder<QuerySnapshot>(
       stream: historyStream,
       builder: (context, snapshot) {
@@ -396,54 +415,53 @@ class _OrderManagementPageState extends State<OrderManagementPage>
             _buildStatusFilter(),
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(screenWidth * 0.04),
                 itemCount: snapshot.data!.docs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                separatorBuilder: (_, __) =>
+                    SizedBox(height: screenHeight * 0.02),
                 itemBuilder: (context, index) {
                   final order = snapshot.data!.docs[index];
                   final data = order.data() as Map<String, dynamic>;
-                  final status = data['Status'] ?? 'Unknown';
 
                   return Card(
                     color: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius:
+                            BorderRadius.circular(screenWidth * 0.03)),
                     elevation: 1,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
                       onTap: () =>
                           _navigateToOrderDetails(context, order, true),
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(screenWidth * 0.04),
                         child: Row(
                           children: [
                             if (data['Customer_ID'] != null)
                               _CustomerInfoWidget(data['Customer_ID'] as String)
                             else
-                              const CircleAvatar(
-                                radius: 24,
-                                backgroundImage: NetworkImage(
+                              CircleAvatar(
+                                radius: screenWidth * 0.06,
+                                backgroundImage: const NetworkImage(
                                     'https://i.imgur.com/OtAn7hT.jpeg'),
                               ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: screenWidth * 0.03),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Text("Order ${data['Order_Number'] ?? ''}",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: screenWidth * 0.04)),
                                   Text(
-                                    "Order ${data['Order_Number'] ?? ''}",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
-                                  ),
-                                  Text(
-                                    "${data['Total']?.toStringAsFixed(3)} BHD",
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
+                                      "${data['Total']?.toStringAsFixed(3)} BHD",
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.035)),
                                 ],
                               ),
                             ),
-                            _buildStatusPill(status),
+                            _buildStatusPill(data['Status'] ?? 'Unknown'),
                           ],
                         ),
                       ),
@@ -477,8 +495,11 @@ class _OrderManagementPageState extends State<OrderManagementPage>
   }
 
   Widget _buildStatusFilter() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return SizedBox(
-      height: 40,
+      height: screenHeight * 0.05,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: historyStatuses.length,
@@ -488,17 +509,20 @@ class _OrderManagementPageState extends State<OrderManagementPage>
           return GestureDetector(
             onTap: () => setState(() => selectedHistoryStatus = status),
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+              padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.04,
+                  vertical: screenHeight * 0.01),
               decoration: BoxDecoration(
                 color: isSelected ? primaryRed : Colors.grey[200],
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(screenWidth * 0.1),
               ),
               child: Text(
                 status,
                 style: TextStyle(
                     color: isSelected ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.bold),
+                    fontWeight: FontWeight.bold,
+                    fontSize: screenWidth * 0.04),
               ),
             ),
           );
@@ -508,8 +532,11 @@ class _OrderManagementPageState extends State<OrderManagementPage>
   }
 
   Widget _buildStatusPill(String status) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     final Color bgColor = Colors.grey[200]!;
-    Color textColor;
+    Color textColor = Colors.black;
     switch (status) {
       case 'Delivered':
         textColor = Colors.green;
@@ -522,22 +549,20 @@ class _OrderManagementPageState extends State<OrderManagementPage>
       case 'Cancelled':
         textColor = Colors.red;
         break;
-      default:
-        textColor = Colors.black;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.03, vertical: screenHeight * 0.005),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(screenWidth * 0.1),
       ),
       child: Text(
         status,
         style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: screenWidth * 0.03),
       ),
     );
   }

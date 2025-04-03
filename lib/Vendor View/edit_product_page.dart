@@ -280,27 +280,23 @@ class _EditProductPageState extends State<EditProductPage> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(screenHeight * 0.08),
+        preferredSize: Size.fromHeight(screenHeight * 0.09),
         child: AppBar(
           leading: Padding(
             padding: EdgeInsets.only(
-              top: screenHeight * 0.025,
-              left: screenWidth * 0.02,
-            ),
+                top: screenHeight * 0.025, left: screenWidth * 0.02),
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0xFFBF0000),
                 ),
                 alignment: Alignment.center,
-                padding: const EdgeInsets.only(top: 2, left: 6),
-                child: Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.white,
-                  size: screenHeight * 0.02,
-                ),
+                padding: EdgeInsets.only(
+                    top: screenHeight * 0.001, left: screenWidth * 0.02),
+                child: Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: screenHeight * 0.025),
               ),
             ),
           ),
@@ -311,19 +307,16 @@ class _EditProductPageState extends State<EditProductPage> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
-                fontSize: screenHeight * 0.022,
+                fontSize: screenHeight * 0.027,
               ),
             ),
           ),
           centerTitle: true,
           backgroundColor: Colors.white,
-          elevation: 0,
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(screenHeight * 0.002),
             child: Divider(
-              thickness: screenHeight * 0.001,
-              color: Colors.grey[300],
-            ),
+                thickness: screenHeight * 0.001, color: Colors.grey[300]),
           ),
         ),
       ),
@@ -348,6 +341,7 @@ class _EditProductPageState extends State<EditProductPage> {
                 requiredField: true,
                 controller: _nameController,
                 onChanged: (value) => _checkButtonEnabled(),
+                screenWidth: screenWidth,
               ),
               _buildTextField(
                 label: 'Product Price in BHD',
@@ -355,6 +349,7 @@ class _EditProductPageState extends State<EditProductPage> {
                 requiredField: true,
                 controller: _priceController,
                 onChanged: (value) => _checkButtonEnabled(),
+                screenWidth: screenWidth,
               ),
               _buildTextField(
                 label: 'Product Description',
@@ -362,6 +357,7 @@ class _EditProductPageState extends State<EditProductPage> {
                 requiredField: true,
                 controller: _descriptionController,
                 onChanged: (value) => _checkButtonEnabled(),
+                screenWidth: screenWidth,
               ),
               _buildTextField(
                 label: 'Points',
@@ -369,23 +365,27 @@ class _EditProductPageState extends State<EditProductPage> {
                 requiredField: false,
                 controller: _pointsController,
                 onChanged: (value) {},
+                screenWidth: screenWidth,
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 18, bottom: 20, right: 18),
+                padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.04,
+                    vertical: screenHeight * 0.01),
                 child: Text(
                   'If this product is eligible for the rewards system, please specify the required points to order it for free.',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(
+                      color: Colors.grey[600], fontSize: screenWidth * 0.035),
                 ),
               ),
-              _buildAddOnsSection(screenWidth),
-              _buildRemoveSection(screenWidth),
+              _buildAddOnsSection(screenWidth, screenHeight),
+              _buildRemoveSection(screenWidth, screenHeight),
               ElevatedButton(
                 onPressed: _isButtonEnabled ? _updateProduct : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFBF0000),
+                  minimumSize: Size(screenWidth * 0.8, screenHeight * 0.06),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: const BorderSide(color: Colors.white),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   ),
                 ),
                 child: Text(
@@ -394,7 +394,7 @@ class _EditProductPageState extends State<EditProductPage> {
                     color: _isButtonEnabled
                         ? Colors.white
                         : Colors.white.withOpacity(0.5),
-                    fontSize: 16,
+                    fontSize: screenWidth * 0.04,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -415,7 +415,7 @@ class _EditProductPageState extends State<EditProductPage> {
         height: screenHeight * 0.25,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(screenWidth * 0.02),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.2),
@@ -429,7 +429,7 @@ class _EditProductPageState extends State<EditProductPage> {
           children: [
             if (_uploadedImage != null)
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(screenWidth * 0.02),
                 child: Image.file(
                   _uploadedImage!,
                   fit: BoxFit.cover,
@@ -439,7 +439,7 @@ class _EditProductPageState extends State<EditProductPage> {
               )
             else if (_imageUrl != null && _imageUrl!.isNotEmpty)
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(screenWidth * 0.02),
                 child: Image.network(
                   _imageUrl!,
                   fit: BoxFit.cover,
@@ -449,7 +449,8 @@ class _EditProductPageState extends State<EditProductPage> {
                     return Center(
                       child: Text(
                         'Image not available',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(
+                            color: Colors.grey, fontSize: screenWidth * 0.035),
                       ),
                     );
                   },
@@ -461,25 +462,25 @@ class _EditProductPageState extends State<EditProductPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 70,
-                      height: 70,
+                      width: screenWidth * 0.15,
+                      height: screenWidth * 0.15,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: const Color.fromARGB(255, 184, 211, 216)
                             .withOpacity(0.2),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.file_copy,
-                        size: 50,
-                        color: Color(0xFFBF0000),
+                        size: screenWidth * 0.1,
+                        color: const Color(0xFFBF0000),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: screenHeight * 0.01),
+                    Text(
                       'Click to upload image',
                       style: TextStyle(
-                        color: Color(0xFFBF0000),
-                        fontSize: 16,
+                        color: const Color(0xFFBF0000),
+                        fontSize: screenWidth * 0.04,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -503,21 +504,25 @@ class _EditProductPageState extends State<EditProductPage> {
     required String hint,
     required bool requiredField,
     required TextEditingController controller,
+    required double screenWidth,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
     required Function(String) onChanged,
   }) {
+    final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
+
     return Padding(
-      padding: const EdgeInsets.only(left: 18, bottom: 20, right: 18),
+      padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: screenWidth * 0.04,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -531,10 +536,10 @@ class _EditProductPageState extends State<EditProductPage> {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: screenHeight * 0.01),
           Container(
             width: screenWidth * 0.82,
-            decoration: _textFieldBoxDecoration(),
+            decoration: _textFieldBoxDecoration(screenWidth),
             child: TextFormField(
               controller: controller,
               maxLines: maxLines,
@@ -545,11 +550,12 @@ class _EditProductPageState extends State<EditProductPage> {
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.03,
+                    vertical: screenHeight * 0.015),
               ),
               validator: (value) {
                 if (requiredField && (value == null || value.isEmpty)) {
@@ -565,21 +571,19 @@ class _EditProductPageState extends State<EditProductPage> {
     );
   }
 
-  Widget _buildAddOnsSection(double screenWidth) {
+  Widget _buildAddOnsSection(double screenWidth, double screenHeight) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: EdgeInsets.only(left: 18),
-            child: Text(
-              'Add-Ons:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+        Padding(
+          padding: EdgeInsets.only(left: screenWidth * 0.04),
+          child: Text(
+            'Add-Ons:',
+            style: TextStyle(
+                fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: screenHeight * 0.01),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -592,25 +596,26 @@ class _EditProductPageState extends State<EditProductPage> {
                   Expanded(
                     flex: 2,
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: _textFieldBoxDecoration(),
+                      margin: EdgeInsets.only(bottom: screenHeight * 0.01),
+                      decoration: _textFieldBoxDecoration(screenWidth),
                       child: TextField(
                         controller: _addOnNameControllers[index],
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Add-On Name',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 12),
+                              horizontal: screenWidth * 0.03,
+                              vertical: screenHeight * 0.015),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: screenWidth * 0.02),
                   Expanded(
                     flex: 1,
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: _textFieldBoxDecoration(),
+                      margin: EdgeInsets.only(bottom: screenHeight * 0.01),
+                      decoration: _textFieldBoxDecoration(screenWidth),
                       child: TextField(
                         controller: _addOnPriceControllers[index],
                         keyboardType: const TextInputType.numberWithOptions(
@@ -619,20 +624,24 @@ class _EditProductPageState extends State<EditProductPage> {
                           FilteringTextInputFormatter.allow(
                               RegExp(r'^\d*\.?\d*$')),
                         ],
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Price',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 12),
+                              horizontal: screenWidth * 0.03,
+                              vertical: screenHeight * 0.015),
                         ),
                       ),
                     ),
                   ),
                   IconButton(
                     icon: (index == _addOnNameControllers.length - 1)
-                        ? const Icon(Icons.add, color: Color(0xFFBF0000))
-                        : const Icon(Icons.remove_circle,
-                            color: Color(0xFFBF0000)),
+                        ? Icon(Icons.add,
+                            color: const Color(0xFFBF0000),
+                            size: screenWidth * 0.06)
+                        : Icon(Icons.remove_circle,
+                            color: const Color(0xFFBF0000),
+                            size: screenWidth * 0.06),
                     onPressed: () {
                       if (index == _addOnNameControllers.length - 1) {
                         _addAddOnRow(index);
@@ -650,21 +659,19 @@ class _EditProductPageState extends State<EditProductPage> {
     );
   }
 
-  Widget _buildRemoveSection(double screenWidth) {
+  Widget _buildRemoveSection(double screenWidth, double screenHeight) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: EdgeInsets.only(left: 18),
-            child: Text(
-              'Remove:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+        Padding(
+          padding: EdgeInsets.only(left: screenWidth * 0.04),
+          child: Text(
+            'Remove:',
+            style: TextStyle(
+                fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: screenHeight * 0.01),
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -676,24 +683,28 @@ class _EditProductPageState extends State<EditProductPage> {
                 children: [
                   Expanded(
                     child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: _textFieldBoxDecoration(),
+                      margin: EdgeInsets.only(bottom: screenHeight * 0.01),
+                      decoration: _textFieldBoxDecoration(screenWidth),
                       child: TextField(
                         controller: _removeControllers[index],
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Remove Option',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 12),
+                              horizontal: screenWidth * 0.03,
+                              vertical: screenHeight * 0.015),
                         ),
                       ),
                     ),
                   ),
                   IconButton(
                     icon: (index == _removeControllers.length - 1)
-                        ? const Icon(Icons.add, color: Color(0xFFBF0000))
-                        : const Icon(Icons.remove_circle,
-                            color: Color(0xFFBF0000)),
+                        ? Icon(Icons.add,
+                            color: const Color(0xFFBF0000),
+                            size: screenWidth * 0.06)
+                        : Icon(Icons.remove_circle,
+                            color: const Color(0xFFBF0000),
+                            size: screenWidth * 0.06),
                     onPressed: () {
                       if (index == _removeControllers.length - 1) {
                         _addRemoveRow(index);
@@ -711,10 +722,10 @@ class _EditProductPageState extends State<EditProductPage> {
     );
   }
 
-  BoxDecoration _textFieldBoxDecoration() {
+  BoxDecoration _textFieldBoxDecoration(double screenWidth) {
     return BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(screenWidth * 0.02),
       boxShadow: [
         BoxShadow(
           color: Colors.grey.withOpacity(0.2),

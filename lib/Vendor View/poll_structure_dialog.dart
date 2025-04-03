@@ -34,25 +34,29 @@ class _PollPopOutState extends State<PollPopOut> {
             children: [
               CircleAvatar(
                 backgroundImage: NetworkImage(widget.restaurantImage),
-                radius: 20,
+                radius: screenWidth * 0.06,
               ),
-              SizedBox(width: 10),
+              SizedBox(width: screenWidth * 0.03),
               Text(
                 widget.restaurantName,
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: screenWidth * 0.05,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
           Padding(
-            padding: EdgeInsets.only(bottom: 38, right: 8),
+            padding: EdgeInsets.only(
+              bottom: screenHeight * 0.02,
+              right: screenWidth * 0.02,
+            ),
             child: GestureDetector(
               onTap: () => Navigator.of(context).pop(),
               child: Icon(
                 Icons.close,
                 color: Color(0xFFBF0000),
+                size: screenWidth * 0.06,
               ),
             ),
           ),
@@ -67,16 +71,22 @@ class _PollPopOutState extends State<PollPopOut> {
             Text(
               widget.pollQuestion,
               style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.bold),
+                fontSize: screenWidth * 0.04,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.03),
             Expanded(
               child: ListView.builder(
                 itemCount: widget.choices.length,
                 itemBuilder: (context, index) {
-                  return _buildChoiceTile(index + 1, widget.choices[index]);
+                  return _buildChoiceTile(
+                    index + 1,
+                    widget.choices[index],
+                    screenWidth,
+                    screenHeight,
+                  );
                 },
               ),
             ),
@@ -91,7 +101,7 @@ class _PollPopOutState extends State<PollPopOut> {
               color: _selectedChoice != null
                   ? Color(0xFFBF0000)
                   : Colors.grey[300],
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(screenWidth * 0.02),
             ),
             child: TextButton(
               onPressed: _selectedChoice != null
@@ -101,7 +111,7 @@ class _PollPopOutState extends State<PollPopOut> {
                 'Close',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: screenWidth * 0.04,
                 ),
               ),
             ),
@@ -111,7 +121,8 @@ class _PollPopOutState extends State<PollPopOut> {
     );
   }
 
-  Widget _buildChoiceTile(int number, String label) {
+  Widget _buildChoiceTile(
+      int number, String label, double screenWidth, double screenHeight) {
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -119,17 +130,17 @@ class _PollPopOutState extends State<PollPopOut> {
         });
       },
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 4),
+        margin: EdgeInsets.symmetric(vertical: screenHeight * 0.005),
         decoration: BoxDecoration(
           color:
               _selectedChoice == number ? Color(0xFFBF0000) : Colors.grey[200],
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(screenWidth * 0.02),
         ),
         child: ListTile(
           leading: Text(
             number.toString().padLeft(2, '0'),
             style: TextStyle(
-              fontSize: 24,
+              fontSize: screenWidth * 0.06,
               color:
                   _selectedChoice == number ? Colors.white : Color(0xFFBF0000),
               fontWeight: FontWeight.bold,
@@ -138,7 +149,7 @@ class _PollPopOutState extends State<PollPopOut> {
           title: Text(
             label,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: screenWidth * 0.04,
               color: _selectedChoice == number ? Colors.white : Colors.black,
             ),
           ),

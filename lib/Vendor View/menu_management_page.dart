@@ -45,54 +45,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  Widget _buildImage(
-    String? image,
-    String productName,
-    double screenWidth,
-    double screenHeight,
-  ) {
-    double imageWidth = screenWidth * 0.479;
-    double imageHeight = screenHeight * 0.135;
-
-    if (image == null || image.isEmpty) {
-      return SizedBox(
-        width: imageWidth,
-        height: imageHeight,
-        child: Image.asset(
-          'assets/placeholder_image.jpg',
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-
-    try {
-      Uri.parse(image);
-      return SizedBox(
-        width: imageWidth,
-        height: imageHeight,
-        child: Image.network(
-          image,
-          fit: BoxFit.cover,
-          errorBuilder: (context, object, stackTrace) {
-            return Image.asset(
-              'assets/placeholder_image.jpg',
-              fit: BoxFit.cover,
-            );
-          },
-        ),
-      );
-    } catch (e) {
-      return SizedBox(
-        width: imageWidth,
-        height: imageHeight,
-        child: Image.asset(
-          'assets/placeholder_image.jpg',
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-  }
-
   Future<void> _fetchVendorDetails() async {
     try {
       DocumentSnapshot vendorSnapshot = await FirebaseFirestore.instance
@@ -215,97 +167,30 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     }
   }
 
-  void showDeleteConfirmationDialog(
-    BuildContext context,
-    String categoryId,
-    String productId,
+  Widget _buildImage(
+    String? image,
+    String productName,
+    double screenWidth,
+    double screenHeight,
   ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
-          title: const Text(
-            'Delete Product?',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFBF0000),
+    double imageWidth = screenWidth * 0.479;
+    double imageHeight = screenHeight * 0.135;
+
+    return SizedBox(
+      width: imageWidth,
+      height: imageHeight,
+      child: (image == null || image.isEmpty)
+          ? Image.asset('assets/placeholder_image.jpg', fit: BoxFit.cover)
+          : Image.network(
+              image,
+              fit: BoxFit.cover,
+              errorBuilder: (context, object, stackTrace) {
+                return Image.asset(
+                  'assets/placeholder_image.jpg',
+                  fit: BoxFit.cover,
+                );
+              },
             ),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                alignment: Alignment.center,
-                child: const Text(
-                  'Are you sure you want to delete this product?',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: Color(0xFFBF0000)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                      onPressed: () async {
-                        await _deleteProduct(categoryId, productId);
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'Yes',
-                        style: TextStyle(
-                          color: Color(0xFFBF0000),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFBF0000),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'No',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -335,7 +220,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: screenWidth * 0.001,
+              crossAxisSpacing: screenWidth * 0.03,
               mainAxisSpacing: screenHeight * 0.02,
               childAspectRatio: 0.8,
             ),
@@ -359,14 +244,14 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                   color: Colors.white,
                   elevation: 4,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.04),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(15),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(screenWidth * 0.04),
                         ),
                         child: _buildImage(
                           item['image'],
@@ -377,8 +262,8 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                       ),
                       Padding(
                         padding: EdgeInsets.only(
-                          top: screenWidth * 0.02,
-                          left: screenWidth * 0.02,
+                          top: screenHeight * 0.01,
+                          left: screenWidth * 0.03,
                         ),
                         child: Text(
                           item['name'],
@@ -391,20 +276,22 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                       Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.02,
-                          vertical: item['name'].length > 20
-                              ? screenHeight * 0.01
-                              : screenHeight * 0.0235,
+                          vertical: screenHeight * 0.01,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            _buildPriceDisplay(item),
+                            _buildPriceDisplay(item, screenWidth),
                             Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
                                   icon: Icon(
                                     Icons.edit,
-                                    size: screenWidth * 0.05,
+                                    size: screenWidth * 0.055,
                                     color: const Color(0xFFBF0000),
                                   ),
                                   onPressed: () {
@@ -417,24 +304,22 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                           productId: item["id"],
                                         ),
                                       ),
-                                    ).then((_) {
-                                      _fetchCategories();
-                                    });
+                                    ).then((_) => _fetchCategories());
                                   },
                                 ),
                                 IconButton(
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
                                   icon: Icon(
                                     Icons.delete,
-                                    size: screenWidth * 0.05,
+                                    size: screenWidth * 0.055,
                                     color: const Color(0xFFBF0000),
                                   ),
-                                  onPressed: () {
-                                    showDeleteConfirmationDialog(
-                                      context,
-                                      item["categoryId"],
-                                      item["id"],
-                                    );
-                                  },
+                                  onPressed: () => showDeleteConfirmationDialog(
+                                    context,
+                                    item["categoryId"],
+                                    item["id"],
+                                  ),
                                 ),
                               ],
                             ),
@@ -451,9 +336,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
           Center(
             child: Text(
               'No products available',
-              style: TextStyle(
-                fontSize: screenWidth * 0.04,
-              ),
+              style: TextStyle(fontSize: screenWidth * 0.04),
             ),
           ),
         SizedBox(height: screenHeight * 0.03),
@@ -477,20 +360,15 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0xFFBF0000),
                 ),
                 alignment: Alignment.center,
                 padding: EdgeInsets.only(
-                  top: screenHeight * 0.001,
-                  left: screenWidth * 0.02,
-                ),
-                child: Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.white,
-                  size: screenHeight * 0.025,
-                ),
+                    top: screenHeight * 0.001, left: screenWidth * 0.02),
+                child: Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: screenHeight * 0.025),
               ),
             ),
           ),
@@ -510,29 +388,23 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(screenHeight * 0.002),
             child: Divider(
-              thickness: screenHeight * 0.001,
-              color: Colors.grey[300],
-            ),
+                thickness: screenHeight * 0.001, color: Colors.grey[300]),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductPage()),
-          ).then((_) {
-            _fetchCategories();
-          });
-        },
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const AddProductPage()),
+        ).then((_) => _fetchCategories()),
         backgroundColor: const Color(0xFFBF0000),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Colors.white, size: screenWidth * 0.08),
       ),
       body: isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
-                color: Color(0xFFBF0000),
-              ),
+                  color: const Color(0xFFBF0000),
+                  strokeWidth: screenWidth * 0.02),
             )
           : SingleChildScrollView(
               child: Column(
@@ -540,24 +412,20 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                 children: [
                   Padding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: screenWidth * 0.04,
-                      vertical: screenHeight * 0.02,
-                    ),
+                        horizontal: screenWidth * 0.04,
+                        vertical: screenHeight * 0.02),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: screenWidth * 0.1,
+                          radius: screenWidth * 0.12,
                           backgroundColor: Colors.grey,
                           backgroundImage: vendorDetails['Logo'] != null
                               ? NetworkImage(vendorDetails['Logo'])
                               : null,
                           child: vendorDetails['Logo'] == null
-                              ? Icon(
-                                  Icons.fastfood,
-                                  size: screenWidth * 0.12,
-                                  color: Colors.white,
-                                )
+                              ? Icon(Icons.fastfood,
+                                  size: screenWidth * 0.15, color: Colors.white)
                               : null,
                         ),
                         SizedBox(width: screenWidth * 0.04),
@@ -568,24 +436,21 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                               Text(
                                 vendorDetails['Name'] ?? 'Vendor Name',
                                 style: TextStyle(
-                                  fontSize: screenWidth * 0.06,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                    fontSize: screenWidth * 0.05,
+                                    fontWeight: FontWeight.bold),
                               ),
                               SizedBox(height: screenHeight * 0.01),
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.star,
-                                    color: const Color(0xFFBF0000),
-                                    size: screenWidth * 0.05,
-                                  ),
+                                  Icon(Icons.star,
+                                      color: const Color(0xFFBF0000),
+                                      size: screenWidth * 0.05),
                                   SizedBox(width: screenWidth * 0.01),
                                   Text(
                                     '${vendorDetails['Rating'] ?? '0.0'}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: screenWidth * 0.04),
                                   ),
                                 ],
                               ),
@@ -595,33 +460,25 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                         IconButton(
                           icon: CircleAvatar(
                             backgroundColor: const Color(0xFFBF0000),
-                            child: Icon(
-                              Icons.rate_review,
-                              color: Colors.white,
-                              size: screenWidth * 0.06,
-                            ),
+                            radius: screenWidth * 0.07,
+                            child: Icon(Icons.rate_review,
+                                color: Colors.white, size: screenWidth * 0.06),
                           ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReviewPage(
-                                  vendorId: widget.vendorId,
-                                  isVendor: true,
-                                ),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ReviewPage(
+                                vendorId: widget.vendorId,
+                                isVendor: true,
                               ),
-                            ).then((_) {
-                              _fetchVendorDetails();
-                            });
-                          },
+                            ),
+                          ).then((_) => _fetchVendorDetails()),
                         ),
                       ],
                     ),
                   ),
                   Divider(
-                    thickness: screenHeight * 0.001,
-                    color: Colors.grey[300],
-                  ),
+                      thickness: screenHeight * 0.001, color: Colors.grey[300]),
                   SizedBox(
                     height: screenHeight * 0.06,
                     child: ListView.builder(
@@ -634,28 +491,26 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                           onTap: () => scrollToCategory(category),
                           child: Container(
                             margin: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.02,
-                            ),
+                                horizontal: screenWidth * 0.02),
                             padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04,
-                              vertical: screenHeight * 0.01,
-                            ),
+                                horizontal: screenWidth * 0.04,
+                                vertical: screenHeight * 0.01),
                             decoration: BoxDecoration(
                               color: selectedCategory == category
                                   ? const Color(0xFFBF0000)
                                   : Colors.grey[200],
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius:
+                                  BorderRadius.circular(screenWidth * 0.1),
                             ),
                             child: Center(
                               child: Text(
                                 category,
                                 style: TextStyle(
-                                  color: selectedCategory == category
-                                      ? Colors.white
-                                      : Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: screenWidth * 0.04,
-                                ),
+                                    color: selectedCategory == category
+                                        ? Colors.white
+                                        : Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: screenWidth * 0.04),
                               ),
                             ),
                           ),
@@ -677,12 +532,12 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     );
   }
 
-  Widget _buildPriceDisplay(Map<String, dynamic> item) {
+  Widget _buildPriceDisplay(Map<String, dynamic> item, double screenWidth) {
     final DateTime now = DateTime.now();
     final Timestamp? start = item["Discount_Start_Date"];
     final Timestamp? end = item["Discount_End_Date"];
-
     bool isDiscountActive = false;
+
     if (start != null && end != null) {
       final DateTime startDate = start.toDate();
       final DateTime endDate = end.toDate();
@@ -694,38 +549,126 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
 
     if (price == null) return const Text("N/A");
 
+    TextStyle defaultStyle = TextStyle(
+      fontSize: screenWidth * 0.035,
+      color: const Color(0xFFBF0000),
+      fontWeight: FontWeight.bold,
+    );
+
     if (isDiscountActive && discountPrice != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "${price.toStringAsFixed(3)} BHD",
-            style: const TextStyle(
-              fontSize: 14,
+            style: defaultStyle.copyWith(
               color: Colors.black54,
               decoration: TextDecoration.lineThrough,
             ),
           ),
-          const SizedBox(width: 4),
           Text(
             "${discountPrice.toStringAsFixed(3)} BHD",
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFFBF0000),
-              fontWeight: FontWeight.bold,
-            ),
+            style: defaultStyle,
           ),
         ],
       );
     } else {
       return Text(
         "${price.toStringAsFixed(3)} BHD",
-        style: const TextStyle(
-          fontSize: 14,
-          color: Color(0xFFBF0000),
-          fontWeight: FontWeight.bold,
-        ),
+        style: defaultStyle,
       );
     }
+  }
+
+  void showDeleteConfirmationDialog(
+    BuildContext context,
+    String categoryId,
+    String productId,
+  ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+              vertical: screenHeight * 0.03, horizontal: screenWidth * 0.04),
+          title: Text(
+            'Delete Product?',
+            style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: screenWidth * 0.06,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFBF0000)),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: screenHeight * 0.01),
+              Text(
+                'Are you sure you want to delete this product?',
+                style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: screenWidth * 0.045,
+                    fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFBF0000)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(screenWidth * 0.02)),
+                          padding: EdgeInsets.symmetric(
+                              vertical: screenHeight * 0.02)),
+                      onPressed: () async {
+                        await _deleteProduct(categoryId, productId);
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        'Yes',
+                        style: TextStyle(
+                            color: const Color(0xFFBF0000),
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFBF0000),
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(screenWidth * 0.02)),
+                          padding: EdgeInsets.symmetric(
+                              vertical: screenHeight * 0.02)),
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'No',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

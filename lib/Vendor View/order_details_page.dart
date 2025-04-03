@@ -224,7 +224,7 @@ class OrderDetailsPage extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -257,27 +257,28 @@ class OrderDetailsPage extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Customer Information:',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: screenWidth * 0.05,
                         color: primaryRed,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: screenHeight * 0.01),
                     Row(
                       children: [
                         CircleAvatar(
-                          radius: 30,
+                          radius: screenWidth * 0.07,
                           backgroundImage: NetworkImage(imageUrl),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: screenWidth * 0.04),
                         Expanded(
                           child: Text(
                             name,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.045,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                         IconButton(
@@ -285,67 +286,64 @@ class OrderDetailsPage extends StatelessWidget {
                             backgroundColor: primaryRed,
                             radius: screenWidth * 0.06,
                             child: Icon(Icons.chat,
-                                color: Colors.white, size: screenWidth * 0.06),
+                                color: Colors.white, size: screenWidth * 0.05),
                           ),
-                          onPressed: () {
-                            final customerId =
-                                orderData['Customer_ID']?.toString() ?? '';
-                            if (customerId.isNotEmpty) {
-                              _handleChatWithCustomer(context, customerId);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Customer ID not available')),
-                              );
-                            }
-                          },
+                          onPressed: () => _handleChatWithCustomer(
+                              context, orderData['Customer_ID']?.toString()),
                         ),
                         IconButton(
                           icon: CircleAvatar(
                             backgroundColor: primaryRed,
                             radius: screenWidth * 0.06,
                             child: Icon(Icons.call,
-                                color: Colors.white, size: screenWidth * 0.06),
+                                color: Colors.white, size: screenWidth * 0.05),
                           ),
                           onPressed: () =>
                               _handleCall(context, orderData['Customer_Phone']),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: screenHeight * 0.02),
                     Text(
                       'Address Details:',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: screenWidth * 0.04),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: screenHeight * 0.01),
                     Text(
                       'Block: $block, Building: $building, Road: $road',
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: screenWidth * 0.035),
                     ),
                     if (apartment != null)
                       Text('Apartment: $apartment',
-                          style: const TextStyle(fontSize: 14)),
+                          style: TextStyle(fontSize: screenWidth * 0.035)),
                     if (floor != null)
                       Text('Floor: $floor',
-                          style: const TextStyle(fontSize: 14)),
+                          style: TextStyle(fontSize: screenWidth * 0.035)),
                     if (office != null)
                       Text('Office: $office',
-                          style: const TextStyle(fontSize: 14)),
+                          style: TextStyle(fontSize: screenWidth * 0.035)),
                     if (companyName != null)
                       Text('Company Name: $companyName',
-                          style: const TextStyle(fontSize: 14)),
+                          style: TextStyle(fontSize: screenWidth * 0.035)),
                     if (location != null && location is GeoPoint)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: EdgeInsets.only(top: screenHeight * 0.02),
                         child: OutlinedButton.icon(
-                          icon: const Icon(Icons.map, color: primaryRed),
-                          label: const Text(
+                          icon: Icon(Icons.map,
+                              color: primaryRed, size: screenWidth * 0.05),
+                          label: Text(
                             'View in Map',
-                            style: TextStyle(color: primaryRed),
+                            style: TextStyle(
+                                color: primaryRed,
+                                fontSize: screenWidth * 0.04),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: primaryRed),
+                            side: BorderSide(color: primaryRed),
+                            padding: EdgeInsets.symmetric(
+                                vertical: screenHeight * 0.015,
+                                horizontal: screenWidth * 0.04),
                           ),
                           onPressed: () => _openGoogleMaps(location),
                         ),
@@ -354,123 +352,131 @@ class OrderDetailsPage extends StatelessWidget {
                 );
               },
             ),
-            const Divider(),
-            const Text(
+            Divider(thickness: screenHeight * 0.001),
+            Text(
               'Order Details:',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontSize: screenWidth * 0.05,
                 color: primaryRed,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: screenHeight * 0.02),
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: EdgeInsets.all(screenWidth * 0.02),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _orderDetailItem("Order Number", orderData['Order_Number']),
-                  _orderDetailItem("Delivery Type", orderData['Delivery_Type']),
                   _orderDetailItem(
-                    "Order Date",
-                    (orderData['Order_Date'] as Timestamp?)
-                            ?.toDate()
-                            .toString()
-                            .substring(0, 16) ??
-                        'N/A',
-                  ),
+                      "Order Number", orderData['Order_Number'], screenWidth),
                   _orderDetailItem(
-                      "Payment Method", orderData['Payment_Method']),
-                  if (orderData['Schedule_Time'] != null)
-                    _orderDetailItem(
-                      "Schedule Time",
-                      (orderData['Schedule_Time'] as Timestamp?)
+                      "Delivery Type", orderData['Delivery_Type'], screenWidth),
+                  _orderDetailItem(
+                      "Order Date",
+                      (orderData['Order_Date'] as Timestamp?)
                               ?.toDate()
                               .toString()
                               .substring(0, 16) ??
                           'N/A',
-                    ),
-                  _orderDetailItem("Status", orderData['Status']),
+                      screenWidth),
+                  _orderDetailItem("Payment Method",
+                      orderData['Payment_Method'], screenWidth),
+                  if (orderData['Schedule_Time'] != null)
+                    _orderDetailItem(
+                        "Schedule Time",
+                        (orderData['Schedule_Time'] as Timestamp?)
+                                ?.toDate()
+                                .toString()
+                                .substring(0, 16) ??
+                            'N/A',
+                        screenWidth),
+                  _orderDetailItem("Status", orderData['Status'], screenWidth),
                 ],
               ),
             ),
-            const Divider(),
-            const Text(
+            Divider(thickness: screenHeight * 0.001),
+            Text(
               'Order Items:',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontSize: screenWidth * 0.05,
                 color: primaryRed,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: screenHeight * 0.02),
             ...items.map((item) {
               final int quantity = item['quantity'] ?? 1;
-
               return ListTile(
+                contentPadding: EdgeInsets.zero,
                 leading: (item['image'] != null && item['image'].isNotEmpty)
-                    ? Image.network(item['image'], width: 60, height: 60)
-                    : const Icon(Icons.fastfood),
+                    ? Image.network(item['image'],
+                        width: screenWidth * 0.15, height: screenWidth * 0.15)
+                    : Icon(Icons.fastfood, size: screenWidth * 0.08),
                 title: Text(
                   '${item['name'] ?? 'No Name'}${quantity > 1 ? ' (x$quantity)' : ''}',
+                  style: TextStyle(fontSize: screenWidth * 0.04),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        "${(item['price'] as num?)?.toStringAsFixed(3) ?? '0.000'} BHD"),
+                      "${(item['price'] as num?)?.toStringAsFixed(3) ?? '0.000'} BHD",
+                      style: TextStyle(fontSize: screenWidth * 0.035),
+                    ),
                     if (item['addOns'] != null)
                       ...(item['addOns'] as List).map<Widget>((addOn) => Text(
-                            "+ ${addOn['name']} (${(addOn['price'] as num).toStringAsFixed(3)} BHD)",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            "+ ${addOn['name']} (${(addOn['price'] as num).toStringAsFixed(3)} BHD",
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.03,
+                                color: Colors.grey),
                           )),
                   ],
                 ),
               );
             }).toList(),
-            const Divider(),
-            const Text(
+            Divider(thickness: screenHeight * 0.001),
+            Text(
               'Payment Summary:',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontSize: screenWidth * 0.05,
                 color: primaryRed,
               ),
             ),
-            const SizedBox(height: 8),
-            _buildDetailRow("Subtotal", orderData['Subtotal']),
-            _buildDetailRow("Delivery Cost", orderData['Delivery_Cost']),
-            _buildDetailRow("Tax", orderData['Tax']),
+            SizedBox(height: screenHeight * 0.02),
+            _buildDetailRow("Subtotal", orderData['Subtotal'], screenWidth),
+            _buildDetailRow(
+                "Delivery Cost", orderData['Delivery_Cost'], screenWidth),
+            _buildDetailRow("Tax", orderData['Tax'], screenWidth),
             if ((orderData['Total_Points_Used'] ?? 0) > 0)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Total Points Used',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: primaryRed,
-                      ),
+                          fontSize: screenWidth * 0.04,
+                          fontWeight: FontWeight.bold,
+                          color: primaryRed),
                     ),
                     Text(
                       '${orderData['Total_Points_Used']} Points',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: primaryRed,
-                      ),
+                      style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          fontWeight: FontWeight.bold,
+                          color: primaryRed),
                     ),
                   ],
                 ),
               ),
-            _buildDetailRow("Total", orderData['Total'], isTotal: true),
+            _buildDetailRow("Total", orderData['Total'], screenWidth,
+                isTotal: true),
             if (isHistory && orderData['Driver_ID'] != null)
               Column(
                 children: [
-                  const Divider(),
+                  Divider(thickness: screenHeight * 0.001),
                   FutureBuilder<DocumentSnapshot>(
                     future: FirebaseFirestore.instance
                         .collection('Driver')
@@ -499,22 +505,23 @@ class OrderDetailsPage extends StatelessWidget {
                       return Row(
                         children: [
                           CircleAvatar(
-                            radius: 30,
+                            radius: screenWidth * 0.07,
                             backgroundImage: NetworkImage(driverImage),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: screenWidth * 0.04),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(driverName,
-                                    style: const TextStyle(
-                                        fontSize: 16,
+                                    style: TextStyle(
+                                        fontSize: screenWidth * 0.04,
                                         fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 4),
+                                SizedBox(height: screenHeight * 0.005),
                                 Text(
                                   'Phone: $driverPhone',
-                                  style: const TextStyle(fontSize: 14),
+                                  style:
+                                      TextStyle(fontSize: screenWidth * 0.035),
                                 ),
                               ],
                             ),
@@ -525,20 +532,10 @@ class OrderDetailsPage extends StatelessWidget {
                               radius: screenWidth * 0.06,
                               child: Icon(Icons.chat,
                                   color: Colors.white,
-                                  size: screenWidth * 0.06),
+                                  size: screenWidth * 0.05),
                             ),
-                            onPressed: () {
-                              final driverId =
-                                  orderData['Driver_ID']?.toString() ?? '';
-                              if (driverId.isNotEmpty) {
-                                _handleChatWithDriver(context, driverId);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Driver ID not available')),
-                                );
-                              }
-                            },
+                            onPressed: () => _handleChatWithDriver(
+                                context, orderData['Driver_ID']?.toString()),
                           ),
                           IconButton(
                             icon: CircleAvatar(
@@ -546,7 +543,7 @@ class OrderDetailsPage extends StatelessWidget {
                               radius: screenWidth * 0.06,
                               child: Icon(Icons.call,
                                   color: Colors.white,
-                                  size: screenWidth * 0.06),
+                                  size: screenWidth * 0.05),
                             ),
                             onPressed: () => _handleCall(context, driverPhone),
                           ),
@@ -562,39 +559,38 @@ class OrderDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _orderDetailItem(String label, dynamic value) {
+  Widget _orderDetailItem(String label, dynamic value, double screenWidth) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: screenWidth * 0.02),
       child: RichText(
         text: TextSpan(
-          style: const TextStyle(fontSize: 16, color: Colors.black),
+          style: TextStyle(fontSize: screenWidth * 0.04, color: Colors.black),
           children: [
             TextSpan(
               text: "$label: ",
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            TextSpan(
-              text: value?.toString() ?? 'N/A',
-            ),
+            TextSpan(text: value?.toString() ?? 'N/A'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, dynamic value, {bool isTotal = false}) {
+  Widget _buildDetailRow(String label, dynamic value, double screenWidth,
+      {bool isTotal = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.02),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
               style: TextStyle(
-                  fontSize: 16,
+                  fontSize: screenWidth * 0.04,
                   fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
           Text("${(value ?? 0).toStringAsFixed(3)} BHD",
               style: TextStyle(
-                  fontSize: 16,
+                  fontSize: screenWidth * 0.04,
                   fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
         ],
       ),

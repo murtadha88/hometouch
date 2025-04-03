@@ -21,7 +21,6 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ImagePicker _picker = ImagePicker();
 
-  // Promotion Variables
   final TextEditingController _promoStartDateController =
       TextEditingController();
   final TextEditingController _promoEndDateController = TextEditingController();
@@ -206,7 +205,6 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
   String _selectedCategory = "All";
   Map<String, List<Map<String, dynamic>>> _categorizedProducts = {};
 
-  // Cache the future so that it does not re-fetch on every setState.
   late Future<Map<String, List<Map<String, dynamic>>>> _vendorProductsFuture;
 
   Future<Map<String, List<Map<String, dynamic>>>> _getVendorProducts() async {
@@ -214,7 +212,6 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return categorizedProducts;
 
-    // Clear _vendorProducts in case this is called multiple times.
     _vendorProducts.clear();
 
     QuerySnapshot catSnapshot = await _firestore
@@ -251,7 +248,6 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
   }
 
   Future<void> _applyDiscount() async {
-    print("ggggggggggggggggggggggggggggggggggggggggggg");
     double discountPercentage =
         double.tryParse(_discountPercentageController.text) ?? 0.0;
     if (discountPercentage <= 0 ||
@@ -259,7 +255,6 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
         _discountEndDate == null ||
         _selectedProductIds.isEmpty) return;
     final user = FirebaseAuth.instance.currentUser;
-    print(user);
     if (user == null) return;
     try {
       for (var product in _vendorProducts) {
@@ -615,68 +610,77 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
         body: TabBarView(
           children: [
             ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(screenWidth * 0.04),
               children: [
-                const Text("Upload",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
+                Text("Upload",
+                    style: TextStyle(
+                        fontSize: screenWidth * 0.045,
+                        fontWeight: FontWeight.bold)),
+                SizedBox(height: screenHeight * 0.015),
                 _buildUploadCard(isFirst: true),
-                const SizedBox(height: 16),
-                const Text("Promotion Dates",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
+                SizedBox(height: screenHeight * 0.02),
+                Text("Promotion Dates",
+                    style: TextStyle(
+                        fontSize: screenWidth * 0.045,
+                        fontWeight: FontWeight.bold)),
+                SizedBox(height: screenHeight * 0.015),
                 TextField(
                   controller: _promoStartDateController,
                   readOnly: true,
                   decoration: InputDecoration(
                     hintText: "Select Start Date",
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius:
+                            BorderRadius.circular(screenWidth * 0.02)),
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.calendar_today),
+                      icon:
+                          Icon(Icons.calendar_today, size: screenWidth * 0.06),
                       onPressed: () => _selectPromoDate(true),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: screenHeight * 0.02),
                 TextField(
                   controller: _promoEndDateController,
                   readOnly: true,
                   decoration: InputDecoration(
                     hintText: "Select End Date",
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                        borderRadius:
+                            BorderRadius.circular(screenWidth * 0.02)),
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.calendar_today),
+                      icon:
+                          Icon(Icons.calendar_today, size: screenWidth * 0.06),
                       onPressed: () => _selectPromoDate(false),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: screenHeight * 0.03),
                 _buildSummaryRow(),
-                const SizedBox(height: 24),
+                SizedBox(height: screenHeight * 0.03),
                 ElevatedButton(
                   onPressed: _savePromotion,
                   style: ElevatedButton.styleFrom(
                       backgroundColor: primaryRed,
-                      padding: const EdgeInsets.symmetric(vertical: 16)),
-                  child: const Text("Set Promotion",
-                      style: TextStyle(color: Colors.white)),
+                      padding:
+                          EdgeInsets.symmetric(vertical: screenHeight * 0.02)),
+                  child: Text("Set Promotion",
+                      style: TextStyle(
+                          color: Colors.white, fontSize: screenWidth * 0.045)),
                 ),
               ],
             ),
             Stack(
               children: [
                 SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 140, top: 20),
+                  padding: EdgeInsets.only(
+                      bottom: screenHeight * 0.2, top: screenHeight * 0.02),
                   child: _buildDiscountedProductsList(),
                 ),
                 Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
+                  left: screenWidth * 0.04,
+                  right: screenWidth * 0.04,
+                  bottom: screenHeight * 0.02,
                   child: _buildDiscountInput(),
                 ),
               ],
@@ -687,38 +691,43 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
     );
   }
 
-  // ---------- Helper Widgets for Promotion Tab ----------
   Widget _buildUploadCard({required bool isFirst}) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     final file = isFirst ? _promoUploadedFile1 : _promoUploadedFile2;
     return InkWell(
       onTap: () => _pickPromoImage(isFirst),
       child: Container(
-        height: 150,
+        height: screenHeight * 0.2,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
           color: Colors.grey.shade100,
         ),
         child: file != null
             ? Image.file(file, fit: BoxFit.cover)
             : Center(
                 child: Text("Click to Upload Image",
-                    style: TextStyle(color: Colors.grey.shade600)),
+                    style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: screenWidth * 0.04)),
               ),
       ),
     );
   }
 
   Widget _buildSummaryRow() {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(screenWidth * 0.03),
       decoration: BoxDecoration(
           border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(12)),
+          borderRadius: BorderRadius.circular(screenWidth * 0.03)),
       child: Column(
         children: [
           _buildSummaryLine("Total Days", "${_totalPromoCost.toInt()} Days"),
-          const Divider(),
+          Divider(),
           _buildSummaryLine("Total Cost", "$_totalPromoCost BHD", isBold: true),
         ],
       ),
@@ -726,71 +735,79 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
   }
 
   Widget _buildSummaryLine(String label, String value, {bool isBold = false}) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
               style: TextStyle(
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                  fontSize: screenWidth * 0.04)),
           Text(value,
               style: TextStyle(
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                  fontSize: screenWidth * 0.04)),
         ],
       ),
     );
   }
 
-  // Discount input widget pinned at the bottom.
   Widget _buildDiscountInput() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Material(
       elevation: 6,
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(screenWidth * 0.1),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         decoration: BoxDecoration(
           color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(screenWidth * 0.1),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Discount Start Date Field
             TextField(
               controller: _discountStartDateController,
               readOnly: true,
               decoration: InputDecoration(
                 hintText: "Discount Start Date",
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.1),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.04,
+                    vertical: screenHeight * 0.015),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today),
+                  icon: Icon(Icons.calendar_today, size: screenWidth * 0.06),
                   onPressed: () => _selectDiscountDate(true),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: screenHeight * 0.015),
             TextField(
               controller: _discountEndDateController,
               readOnly: true,
               decoration: InputDecoration(
                 hintText: "Discount End Date",
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.1),
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.04,
+                    vertical: screenHeight * 0.015),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.calendar_today),
+                  icon: Icon(Icons.calendar_today, size: screenWidth * 0.06),
                   onPressed: () => _selectDiscountDate(false),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: screenHeight * 0.015),
             Row(
               children: [
                 Expanded(
@@ -800,26 +817,29 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
                     decoration: InputDecoration(
                       hintText: "Discount %",
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.1),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: screenHeight * 0.015),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: screenWidth * 0.04),
                 ElevatedButton(
                   onPressed: _applyDiscount,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryRed,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.06,
+                        vertical: screenHeight * 0.02),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.1),
                     ),
                   ),
-                  child: const Text("Apply",
-                      style: TextStyle(color: Colors.white)),
+                  child: Text("Apply",
+                      style: TextStyle(
+                          color: Colors.white, fontSize: screenWidth * 0.04)),
                 ),
               ],
             ),
@@ -830,6 +850,8 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
   }
 
   Widget _buildPriceDisplay(Map<String, dynamic> item) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     final DateTime now = DateTime.now();
     final Timestamp? start = item["Discount_Start_Date"];
     final Timestamp? end = item["Discount_End_Date"];
@@ -847,17 +869,17 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
         children: [
           Text(
             "${item["Price"]} BHD",
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: screenWidth * 0.035,
               color: Colors.black54,
               decoration: TextDecoration.lineThrough,
             ),
           ),
-          SizedBox(width: 8),
+          SizedBox(width: screenWidth * 0.02),
           Text(
             "${item["Discount_Price"]} BHD",
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: screenWidth * 0.035,
               color: primaryRed,
               fontWeight: FontWeight.bold,
             ),
@@ -867,8 +889,8 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
     } else {
       return Text(
         "${item["Price"]} BHD",
-        style: const TextStyle(
-          fontSize: 14,
+        style: TextStyle(
+          fontSize: screenWidth * 0.035,
           color: Colors.black54,
           fontWeight: FontWeight.bold,
         ),

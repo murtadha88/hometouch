@@ -230,7 +230,8 @@ class _AddProductPageState extends State<AddProductPage> {
                   color: Color(0xFFBF0000),
                 ),
                 alignment: Alignment.center,
-                padding: EdgeInsets.only(top: 2, left: 6),
+                padding: EdgeInsets.only(
+                    top: screenHeight * 0.0025, left: screenWidth * 0.015),
                 child: Icon(Icons.arrow_back_ios,
                     color: Colors.white, size: screenHeight * 0.02),
               ),
@@ -265,7 +266,7 @@ class _AddProductPageState extends State<AddProductPage> {
           child: ListView(
             children: [
               _buildImageCard(screenWidth, screenHeight),
-              const SizedBox(height: 20),
+              SizedBox(height: screenHeight * 0.025),
               _buildTextField(
                 label: 'Product Name',
                 hint: 'Enter product name',
@@ -306,14 +307,18 @@ class _AddProductPageState extends State<AddProductPage> {
                 },
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 18, bottom: 20, right: 18),
+                padding: EdgeInsets.only(
+                  left: screenWidth * 0.045,
+                  bottom: screenHeight * 0.025,
+                  right: screenWidth * 0.045,
+                ),
                 child: DropdownButtonFormField<String>(
                   dropdownColor: Colors.white,
                   value: _selectedCategoryId,
                   decoration: InputDecoration(
                     labelText: 'Category',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     ),
                   ),
                   items: _fixedCategories.map((category) {
@@ -344,20 +349,27 @@ class _AddProductPageState extends State<AddProductPage> {
                 },
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 18, bottom: 20, right: 18),
+                padding: EdgeInsets.only(
+                  left: screenWidth * 0.045,
+                  bottom: screenHeight * 0.025,
+                  right: screenWidth * 0.045,
+                ),
                 child: Text(
                   'If this product is eligible for the rewards system, please specify the required points to order it for free.',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(
+                      color: Colors.grey[600], fontSize: screenWidth * 0.03),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 18),
+                padding: EdgeInsets.only(left: screenWidth * 0.045),
                 child: Text(
                   'Add-Ons:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: screenHeight * 0.0125),
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -371,15 +383,17 @@ class _AddProductPageState extends State<AddProductPage> {
                         Expanded(
                           flex: 2,
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: 10),
+                            margin:
+                                EdgeInsets.only(bottom: screenHeight * 0.0125),
                             decoration: _textFieldBoxDecoration(),
                             child: TextField(
                               controller: _addOnNameControllers[index],
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Add-On Name',
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 12),
+                                    horizontal: screenWidth * 0.025,
+                                    vertical: screenHeight * 0.015),
                               ),
                             ),
                           ),
@@ -388,7 +402,8 @@ class _AddProductPageState extends State<AddProductPage> {
                         Expanded(
                           flex: 1,
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: 10),
+                            margin:
+                                EdgeInsets.only(bottom: screenHeight * 0.0125),
                             decoration: _textFieldBoxDecoration(),
                             child: TextField(
                               controller: _addOnPriceControllers[index],
@@ -399,11 +414,12 @@ class _AddProductPageState extends State<AddProductPage> {
                                 FilteringTextInputFormatter.allow(
                                     RegExp(r'^\d*\.?\d*$')),
                               ],
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Price',
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 12),
+                                    horizontal: screenWidth * 0.025,
+                                    vertical: screenHeight * 0.015),
                               ),
                             ),
                           ),
@@ -426,15 +442,17 @@ class _AddProductPageState extends State<AddProductPage> {
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: screenHeight * 0.025),
               Padding(
-                padding: const EdgeInsets.only(left: 18),
+                padding: EdgeInsets.only(left: screenWidth * 0.045),
                 child: Text(
                   'Remove:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: screenHeight * 0.0125),
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -447,15 +465,17 @@ class _AddProductPageState extends State<AddProductPage> {
                       children: [
                         Expanded(
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: 10),
+                            margin:
+                                EdgeInsets.only(bottom: screenHeight * 0.0125),
                             decoration: _textFieldBoxDecoration(),
                             child: TextField(
                               controller: _removeControllers[index],
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Remove Option',
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 12),
+                                    horizontal: screenWidth * 0.025,
+                                    vertical: screenHeight * 0.015),
                               ),
                             ),
                           ),
@@ -484,7 +504,7 @@ class _AddProductPageState extends State<AddProductPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFBF0000),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     side: const BorderSide(color: Colors.white),
                   ),
                 ),
@@ -494,7 +514,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     color: _isButtonEnabled
                         ? Colors.white
                         : Colors.white.withOpacity(0.5),
-                    fontSize: 16,
+                    fontSize: screenWidth * 0.04,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -514,7 +534,7 @@ class _AddProductPageState extends State<AddProductPage> {
         height: screenHeight * 0.25,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(screenWidth * 0.02),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.2),
@@ -532,25 +552,25 @@ class _AddProductPageState extends State<AddProductPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 70,
-                      height: 70,
+                      width: screenWidth * 0.17,
+                      height: screenWidth * 0.17,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: const Color.fromARGB(255, 184, 211, 216)
                             .withOpacity(0.2),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.file_copy,
-                        size: 50,
+                        size: screenWidth * 0.13,
                         color: Color(0xFFBF0000),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: screenHeight * 0.01),
+                    Text(
                       'Click to upload image',
                       style: TextStyle(
                         color: Color(0xFFBF0000),
-                        fontSize: 16,
+                        fontSize: screenWidth * 0.04,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -559,7 +579,7 @@ class _AddProductPageState extends State<AddProductPage> {
               )
             else
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(screenWidth * 0.02),
                 child: Image.file(
                   _uploadedImage!,
                   fit: BoxFit.cover,
@@ -590,15 +610,19 @@ class _AddProductPageState extends State<AddProductPage> {
     required Function(String) onChanged,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     return Padding(
-      padding: const EdgeInsets.only(left: 18, bottom: 20),
+      padding: EdgeInsets.only(
+        left: screenWidth * 0.045,
+        bottom: screenHeight * 0.025,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RichText(
             text: TextSpan(
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: screenWidth * 0.04,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
@@ -626,11 +650,12 @@ class _AddProductPageState extends State<AddProductPage> {
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(screenWidth * 0.02),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.025,
+                    vertical: screenHeight * 0.015),
               ),
               validator: (value) {
                 if (requiredField && (value == null || value.isEmpty)) {
@@ -647,9 +672,10 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   BoxDecoration _textFieldBoxDecoration() {
+    final screenWidth = MediaQuery.of(context).size.width;
     return BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(screenWidth * 0.02),
       boxShadow: [
         BoxShadow(
           color: Colors.grey.withOpacity(0.2),
