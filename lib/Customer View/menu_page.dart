@@ -38,6 +38,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     _checkIfFavorite();
     _fetchCartItemCount();
     _initializeUserAndCart();
+    _checkAndShowActivePoll();
   }
 
   Future<void> _initializeUserAndCart() async {
@@ -309,6 +310,196 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     } catch (e) {
       print("❌ Error fetching cart count: $e");
     }
+  }
+
+  Future<void> _checkAndShowActivePoll() async {
+    final DateTime now = DateTime.now();
+
+    final pollSnapshot = await FirebaseFirestore.instance
+        .collection('poll')
+        .where('Vendor_ID', isEqualTo: widget.vendorId)
+        .where('Start_Date', isLessThanOrEqualTo: now)
+        .where('End_Date', isGreaterThanOrEqualTo: now)
+        .limit(1)
+        .get();
+
+    if (pollSnapshot.docs.isNotEmpty) {
+      final pollData = pollSnapshot.docs.first.data();
+      _showPollDialog(pollSnapshot.docs.first.id, pollData);
+    }
+  }
+
+  void _showPollDialog(String pollId, Map<String, dynamic> pollData) {
+    final List<dynamic> choicesData = pollData['Choices'];
+    final List<String> choices =
+        choicesData.map((c) => c['choice'] as String).toList();
+    String? selectedChoice;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundImage:
+                            NetworkImage(vendorDetails['Logo'] ?? ''),
+                        radius: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        vendorDetails['Name'] ?? 'Vendor',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 38, right: 8),
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Icon(
+                        Icons.close,
+                        color: Color(0xFFBF0000),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: screenWidth * 0.8,
+                height: screenHeight * 0.35,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      pollData['Question'] ?? '',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: choices.length,
+                        itemBuilder: (context, index) {
+                          final choice = choices[index];
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedChoice = choice;
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              decoration: BoxDecoration(
+                                color: selectedChoice == choice
+                                    ? const Color(0xFFBF0000)
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: ListTile(
+                                leading: Text(
+                                  (index + 1).toString().padLeft(2, '0'),
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    color: selectedChoice == choice
+                                        ? Colors.white
+                                        : const Color(0xFFBF0000),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                title: Text(
+                                  choice,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: selectedChoice == choice
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                Center(
+                  child: Container(
+                    width: screenWidth * 0.4,
+                    decoration: BoxDecoration(
+                      color: selectedChoice != null
+                          ? const Color(0xFFBF0000)
+                          : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: TextButton(
+                      onPressed: selectedChoice != null
+                          ? () {
+                              _submitVote(pollId, selectedChoice!);
+                              Navigator.of(context).pop();
+                            }
+                          : null,
+                      child: const Text(
+                        'Vote',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitVote(String pollId, String selectedOption) async {
+    final pollRef = FirebaseFirestore.instance.collection('poll').doc(pollId);
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final pollSnapshot = await transaction.get(pollRef);
+      if (!pollSnapshot.exists) {
+        throw Exception("Poll does not exist!");
+      }
+
+      final List<dynamic> choices = pollSnapshot.data()?['Choices'] ?? [];
+
+      final updatedChoices = choices.map((choiceMap) {
+        if (choiceMap['choice'] == selectedOption) {
+          return {
+            'choice': choiceMap['choice'],
+            'votes': (choiceMap['votes'] ?? 0) + 1,
+          };
+        }
+        return choiceMap;
+      }).toList();
+
+      transaction.update(pollRef, {'Choices': updatedChoices});
+    });
+
+    Navigator.of(context).pop();
   }
 
   @override

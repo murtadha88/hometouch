@@ -7,6 +7,7 @@ import 'package:hometouch/Common%20Pages/review_page.dart';
 import 'package:hometouch/Vendor%20View/discount_promotion_page.dart';
 import 'package:hometouch/Vendor%20View/menu_management_page.dart';
 import 'package:hometouch/Vendor%20View/orders_management_page.dart';
+import 'package:hometouch/Vendor%20View/poll_management_page.dart';
 import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hometouch/Common%20Pages/role_page.dart';
@@ -327,7 +328,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => OrderManagementPage()),
+                                  builder: (context) => PollPage()),
                             );
                           },
                         ),
