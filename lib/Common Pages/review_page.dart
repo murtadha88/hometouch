@@ -7,8 +7,14 @@ class ReviewPage extends StatefulWidget {
   final String? vendorId;
   final String? productId;
   final String? categoryId;
+  final bool isVendor;
 
-  const ReviewPage({Key? key, this.vendorId, this.productId, this.categoryId})
+  const ReviewPage(
+      {Key? key,
+      this.vendorId,
+      this.productId,
+      this.categoryId,
+      this.isVendor = false})
       : super(key: key);
 
   @override
@@ -18,6 +24,9 @@ class ReviewPage extends StatefulWidget {
 class _ReviewPageState extends State<ReviewPage> {
   final TextEditingController _reviewController = TextEditingController();
   final FocusNode _reviewFocusNode = FocusNode();
+  final TextEditingController _replyController = TextEditingController();
+  String? _replyingToReviewId;
+
   int _rating = 5;
   String _ratingLabel = "Excellent";
   List<Map<String, dynamic>> _reviews = [];
@@ -85,12 +94,16 @@ class _ReviewPageState extends State<ReviewPage> {
             ? DateFormat('dd MMM yyyy').format(reviewData["Date"].toDate())
             : "Unknown Date";
 
+        List<Map<String, dynamic>> replies = await fetchReplies(doc.id);
+
         reviews.add({
+          "reviewId": doc.id,
           "customerName": customerData?["Name"] ?? "Unknown Customer",
           "customerPhoto": customerData?["Photo"],
           "rating": reviewData["Rating"] ?? 0,
           "review": reviewData["Review"] ?? "No review",
           "date": formattedDate,
+          "replies": replies,
         });
       }
 
@@ -145,6 +158,76 @@ class _ReviewPageState extends State<ReviewPage> {
       await _updateAverageRating();
     } catch (e) {
       print("Error submitting review: $e");
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchReplies(String reviewId) async {
+    try {
+      QuerySnapshot replySnapshot = await FirebaseFirestore.instance
+          .collection('review')
+          .doc(reviewId)
+          .collection('replies')
+          .orderBy('Date', descending: true)
+          .get();
+
+      List<Map<String, dynamic>> replies = [];
+      for (var doc in replySnapshot.docs) {
+        Map<String, dynamic> replyData = doc.data() as Map<String, dynamic>;
+
+        DocumentReference vendorRef = FirebaseFirestore.instance
+            .collection('vendor')
+            .doc(replyData['Vendor_ID']);
+
+        DocumentSnapshot vendorSnapshot = await vendorRef.get();
+        Map<String, dynamic>? vendorData =
+            vendorSnapshot.data() as Map<String, dynamic>?;
+
+        replies.add({
+          "vendorName": vendorData?["Name"] ?? "Vendor",
+          "vendorLogo":
+              vendorData?["Logo"] ?? 'https://i.imgur.com/OtAn7hT.jpeg',
+          "reply": replyData["Reply_Text"] ?? "",
+          "date": DateFormat('dd MMM yyyy').format(replyData["Date"].toDate()),
+        });
+      }
+
+      setState(() {
+        fetchReviews();
+      });
+
+      return replies;
+    } catch (e) {
+      print("Error fetching replies: $e");
+      return [];
+    }
+  }
+
+  Future<void> _submitReply(String reviewId) async {
+    if (_replyController.text.isEmpty) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !widget.isVendor) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('review')
+          .doc(reviewId)
+          .collection('replies')
+          .add({
+        'Vendor_ID': user.uid,
+        'Reply_Text': _replyController.text.trim(),
+        'Date': FieldValue.serverTimestamp(),
+      });
+
+      _replyController.clear();
+      setState(() => _replyingToReviewId = null);
+
+      int index = _reviews.indexWhere((r) => r['reviewId'] == reviewId);
+      if (index != -1) {
+        _reviews[index]['replies'] = await fetchReplies(reviewId);
+      }
+    } catch (e) {
+      print("Error submitting reply: $e");
     }
   }
 
@@ -307,8 +390,7 @@ class _ReviewPageState extends State<ReviewPage> {
                                           review["customerPhoto"]!.isNotEmpty)
                                       ? NetworkImage(review["customerPhoto"])
                                       : NetworkImage(
-                                          'https://i.imgur.com/OtAn7hT.jpeg',
-                                        ),
+                                          'https://i.imgur.com/OtAn7hT.jpeg'),
                                 ),
                                 title: Text(
                                   review["customerName"],
@@ -339,70 +421,151 @@ class _ReviewPageState extends State<ReviewPage> {
                               Padding(
                                 padding: EdgeInsets.symmetric(
                                     horizontal: screenWidth * 0.04),
-                                child: Text(review["review"],
-                                    style: TextStyle(
-                                        fontSize: screenHeight * 0.02)),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(review["review"],
+                                          style: TextStyle(
+                                              fontSize: screenHeight * 0.02)),
+                                    ),
+                                    if (widget.isVendor)
+                                      Container(
+                                        margin: EdgeInsets.only(left: 10),
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Color(0xFFBF0000),
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: screenWidth * 0.03,
+                                                vertical: screenHeight * 0.01),
+                                          ),
+                                          onPressed: () => setState(() =>
+                                              _replyingToReviewId =
+                                                  review['reviewId']),
+                                          child: Text("Reply",
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize:
+                                                      screenHeight * 0.018)),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
+                              if (_replyingToReviewId == review['reviewId'])
+                                Padding(
+                                  padding: EdgeInsets.only(left: 16.0, top: 10),
+                                  child: TextField(
+                                    controller: _replyController,
+                                    decoration: InputDecoration(
+                                      hintText: "Write your reply...",
+                                      suffixIcon: IconButton(
+                                        icon: Icon(Icons.send,
+                                            color: Color(0xFFBF0000)),
+                                        onPressed: () =>
+                                            _submitReply(review['reviewId']),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ...review['replies']
+                                  .map<Widget>((reply) => Padding(
+                                        padding: EdgeInsets.only(
+                                            left: 24.0, top: 10),
+                                        child: ListTile(
+                                          leading: CircleAvatar(
+                                            radius: screenWidth * 0.07,
+                                            backgroundImage: NetworkImage(
+                                                reply['vendorLogo']),
+                                          ),
+                                          title: Text(reply['vendorName'],
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize:
+                                                      screenHeight * 0.02)),
+                                          subtitle: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(reply['reply'],
+                                                  style: TextStyle(
+                                                      fontSize: screenHeight *
+                                                          0.018)),
+                                              Text(reply['date'],
+                                                  style: TextStyle(
+                                                      fontSize:
+                                                          screenHeight * 0.016,
+                                                      color: Colors.grey)),
+                                            ],
+                                          ),
+                                        ),
+                                      ))
+                                  .toList(),
                             ],
                           );
                         },
                       ),
           ),
-          Container(
-            padding: EdgeInsets.all(screenWidth * 0.04),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
+          if (!widget.isVendor)
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.04),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
                   top: BorderSide(
-                      color: Colors.black26, width: screenHeight * 0.001)),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  "Add Rate and Review",
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenHeight * 0.022),
+                      color: Colors.black26, width: screenHeight * 0.001),
                 ),
-                SizedBox(height: screenHeight * 0.015),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (index) {
-                    return IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _rating = index + 1;
-                          _updateRatingLabel(_rating);
-                        });
-                      },
-                      icon: Icon(Icons.star,
-                          color:
-                              index < _rating ? Color(0xFFBF0000) : Colors.grey,
-                          size: screenWidth * 0.07),
-                    );
-                  }),
-                ),
-                Text(
-                  _ratingLabel,
-                  style: TextStyle(
-                      fontSize: screenHeight * 0.02,
-                      fontWeight: FontWeight.bold),
-                ),
-                TextField(
-                  controller: _reviewController,
-                  focusNode: _reviewFocusNode,
-                  decoration: InputDecoration(
-                    hintText: "Write your review...",
-                    suffixIcon: IconButton(
-                      onPressed: _submitReview,
-                      icon: Icon(Icons.send,
-                          color: Color(0xFFBF0000), size: screenHeight * 0.035),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Add Rate and Review",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenHeight * 0.022),
+                  ),
+                  SizedBox(height: screenHeight * 0.015),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _rating = index + 1;
+                            _updateRatingLabel(_rating);
+                          });
+                        },
+                        icon: Icon(Icons.star,
+                            color: index < _rating
+                                ? Color(0xFFBF0000)
+                                : Colors.grey,
+                            size: screenWidth * 0.07),
+                      );
+                    }),
+                  ),
+                  Text(
+                    _ratingLabel,
+                    style: TextStyle(
+                        fontSize: screenHeight * 0.02,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  TextField(
+                    controller: _reviewController,
+                    focusNode: _reviewFocusNode,
+                    decoration: InputDecoration(
+                      hintText: "Write your review...",
+                      suffixIcon: IconButton(
+                        onPressed: _submitReview,
+                        icon: Icon(Icons.send,
+                            color: Color(0xFFBF0000),
+                            size: screenHeight * 0.035),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

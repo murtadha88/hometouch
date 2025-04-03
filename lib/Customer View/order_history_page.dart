@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Customer%20View/order_tracking_page.dart';
-import 'package:hometouch/Customer%20View/review_page.dart';
+import 'package:hometouch/Common%20Pages/review_page.dart';
 
 const Color primaryRed = Color(0xFFBF0000);
 

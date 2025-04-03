@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hometouch/Customer%20View/review_page.dart';
+import 'package:hometouch/Common%20Pages/product_details_page.dart';
+import 'package:hometouch/Common%20Pages/review_page.dart';
 import 'package:hometouch/Vendor%20View/add_product_page.dart';
 import 'package:hometouch/Vendor%20View/edit_product_page.dart';
 
@@ -341,93 +342,107 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
             itemCount: items.length,
             itemBuilder: (context, itemIndex) {
               final item = items[itemIndex];
-              return Card(
-                color: Colors.white,
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(15),
-                      ),
-                      child: _buildImage(
-                        item['image'],
-                        item['name'],
-                        screenWidth,
-                        screenHeight,
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailsPage(
+                        productId: item['id'],
+                        isFromRewards: false,
+                        isVendorView: true,
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: screenWidth * 0.02,
-                        left: screenWidth * 0.02,
-                      ),
-                      child: Text(
-                        item['name'],
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: screenWidth * 0.04,
+                  );
+                },
+                child: Card(
+                  color: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(15),
+                        ),
+                        child: _buildImage(
+                          item['image'],
+                          item['name'],
+                          screenWidth,
+                          screenHeight,
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.02,
-                        vertical: item['name'].length > 20
-                            ? screenHeight * 0.01
-                            : screenHeight * 0.0235,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildPriceDisplay(item),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  Icons.edit,
-                                  size: screenWidth * 0.05,
-                                  color: const Color(0xFFBF0000),
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EditProductPage(
-                                        vendorId: widget.vendorId,
-                                        categoryId: item["categoryId"],
-                                        productId: item["id"],
-                                      ),
-                                    ),
-                                  ).then((_) {
-                                    _fetchCategories();
-                                  });
-                                },
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.delete,
-                                  size: screenWidth * 0.05,
-                                  color: const Color(0xFFBF0000),
-                                ),
-                                onPressed: () {
-                                  showDeleteConfirmationDialog(
-                                    context,
-                                    item["categoryId"],
-                                    item["id"],
-                                  );
-                                },
-                              ),
-                            ],
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: screenWidth * 0.02,
+                          left: screenWidth * 0.02,
+                        ),
+                        child: Text(
+                          item['name'],
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04,
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.02,
+                          vertical: item['name'].length > 20
+                              ? screenHeight * 0.01
+                              : screenHeight * 0.0235,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildPriceDisplay(item),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit,
+                                    size: screenWidth * 0.05,
+                                    color: const Color(0xFFBF0000),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditProductPage(
+                                          vendorId: widget.vendorId,
+                                          categoryId: item["categoryId"],
+                                          productId: item["id"],
+                                        ),
+                                      ),
+                                    ).then((_) {
+                                      _fetchCategories();
+                                    });
+                                  },
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete,
+                                    size: screenWidth * 0.05,
+                                    color: const Color(0xFFBF0000),
+                                  ),
+                                  onPressed: () {
+                                    showDeleteConfirmationDialog(
+                                      context,
+                                      item["categoryId"],
+                                      item["id"],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -590,8 +605,10 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    ReviewPage(vendorId: widget.vendorId),
+                                builder: (context) => ReviewPage(
+                                  vendorId: widget.vendorId,
+                                  isVendor: true,
+                                ),
                               ),
                             ).then((_) {
                               _fetchVendorDetails();

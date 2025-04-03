@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
-import 'package:hometouch/Customer%20View/review_page.dart';
+import 'package:hometouch/Common%20Pages/review_page.dart';
 import 'menu_page.dart';
-import 'product_details_page.dart';
+import '../Common Pages/product_details_page.dart';
 import 'cart_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';

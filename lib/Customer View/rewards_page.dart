@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hometouch/Customer%20View/product_details_page.dart';
+import 'package:hometouch/Common%20Pages/product_details_page.dart';
 import 'cart_page.dart';
 
 class RewardsPage extends StatefulWidget {

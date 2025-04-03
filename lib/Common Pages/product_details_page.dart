@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hometouch/Customer%20View/review_page.dart';
+import 'package:hometouch/Common%20Pages/review_page.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String productId;
   final bool isFromRewards;
   final int points;
+  final bool isVendorView;
 
   const ProductDetailsPage({
     super.key,
     required this.productId,
     this.isFromRewards = false,
     this.points = 0,
+    this.isVendorView = false,
   });
 
   @override
@@ -358,22 +360,23 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             ),
           ),
           actions: [
-            Padding(
-              padding: EdgeInsets.only(
-                  top: screenHeight * 0.02, right: screenWidth * 0.02),
-              child: GestureDetector(
-                onTap: _toggleFavorite,
-                child: CircleAvatar(
-                  backgroundColor: const Color(0xFFBF0000),
-                  radius: screenHeight * 0.027,
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: Colors.white,
-                    size: screenHeight * 0.027,
+            if (!widget.isVendorView)
+              Padding(
+                padding: EdgeInsets.only(
+                    top: screenHeight * 0.02, right: screenWidth * 0.02),
+                child: GestureDetector(
+                  onTap: _toggleFavorite,
+                  child: CircleAvatar(
+                    backgroundColor: const Color(0xFFBF0000),
+                    radius: screenHeight * 0.027,
+                    child: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: Colors.white,
+                      size: screenHeight * 0.027,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(screenHeight * 0.002),
@@ -414,7 +417,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     ),
             ),
             SizedBox(height: screenHeight * 0.01),
-            // Replace the existing Row widget with this code
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -468,18 +470,32 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               return;
                             }
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReviewPage(
-                                  productId: widget.productId,
-                                  categoryId: productData?["categoryId"],
-                                ),
-                              ),
-                            ).then((_) {
-                              _fetchRecentReviews();
-                              _fetchProductDetails();
-                            });
+                            widget.isVendorView
+                                ? Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReviewPage(
+                                        productId: widget.productId,
+                                        categoryId: productData?["categoryId"],
+                                        isVendor: true,
+                                      ),
+                                    ),
+                                  ).then((_) {
+                                    _fetchRecentReviews();
+                                    _fetchProductDetails();
+                                  })
+                                : Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReviewPage(
+                                        productId: widget.productId,
+                                        categoryId: productData?["categoryId"],
+                                      ),
+                                    ),
+                                  ).then((_) {
+                                    _fetchRecentReviews();
+                                    _fetchProductDetails();
+                                  });
                           },
                         ),
                       ],
@@ -488,15 +504,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
               ],
             ),
-            Text(
-              widget.isFromRewards
-                  ? "${widget.points.toStringAsFixed(0)} Points Required"
-                  : "${productData?["Price"].toStringAsFixed(3)} BHD",
-              style: TextStyle(
-                  fontSize: screenWidth * 0.05,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFBF0000)),
-            ),
+            widget.isFromRewards
+                ? Text(
+                    "${widget.points.toStringAsFixed(0)} Points Required",
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFBF0000),
+                    ),
+                  )
+                : _buildPriceDisplay({
+                    "price": productData?["Price"],
+                    "Discount_Price": productData?["Discount_Price"],
+                    "Discount_Start_Date": productData?["Discount_Start_Date"],
+                    "Discount_End_Date": productData?["Discount_End_Date"],
+                  }),
             SizedBox(height: screenHeight * 0.02),
             Text(
               productData?["Description"] ?? "No description available.",
@@ -518,80 +540,84 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.only(
-            left: screenWidth * 0.04, right: screenWidth * 0.04),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border:
-              Border(top: BorderSide(color: Colors.grey.shade300, width: 1)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Quantity",
-                    style: TextStyle(
-                        fontSize: screenWidth * 0.045,
-                        fontWeight: FontWeight.bold)),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.remove,
-                          color: const Color(0xFFBF0000),
-                          size: screenWidth * 0.07),
-                      onPressed: () {
-                        setState(() {
-                          if (_quantity > 1) _quantity--;
-                        });
-                      },
-                    ),
-                    Text(
-                      _quantity.toString(),
-                      style: TextStyle(
-                          fontSize: screenWidth * 0.05,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add,
-                          color: const Color(0xFFBF0000),
-                          size: screenWidth * 0.07),
-                      onPressed: () {
-                        setState(() {
-                          _quantity++;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: _addToCart,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFBF0000),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(screenWidth * 0.08)),
-                padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+      bottomNavigationBar: widget.isVendorView
+          ? null
+          : Container(
+              padding: EdgeInsets.only(
+                  left: screenWidth * 0.04, right: screenWidth * 0.04),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                    top: BorderSide(color: Colors.grey.shade300, width: 1)),
               ),
-              child: Center(
-                child: Text(
-                  widget.isFromRewards
-                      ? "Add to Cart ($_totalDisplay)"
-                      : "Add to Cart ($_totalDisplay)",
-                  style: TextStyle(
-                      fontSize: screenWidth * 0.05, color: Colors.white),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Quantity",
+                          style: TextStyle(
+                              fontSize: screenWidth * 0.045,
+                              fontWeight: FontWeight.bold)),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.remove,
+                                color: const Color(0xFFBF0000),
+                                size: screenWidth * 0.07),
+                            onPressed: () {
+                              setState(() {
+                                if (_quantity > 1) _quantity--;
+                              });
+                            },
+                          ),
+                          Text(
+                            _quantity.toString(),
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.05,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.add,
+                                color: const Color(0xFFBF0000),
+                                size: screenWidth * 0.07),
+                            onPressed: () {
+                              setState(() {
+                                _quantity++;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  ElevatedButton(
+                    onPressed: _addToCart,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFBF0000),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.08)),
+                      padding:
+                          EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.isFromRewards
+                            ? "Add to Cart ($_totalDisplay)"
+                            : "Add to Cart ($_totalDisplay)",
+                        style: TextStyle(
+                            fontSize: screenWidth * 0.05, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: screenHeight * 0.03,
+                  )
+                ],
               ),
             ),
-            SizedBox(
-              height: screenHeight * 0.03,
-            )
-          ],
-        ),
-      ),
     );
   }
 
@@ -728,5 +754,57 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         );
       }).toList(),
     );
+  }
+
+  Widget _buildPriceDisplay(Map<String, dynamic> item) {
+    final DateTime now = DateTime.now();
+    final Timestamp? start = item["Discount_Start_Date"];
+    final Timestamp? end = item["Discount_End_Date"];
+
+    bool isDiscountActive = false;
+    if (start != null && end != null) {
+      final DateTime startDate = start.toDate();
+      final DateTime endDate = end.toDate();
+      isDiscountActive = now.isAfter(startDate) && now.isBefore(endDate);
+    }
+
+    final double? price = (item["price"] as num?)?.toDouble();
+    final double? discountPrice = (item["Discount_Price"] as num?)?.toDouble();
+
+    if (price == null) return const Text("N/A");
+
+    if (isDiscountActive && discountPrice != null) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "${price.toStringAsFixed(3)} BHD",
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.black54,
+              decoration: TextDecoration.lineThrough,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            "${discountPrice.toStringAsFixed(3)} BHD",
+            style: const TextStyle(
+              fontSize: 18,
+              color: Color(0xFFBF0000),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Text(
+        "${price.toStringAsFixed(3)} BHD",
+        style: const TextStyle(
+          fontSize: 18,
+          color: Color(0xFFBF0000),
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
   }
 }
