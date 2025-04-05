@@ -123,6 +123,24 @@ class _OrdersPageState extends State<OrdersPage>
 
   void _cancelOrder(String orderId) async {
     try {
+      DocumentSnapshot orderSnapshot = await FirebaseFirestore.instance
+          .collection('order')
+          .doc(orderId)
+          .get();
+
+      if (orderSnapshot.exists) {
+        Map<String, dynamic> orderData =
+            orderSnapshot.data() as Map<String, dynamic>;
+        String? driverId = orderData['Driver_ID'];
+
+        if (driverId != null && driverId != "Pending" && driverId.isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('Driver')
+              .doc(driverId)
+              .update({'isBusy': false});
+        }
+      }
+
       await FirebaseFirestore.instance
           .collection('order')
           .doc(orderId)
@@ -134,6 +152,9 @@ class _OrdersPageState extends State<OrdersPage>
       );
     } catch (e) {
       print("Error cancelling order: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to cancel order: ${e.toString()}")),
+      );
     }
   }
 

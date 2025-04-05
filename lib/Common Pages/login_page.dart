@@ -73,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
         await prefs.setString('role', 'vendor');
       } else if (widget.role == 'driver') {
         QuerySnapshot qs = await FirebaseFirestore.instance
-            .collection('driver')
+            .collection('Driver')
             .where('Email', isEqualTo: user.email)
             .get();
         if (qs.docs.isEmpty) {

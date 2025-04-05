@@ -6,6 +6,7 @@ import 'package:hometouch/Customer%20View/order_history_page.dart';
 import 'package:intl/intl.dart';
 import 'package:hometouch/Customer View/address_dialog.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
@@ -118,6 +119,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return maxOrderNumber + 1;
   }
 
+  double calculateDistance(GeoPoint pos1, GeoPoint pos2) {
+    const double earthRadius = 6371;
+
+    double lat1 = pos1.latitude * (math.pi / 180);
+    double lon1 = pos1.longitude * (math.pi / 180);
+    double lat2 = pos2.latitude * (math.pi / 180);
+    double lon2 = pos2.longitude * (math.pi / 180);
+
+    double dLat = lat2 - lat1;
+    double dLon = lon2 - lon1;
+
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
   Future<void> _placeOrder() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -128,6 +150,55 @@ class _CheckoutPageState extends State<CheckoutPage> {
       String vendorId = widget.cartItems.isNotEmpty
           ? widget.cartItems.first["vendorId"].toString()
           : "Unknown";
+
+      DocumentSnapshot vendorSnapshot = await FirebaseFirestore.instance
+          .collection('vendor')
+          .doc(vendorId)
+          .get();
+
+      if (!vendorSnapshot.exists) {
+        print("Vendor not found");
+        return;
+      }
+
+      GeoPoint vendorLocation;
+      if (vendorSnapshot.get('Location') != null) {
+        vendorLocation = vendorSnapshot.get('Location') as GeoPoint;
+      } else {
+        print("Vendor location not available");
+        return;
+      }
+
+      QuerySnapshot driversSnapshot = await FirebaseFirestore.instance
+          .collection('Driver')
+          .where('isBusy', isEqualTo: false)
+          .get();
+
+      List<QueryDocumentSnapshot> drivers = driversSnapshot.docs;
+
+      String? nearestDriverId;
+      double minDistance = double.infinity;
+
+      for (var driverDoc in drivers) {
+        GeoPoint? driverGeoPoint = driverDoc.get('Location') as GeoPoint?;
+        if (driverGeoPoint == null) continue;
+
+        double distance = calculateDistance(vendorLocation, driverGeoPoint);
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestDriverId = driverDoc.id;
+        }
+      }
+
+      if (nearestDriverId == null) {
+        print("No available drivers nearby");
+        nearestDriverId = "Pending";
+      } else {
+        await FirebaseFirestore.instance
+            .collection('Driver')
+            .doc(nearestDriverId)
+            .update({'isBusy': true});
+      }
 
       homeTouchCut = widget.subtotal * 0.15;
       vendorRevenue = widget.subtotal - homeTouchCut;
@@ -142,7 +213,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       await orderRef.set({
         "Customer_ID": user.uid,
         "Order_Number": "#$orderNumber",
-        "Driver_ID": "eJXF01SPCo4QK3UApmpR",
+        "Driver_ID": nearestDriverId,
         "Vendor_ID": vendorId,
         "Items": widget.cartItems,
         "Subtotal": roundedSubTotal,

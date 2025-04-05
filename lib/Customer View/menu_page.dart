@@ -498,8 +498,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
 
       transaction.update(pollRef, {'Choices': updatedChoices});
     });
-
-    Navigator.of(context).pop();
   }
 
   @override
