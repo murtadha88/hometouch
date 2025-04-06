@@ -6,7 +6,8 @@ class PollPopOut extends StatefulWidget {
   final String pollQuestion;
   final List<String> choices;
 
-  PollPopOut({
+  const PollPopOut({
+    super.key,
     required this.restaurantName,
     required this.restaurantImage,
     required this.pollQuestion,

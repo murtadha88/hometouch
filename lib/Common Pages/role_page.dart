@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'login_page.dart';
 
 class RoleSelectionPage extends StatelessWidget {
-  const RoleSelectionPage({Key? key}) : super(key: key);
+  const RoleSelectionPage({super.key});
 
   Widget _buildRoleButton({
     required BuildContext context,

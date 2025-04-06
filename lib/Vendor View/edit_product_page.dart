@@ -12,11 +12,11 @@ class EditProductPage extends StatefulWidget {
   final String productId;
 
   const EditProductPage({
-    Key? key,
+    super.key,
     required this.vendorId,
     required this.categoryId,
     required this.productId,
-  }) : super(key: key);
+  });
 
   @override
   _EditProductPageState createState() => _EditProductPageState();
@@ -36,10 +36,10 @@ class _EditProductPageState extends State<EditProductPage> {
   late TextEditingController _descriptionController;
   late TextEditingController _pointsController;
 
-  List<TextEditingController> _addOnNameControllers = [];
-  List<TextEditingController> _addOnPriceControllers = [];
+  final List<TextEditingController> _addOnNameControllers = [];
+  final List<TextEditingController> _addOnPriceControllers = [];
 
-  List<TextEditingController> _removeControllers = [];
+  final List<TextEditingController> _removeControllers = [];
 
   @override
   void initState() {

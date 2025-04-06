@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import "driver_side_bar.dart";
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'driver_side_bar.dart';
 
 void main() {
   runApp(const DriverDashboard());
@@ -27,32 +29,151 @@ class DriverOrdersChart extends StatefulWidget {
 }
 
 class _DriverOrdersChartState extends State<DriverOrdersChart> {
-  late List<OrderData> orderData;
-  late double highestSales;
-
-  double orderPrice = 7.350;
+  late List<OrderData> orderData = [];
+  double highestSales = 0.0;
   int currentMenuIndex = 0;
+  String driverId = "";
+  String driverName = "Loading...";
+  String driverImage = "https://i.imgur.com/OtAn7hT.jpeg";
+  String vendorLogo = "";
 
-  String getTodayDay() {
-    return DateFormat('E').format(DateTime.now());
+  Map<String, dynamic>? currentOrder;
+  double orderPrice = 0.0;
+  int totalItems = 0;
+
+  int todayOrders = 0;
+  double todayRevenue = 0.0;
+  int yesterdayOrders = 0;
+  double yesterdayRevenue = 0.0;
+  int totalOrders = 0;
+  double totalRevenue = 0.0;
+
+  bool isBusy = false;
+  bool isLoadingStatus = true;
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDriverData();
+    _fetchCurrentOrder();
+  }
+
+  Future<void> _fetchDriverData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    driverId = user.uid;
+
+    DocumentSnapshot driverDoc = await FirebaseFirestore.instance
+        .collection('Driver')
+        .doc(driverId)
+        .get();
+
+    if (driverDoc.exists) {
+      setState(() {
+        driverName = driverDoc.get('Name') ?? "Driver Name";
+        driverImage =
+            driverDoc.get('Image') ?? "https://i.imgur.com/OtAn7hT.jpeg";
+        totalOrders = driverDoc.get('Total_Orders') ?? 0;
+        totalRevenue = (driverDoc.get('Total_Revenue') ?? 0.0).toDouble();
+        isBusy = driverDoc.get('isBusy') ?? false;
+        isLoadingStatus = false;
+      });
+    }
+
+    DateTime now = DateTime.now();
+    DateTime sevenDaysAgo = now.subtract(const Duration(days: 7));
+
+    QuerySnapshot salesSnapshot = await FirebaseFirestore.instance
+        .collection('Driver')
+        .doc(driverId)
+        .collection('Sales_Data')
+        .where('Date', isGreaterThanOrEqualTo: sevenDaysAgo)
+        .orderBy('Date', descending: true)
+        .get();
+
+    List<OrderData> tempData = [];
+    for (var doc in salesSnapshot.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      tempData.add(OrderData(
+        DateFormat('E').format(data['Date'].toDate()),
+        data['Orders'] ?? 0,
+        'current',
+        (data['Revenue'] ?? 0.0).toDouble(),
+      ));
+    }
+
+    DateTime yesterday = now.subtract(const Duration(days: 1));
+    DocumentSnapshot yesterdayDoc = await FirebaseFirestore.instance
+        .collection('Driver')
+        .doc(driverId)
+        .collection('Sales_Data')
+        .doc(DateFormat('yyyy-MM-dd').format(yesterday))
+        .get();
+
+    setState(() {
+      orderData = tempData;
+      todayOrders = orderData.isNotEmpty ? orderData.first.orders : 0;
+      todayRevenue = orderData.isNotEmpty ? orderData.first.revenue : 0.0;
+      yesterdayOrders = yesterdayDoc.exists ? yesterdayDoc.get('Orders') : 0;
+      yesterdayRevenue = yesterdayDoc.exists
+          ? (yesterdayDoc.get('Revenue') ?? 0.0).toDouble()
+          : 0.0;
+
+      if (orderData.isNotEmpty) {
+        highestSales = orderData
+            .map((e) => e.orders)
+            .reduce((a, b) => a > b ? a : b)
+            .toDouble();
+      }
+
+      isLoading = false;
+    });
+  }
+
+  Future<void> _fetchCurrentOrder() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    QuerySnapshot orderSnapshot = await FirebaseFirestore.instance
+        .collection('order')
+        .where('Driver_ID', isEqualTo: user.uid)
+        .where('Status', whereIn: ['Preparing', 'On The Way'])
+        .limit(1)
+        .get();
+
+    if (orderSnapshot.docs.isNotEmpty) {
+      var order = orderSnapshot.docs.first.data() as Map<String, dynamic>;
+
+      Timestamp orderDate = order['Order_Date'];
+      String formattedDate = DateFormat('MMMM d, y').format(orderDate.toDate());
+
+      DocumentSnapshot customerDoc = await FirebaseFirestore.instance
+          .collection('Customer')
+          .doc(order['Customer_ID'])
+          .get();
+
+      DocumentSnapshot vendorDoc = await FirebaseFirestore.instance
+          .collection('vendor')
+          .doc(order['Vendor_ID'])
+          .get();
+
+      setState(() {
+        currentOrder = order;
+        orderPrice = order['Total'] ?? 0.0;
+        totalItems = (order['Items'] as List).length;
+        currentOrder?['Customer_Name'] = customerDoc.get('Name') ?? 'Customer';
+        currentOrder?['Formatted_Date'] = formattedDate;
+        vendorLogo = vendorDoc['Logo'];
+      });
+    }
   }
 
   Map<String, dynamic> getTodayOrderData() {
-    String today = getTodayDay();
-
-    OrderData currentData = orderData.firstWhere(
-      (e) => e.day == today && e.weekType == 'current',
-      orElse: () => OrderData(today, 0, 'current', 0.0),
-    );
-
-    OrderData previousData = orderData.firstWhere(
-      (e) => e.day == today && e.weekType == 'previous',
-      orElse: () => OrderData(today, 0, 'previous', 0.0),
-    );
-
-    double dailyPercentageOrderChange = previousData.orders > 0
-        ? ((currentData.orders - previousData.orders) / previousData.orders) *
-            100
+    double dailyPercentageOrderChange = yesterdayOrders > 0
+        ? ((todayOrders - yesterdayOrders) / yesterdayOrders) * 100
         : 0.0;
 
     Color dailyPercentageColor =
@@ -61,79 +182,40 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
         ? Icons.arrow_upward
         : Icons.arrow_downward;
 
-    int totalOrdersCurrentWeek = orderData
-        .where((e) => e.weekType == 'current')
-        .fold(0, (sum, e) => sum + e.orders);
-
-    int totalOrdersPreviousWeek = orderData
-        .where((e) => e.weekType == 'previous')
-        .fold(0, (sum, e) => sum + e.orders);
-
-    double totalPercentageOrderChange = totalOrdersPreviousWeek > 0
-        ? ((totalOrdersCurrentWeek - totalOrdersPreviousWeek) /
-                totalOrdersPreviousWeek) *
-            100
-        : 0.0;
-
-    Color totalPercentageColor =
-        totalPercentageOrderChange >= 0 ? Colors.green : Colors.red;
-    IconData totalArrowIcon = totalPercentageOrderChange >= 0
-        ? Icons.arrow_upward
-        : Icons.arrow_downward;
-
     return {
-      // Daily orders data
-      "dailyOrders": currentData.orders.toString(),
+      "dailyOrders": todayOrders.toString(),
+      "dailyRevenue": todayRevenue.toStringAsFixed(3),
       "dailyPercentageOrderChange":
           "${dailyPercentageOrderChange.toStringAsFixed(1)}%",
       "dailyPercentageColor": dailyPercentageColor,
       "dailyArrowIcon": dailyArrowIcon,
-
-      // Total orders data
-      "totalOrdersCurrentWeek": totalOrdersCurrentWeek.toString(),
-      "totalOrdersPreviousWeek": totalOrdersPreviousWeek.toString(),
-      "percentageTotalOrderChange":
-          "${totalPercentageOrderChange.toStringAsFixed(1)}%",
-      "totalPercentageColor": totalPercentageColor,
-      "totalArrowIcon": totalArrowIcon,
     };
   }
 
-  @override
-  void initState() {
-    super.initState();
-    orderData = getFakeOrderData();
+  Future<void> _toggleAvailability() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    if (orderData.isNotEmpty) {
-      highestSales = orderData
-          .map((e) => e.orders)
-          .reduce((a, b) => a > b ? a : b)
-          .toDouble();
-    } else {
-      highestSales = 0.0;
+    setState(() {
+      isLoadingStatus = true;
+    });
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('Driver')
+          .doc(user.uid)
+          .update({'isBusy': !isBusy});
+
+      setState(() {
+        isBusy = !isBusy;
+        isLoadingStatus = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoadingStatus = false;
+      });
+      print("Error updating status: $e");
     }
-  }
-
-  List<OrderData> getFakeOrderData() {
-    return [
-      // Current week data
-      OrderData('Sun', 12, 'current', 120.0),
-      OrderData('Mon', 15, 'current', 150.0),
-      OrderData('Tue', 10, 'current', 50.0),
-      OrderData('Wed', 17, 'current', 180.0),
-      OrderData('Thu', 14, 'current', 140.0),
-      OrderData('Fri', 20, 'current', 200.0),
-      OrderData('Sat', 14, 'current', 40.0),
-
-// Previous week data
-      OrderData('Sun', 10, 'previous', 100.0),
-      OrderData('Mon', 13, 'previous', 130.0),
-      OrderData('Tue', 12, 'previous', 120.0),
-      OrderData('Wed', 20, 'previous', 200.0),
-      OrderData('Thu', 15, 'previous', 150.0),
-      OrderData('Fri', 18, 'previous', 180.0),
-      OrderData('Sat', 3, 'previous', 140.0),
-    ];
   }
 
   @override
@@ -148,198 +230,187 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFBF0000),
         elevation: 0,
-        title: const Text(
-          "Dashboard",
-          style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+        title: Column(
+          children: [
+            Text(
+              "Dashboard",
+              style: TextStyle(
+                fontSize: screenWidth * 0.06,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.01),
+          ],
         ),
+        centerTitle: true,
         leading: Builder(
-          builder: (context) {
-            return IconButton(
+          builder: (context) => Padding(
+            padding: EdgeInsets.only(bottom: screenHeight * 0.008),
+            child: IconButton(
               icon: const Icon(Icons.menu, color: Colors.white),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          },
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+          ),
         ),
       ),
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(screenWidth * 0.04),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Profile Section
-            Padding(
-              padding: EdgeInsets.only(
-                  left: screenWidth * 0.02, top: screenHeight * 0.02),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 20,
-                    backgroundImage: AssetImage('assets/your_image.png'),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    "John Doe",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ],
+      body: isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFFBF0000),
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Stats Cards
-            Wrap(
-              spacing: screenWidth * 0.08,
-              runSpacing: screenHeight * 0.02,
-              children: <Widget>[
-                _buildCard(
-                  "Per Day Orders",
-                  todayOrderData["dailyOrders"] ??
-                      "0", // Daily orders for today
-                  todayOrderData["dailyPercentageOrderChange"] ??
-                      "0%", // Percentage change
-                  cardWidth,
-                  screenHeight,
-                  percentageColor: todayOrderData[
-                      "dailyPercentageColor"], // Color for daily orders
-                  arrowIcon: todayOrderData[
-                      "dailyArrowIcon"], // Arrow icon for daily orders
-                ),
-                _buildCard(
-                  "Total Orders",
-                  todayOrderData["totalOrdersCurrentWeek"] ??
-                      "0", // Total orders for the week
-                  todayOrderData["percentageTotalOrderChange"] ??
-                      "0%", // Percentage change
-                  cardWidth,
-                  screenHeight,
-                  percentageColor: todayOrderData[
-                      "totalPercentageColor"], // Color for total orders
-                  arrowIcon: todayOrderData[
-                      "totalArrowIcon"], // Arrow icon for total orders
-                ),
-              ],
-            ),
-
-            SizedBox(height: screenHeight * 0.02),
-            Divider(
-              color: Colors.black26,
-              thickness: 1,
-              indent: screenWidth * 0.01,
-              endIndent: screenWidth * 0.01,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "Current Order",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Container(
-              height: screenHeight * 0.15,
-              child: _buildCurrentCustomerCard(
-                index: 0,
-                screenWidth: screenWidth,
-                screenHeight: screenHeight,
-                title: "Customer Name",
-                price: orderPrice,
-                items: 3,
-                imageUrl: "https://i.imgur.com/aMJClNe.jpeg",
-                id: 12345,
-                onCardTap: () {
-                  print("Card Tapped!");
-                },
-                onIdTap: () {
-                  print("ID #12345 Clicked!");
-                },
-              ),
-            ),
-            SizedBox(height: screenHeight * 0.02),
-            Divider(
-              color: Colors.black26,
-              thickness: 1,
-              indent: screenWidth * 0.01,
-              endIndent: screenWidth * 0.01,
-            ),
-            const SizedBox(height: 20),
-
-            Container(
-              padding: EdgeInsets.all(screenWidth * 0.04),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
-                  )
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Center(
-                    child: Text(
-                      "Daily Orders",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Chart
-                  SizedBox(
-                    height: 200,
-                    child: SfCartesianChart(
-                      plotAreaBorderColor: Colors.white,
-                      primaryXAxis: CategoryAxis(
-                        title: AxisTitle(text: ''),
-                        plotOffset: 10,
-                        majorTickLines: MajorTickLines(width: 0),
-                        axisLine: AxisLine(width: 1, color: Colors.white),
-                        majorGridLines: MajorGridLines(width: 0),
-                      ),
-                      primaryYAxis: NumericAxis(
-                        title: AxisTitle(text: ''),
-                        majorGridLines: MajorGridLines(width: 0),
-                        axisLine: AxisLine(width: 1, color: Colors.white),
-                        majorTickLines: MajorTickLines(width: 0),
-                      ),
-                      series: <CartesianSeries>[
-                        ColumnSeries<OrderData, String>(
-                          dataSource: orderData
-                              .where((data) => data.weekType == 'current')
-                              .toList(),
-                          xValueMapper: (OrderData data, _) => data.day,
-                          yValueMapper: (OrderData data, _) => data.orders,
-                          dataLabelSettings:
-                              DataLabelSettings(isVisible: false),
-                          color: Color(0xFFBF0000),
-                          borderRadius: BorderRadius.circular(10),
-                          width: 0.3,
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(screenWidth * 0.04),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.only(
+                              left: screenWidth * 0.02,
+                              top: screenHeight * 0.02),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                  radius: 20,
+                                  backgroundImage: driverImage.isNotEmpty
+                                      ? NetworkImage(driverImage)
+                                      : const NetworkImage(
+                                          'https://i.imgur.com/OtAn7hT.jpeg')),
+                              const SizedBox(width: 8),
+                              Text(
+                                driverName,
+                                style: const TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Wrap(
+                          spacing: screenWidth * 0.08,
+                          runSpacing: screenHeight * 0.02,
+                          children: <Widget>[
+                            _buildCard(
+                              "Today's Orders",
+                              todayOrderData["dailyOrders"] ?? "0",
+                              todayOrderData["dailyPercentageOrderChange"] ??
+                                  "0%",
+                              cardWidth,
+                              screenHeight,
+                              percentageColor:
+                                  todayOrderData["dailyPercentageColor"],
+                              arrowIcon: todayOrderData["dailyArrowIcon"],
+                            ),
+                            _buildCard(
+                              "Today's Revenue",
+                              "BHD ${todayOrderData["dailyRevenue"]}",
+                              todayOrderData["dailyPercentageOrderChange"] ??
+                                  "0%",
+                              cardWidth,
+                              screenHeight,
+                              percentageColor:
+                                  todayOrderData["dailyPercentageColor"],
+                              arrowIcon: todayOrderData["dailyArrowIcon"],
+                            ),
+                            _buildCard(
+                                "Total Orders",
+                                totalOrders.toString(),
+                                "+${totalOrders.toStringAsFixed(1)}%",
+                                cardWidth,
+                                screenHeight,
+                                percentageColor: Colors.green,
+                                arrowIcon: Icons.arrow_upward,
+                                showSinceYesterday: false),
+                            _buildCard(
+                                "Total Revenue",
+                                "BHD ${totalRevenue.toStringAsFixed(3)}",
+                                "+${(totalRevenue * 0.1).toStringAsFixed(1)}%",
+                                cardWidth,
+                                screenHeight,
+                                percentageColor: Colors.green,
+                                arrowIcon: Icons.arrow_upward,
+                                showSinceYesterday: false),
+                          ],
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                        const Divider(),
+                        const SizedBox(height: 20),
+                        if (currentOrder != null) ...[
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              "Current Order",
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          _buildCurrentOrderCard(
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            orderNumber: currentOrder!['Order_Number'] ?? '#47',
+                            customerName:
+                                currentOrder!['Customer_Name'] ?? 'Customer',
+                            totalPrice: currentOrder!['Total'] ?? 0.0,
+                            itemCount: totalItems,
+                            imageUrl: vendorLogo,
+                          ),
+                          const Divider(),
+                        ],
+                        Container(
+                          padding: EdgeInsets.all(screenWidth * 0.04),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 4,
+                                offset: Offset(2, 2),
+                              )
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              const Text(
+                                "Daily Orders",
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(
+                                height: 200,
+                                child: SfCartesianChart(
+                                  primaryXAxis: CategoryAxis(),
+                                  primaryYAxis: NumericAxis(),
+                                  series: <CartesianSeries>[
+                                    ColumnSeries<OrderData, String>(
+                                      dataSource: orderData,
+                                      xValueMapper: (OrderData data, _) =>
+                                          data.day,
+                                      yValueMapper: (OrderData data, _) =>
+                                          data.orders,
+                                      color: const Color(0xFFBF0000),
+                                    )
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-                ],
-              ),
+                ),
+                _buildAvailabilityButton(screenWidth),
+              ],
             ),
-          ],
-        ),
-      ),
-      //----------------------- Drawer (for menu icon)-----------------------
       drawer: DrawerScreen(
         selectedIndex: currentMenuIndex,
-        onItemTapped: (index) {
-          setState(() {
-            currentMenuIndex = index;
-          });
-        },
+        onItemTapped: (index) => setState(() => currentMenuIndex = index),
       ),
     );
   }
@@ -352,6 +423,7 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
     double screenHeight, {
     Color? percentageColor,
     IconData? arrowIcon,
+    bool showSinceYesterday = true,
   }) {
     return Container(
       padding: const EdgeInsets.all(12.0),
@@ -379,36 +451,35 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
               color: Color(0xFFBF0000),
             ),
           ),
-          SizedBox(height: screenHeight * 0.01),
+          const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: showSinceYesterday ? 17 : 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          SizedBox(height: screenHeight * 0.01),
+          const SizedBox(height: 8),
           Row(
             children: [
-              if (percentageColor != null && arrowIcon != null)
-                Icon(arrowIcon,
-                    size: 12,
-                    color: percentageColor), // Use the passed icon and color
-              const SizedBox(width: 4),
-              Text(
-                percentage,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      percentageColor ?? Colors.black, // Use the passed color
+              if (showSinceYesterday) ...[
+                if (percentageColor != null && arrowIcon != null)
+                  Icon(arrowIcon, size: 12, color: percentageColor),
+                const SizedBox(width: 4),
+                Text(
+                  percentage,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: percentageColor ?? Colors.black,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              const Text(
-                "Since Last Week",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.black,
+                const SizedBox(width: 4),
+                const Text(
+                  "Since Yesterday",
+                  style: TextStyle(fontSize: 11, color: Colors.black),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -416,23 +487,22 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
     );
   }
 
-  Widget _buildCurrentCustomerCard({
-    required int index,
+  Widget _buildCurrentOrderCard({
     required double screenWidth,
     required double screenHeight,
-    required String title,
-    required double price,
-    required int items,
+    required String orderNumber,
+    required String customerName,
+    required double totalPrice,
+    required int itemCount,
     required String imageUrl,
-    required Function() onCardTap,
-    required int id,
-    required Function() onIdTap,
   }) {
     return Padding(
       padding: EdgeInsets.symmetric(
           horizontal: screenWidth * 0.0, vertical: screenHeight * 0.01),
       child: GestureDetector(
-        onTap: onCardTap,
+        onTap: () {
+          print("Card Tapped!");
+        },
         child: Card(
           color: Colors.white,
           shape: RoundedRectangleBorder(
@@ -442,8 +512,8 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
           child: Row(
             children: [
               Container(
-                width: screenWidth * 0.23,
-                height: screenHeight * 0.2,
+                width: screenWidth * 0.22,
+                height: screenHeight * 0.1,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(7.0),
                   image: DecorationImage(
@@ -464,21 +534,23 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
                     Row(
                       children: [
                         Text(
-                          title,
+                          customerName,
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(width: screenWidth * 0.09),
                         GestureDetector(
-                          onTap: onIdTap,
+                          onTap: () {
+                            print("ID $orderNumber Clicked!");
+                          },
                           child: Text(
-                            "#$id",
+                            orderNumber,
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: const Color.fromARGB(255, 120, 121, 121),
+                              color: Color.fromARGB(255, 120, 121, 121),
                               decoration: TextDecoration.underline,
                             ),
                           ),
@@ -489,7 +561,7 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
                     Row(
                       children: [
                         Text(
-                          "$price BHD",
+                          "BHD ${totalPrice.toStringAsFixed(3)}",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -498,9 +570,8 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
                         SizedBox(width: screenWidth * 0.05),
                         Text(" | "),
                         SizedBox(width: screenWidth * 0.05),
-                        Text(items.toString()),
                         Text(
-                          " items",
+                          "$itemCount items",
                           style: TextStyle(
                             fontSize: 16,
                           ),
@@ -512,6 +583,43 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvailabilityButton(double screenWidth) {
+    bool disableToggle = isLoadingStatus || currentOrder != null;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: SizedBox(
+        width: screenWidth * 0.9,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFBF0000),
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          onPressed: disableToggle ? null : _toggleAvailability,
+          child: disableToggle
+              ? const Text(
+                  'Unavailable (Active Order)',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : Text(
+                  isBusy ? 'Go Online' : 'Go Offline',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
         ),
       ),
     );

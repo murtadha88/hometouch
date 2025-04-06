@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hometouch/Common%20Pages/role_page.dart';
 
 class AdminRequestsPage extends StatefulWidget {
-  const AdminRequestsPage({Key? key}) : super(key: key);
+  const AdminRequestsPage({super.key});
 
   @override
   State<AdminRequestsPage> createState() => _AdminRequestsPageState();

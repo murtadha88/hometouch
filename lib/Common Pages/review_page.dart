@@ -10,12 +10,11 @@ class ReviewPage extends StatefulWidget {
   final bool isVendor;
 
   const ReviewPage(
-      {Key? key,
+      {super.key,
       this.vendorId,
       this.productId,
       this.categoryId,
-      this.isVendor = false})
-      : super(key: key);
+      this.isVendor = false});
 
   @override
   State<ReviewPage> createState() => _ReviewPageState();

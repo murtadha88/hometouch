@@ -10,11 +10,11 @@ class AdminRequestDetailsPage extends StatefulWidget {
   final Function(Map<String, dynamic>) onReject;
 
   const AdminRequestDetailsPage({
-    Key? key,
+    super.key,
     required this.requestData,
     required this.onAccept,
     required this.onReject,
-  }) : super(key: key);
+  });
 
   @override
   _AdminRequestDetailsPageState createState() =>

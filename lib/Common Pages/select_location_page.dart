@@ -3,7 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
 class SelectLocationPage extends StatefulWidget {
-  const SelectLocationPage({Key? key}) : super(key: key);
+  const SelectLocationPage({super.key});
 
   @override
   _SelectLocationPageState createState() => _SelectLocationPageState();

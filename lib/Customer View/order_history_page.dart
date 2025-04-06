@@ -5,6 +5,7 @@ import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Customer%20View/order_tracking_page.dart';
 import 'package:hometouch/Common%20Pages/review_page.dart';
+import 'package:intl/intl.dart';
 
 const Color primaryRed = Color(0xFFBF0000);
 
@@ -123,38 +124,72 @@ class _OrdersPageState extends State<OrdersPage>
 
   void _cancelOrder(String orderId) async {
     try {
-      DocumentSnapshot orderSnapshot = await FirebaseFirestore.instance
-          .collection('order')
-          .doc(orderId)
-          .get();
+      final orderRef =
+          FirebaseFirestore.instance.collection('order').doc(orderId);
+      DocumentSnapshot orderSnapshot = await orderRef.get();
 
-      if (orderSnapshot.exists) {
-        Map<String, dynamic> orderData =
-            orderSnapshot.data() as Map<String, dynamic>;
-        String? driverId = orderData['Driver_ID'];
+      if (!orderSnapshot.exists) return;
 
-        if (driverId != null && driverId != "Pending" && driverId.isNotEmpty) {
-          await FirebaseFirestore.instance
-              .collection('Driver')
-              .doc(driverId)
-              .update({'isBusy': false});
-        }
+      final orderData = orderSnapshot.data() as Map<String, dynamic>;
+      final totalAmount = orderData['Total_Vendor_Revenue'] as double;
+      final vendorId = orderData['Vendor_ID'] as String;
+      final orderDate = (orderData['Order_Date'] as Timestamp).toDate();
+
+      final vendorRef =
+          FirebaseFirestore.instance.collection('vendor').doc(vendorId);
+      await vendorRef.update({
+        'Total_Orders': FieldValue.increment(-1),
+        'Total_Revenue': FieldValue.increment(-totalAmount),
+      });
+
+      final monthYear = DateFormat('yyyy-MM').format(orderDate);
+      final monthlySalesRef =
+          vendorRef.collection('Monthly_Sales').doc(monthYear);
+
+      await monthlySalesRef.update({
+        'Orders': FieldValue.increment(-1),
+        'Sales': FieldValue.increment(-totalAmount),
+      });
+
+      final dayDate = DateFormat('yyyy-MM-dd').format(orderDate);
+      final salesDataRef = vendorRef.collection('Sales_Data').doc(dayDate);
+
+      await salesDataRef.update({
+        'Orders': FieldValue.increment(-1),
+        'Sales': FieldValue.increment(-totalAmount),
+      });
+
+      final driverId = orderData['Driver_ID'];
+      if (driverId != null && driverId != "Pending" && driverId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('Driver')
+            .doc(driverId)
+            .update({'isBusy': false});
       }
 
-      await FirebaseFirestore.instance
-          .collection('order')
-          .doc(orderId)
-          .update({"Status": "Cancelled"});
+      final customerId = orderData['Customer_ID'];
+      if (orderData['Accepted'] == true) {
+        await FirebaseFirestore.instance
+            .collection('Customer')
+            .doc(customerId)
+            .update({'Loyalty_Points': FieldValue.increment(-100)});
+      }
 
-      _fetchOrders();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Order cancelled successfully!")),
-      );
+      await orderRef.update({"Status": "Cancelled"});
+
+      if (mounted) {
+        _fetchOrders();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Order cancelled successfully!")),
+        );
+      }
     } catch (e) {
       print("Error cancelling order: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to cancel order: ${e.toString()}")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.toString()}")),
+        );
+      }
     }
   }
 

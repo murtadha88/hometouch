@@ -15,7 +15,7 @@ import 'package:http/http.dart' as http;
 
 class CreateAccountPage extends StatefulWidget {
   final String role;
-  const CreateAccountPage({Key? key, this.role = 'customer'}) : super(key: key);
+  const CreateAccountPage({super.key, this.role = 'customer'});
 
   @override
   State<CreateAccountPage> createState() => _CreateAccountPageState();
@@ -41,7 +41,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     "Drinks",
     "Breakfast"
   ];
-  List<String> _selectedCategories = [];
+  final List<String> _selectedCategories = [];
   String? _selectedVendorType;
   String? _logoUrl;
   bool _twoPeriods = false;
@@ -84,29 +84,35 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   String? _validatePhone(String? value) {
     if (value == null || value.isEmpty) return 'Phone number is required.';
-    if (!RegExp(r'^\d{8}$').hasMatch(value))
+    if (!RegExp(r'^\d{8}$').hasMatch(value)) {
       return 'Enter a valid 8-digit phone number.';
+    }
     return null;
   }
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Email is required.';
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value))
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
       return 'Please enter a valid email.';
+    }
     return null;
   }
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Password is required.';
     if (value.length < 8) return 'Password must be at least 8 characters.';
-    if (!RegExp(r'[a-z]').hasMatch(value))
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
       return 'Password must include at least one lowercase letter.';
-    if (!RegExp(r'[A-Z]').hasMatch(value))
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
       return 'Password must include at least one uppercase letter.';
-    if (!RegExp(r'[0-9]').hasMatch(value))
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
       return 'Password must contain at least one number.';
-    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-]').hasMatch(value))
+    }
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-]').hasMatch(value)) {
       return 'Password must include at least one special character.';
+    }
     return null;
   }
 
@@ -117,20 +123,23 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   }
 
   String? _validateCategories() {
-    if (_selectedCategories.isEmpty)
+    if (_selectedCategories.isEmpty) {
       return 'Please select at least one category.';
+    }
     return null;
   }
 
   String? _validateVendorType() {
-    if (_selectedVendorType == null || _selectedVendorType!.isEmpty)
+    if (_selectedVendorType == null || _selectedVendorType!.isEmpty) {
       return 'Please select a vendor type.';
+    }
     return null;
   }
 
   String? _validateLogo() {
-    if (_logoUrl == null || _logoUrl!.isEmpty)
+    if (_logoUrl == null || _logoUrl!.isEmpty) {
       return 'Please upload your logo.';
+    }
     return null;
   }
 
@@ -140,14 +149,16 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   }
 
   String? _validateDriverLicense() {
-    if (_driverLicenseUrl == null || _driverLicenseUrl!.isEmpty)
+    if (_driverLicenseUrl == null || _driverLicenseUrl!.isEmpty) {
       return 'Please upload your driver license.';
+    }
     return null;
   }
 
   String? _validateCarOwnership() {
-    if (_carOwnershipUrl == null || _carOwnershipUrl!.isEmpty)
+    if (_carOwnershipUrl == null || _carOwnershipUrl!.isEmpty) {
       return 'Please upload your car ownership card.';
+    }
     return null;
   }
 
@@ -372,9 +383,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   _locationData!['latitude']!, _locationData!['longitude']!)
               : null,
           'Open_Time_Period1':
-              _openTime1 != null ? _openTime1!.format(context) : null,
+              _openTime1?.format(context),
           'Close_Time_Period1':
-              _closeTime1 != null ? _closeTime1!.format(context) : null,
+              _closeTime1?.format(context),
           'Two_Periods': _twoPeriods,
           'Open_Time_Period2': _twoPeriods && _openTime2 != null
               ? _openTime2!.format(context)

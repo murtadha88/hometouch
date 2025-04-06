@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const Color primaryRed = Color(0xFFBF0000);
 
-class OrderDetailsPage extends StatelessWidget {
+class OrderDetailsPage extends StatefulWidget {
   final Map<String, dynamic> orderData;
   final bool isHistory;
   final VoidCallback? onAccept;
@@ -20,6 +20,19 @@ class OrderDetailsPage extends StatelessWidget {
     this.onAccept,
     this.onReject,
   });
+
+  @override
+  _OrderDetailsPageState createState() => _OrderDetailsPageState();
+}
+
+class _OrderDetailsPageState extends State<OrderDetailsPage> {
+  late Map<String, dynamic> orderData;
+
+  @override
+  void initState() {
+    super.initState();
+    orderData = Map<String, dynamic>.from(widget.orderData);
+  }
 
   Future<void> _openGoogleMaps(GeoPoint location) async {
     final url =
@@ -193,7 +206,7 @@ class OrderDetailsPage extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFFBF0000),
+                  color: primaryRed,
                 ),
                 alignment: Alignment.center,
                 padding: EdgeInsets.only(
@@ -391,6 +404,64 @@ class OrderDetailsPage extends StatelessWidget {
                             'N/A',
                         screenWidth),
                   _orderDetailItem("Status", orderData['Status'], screenWidth),
+                  if (orderData['Status'] == "Preparing" &&
+                      orderData['Accepted'] == true)
+                    Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                              vertical: screenHeight * 0.02),
+                          child: Center(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                await FirebaseFirestore.instance
+                                    .collection('order')
+                                    .doc(orderData['Order_Number'])
+                                    .update({'Status': 'On The Way'});
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Order status updated to On The Way')),
+                                );
+
+                                // Refresh the page by updating the local orderData and calling setState
+                                setState(() {
+                                  orderData['Status'] = 'On The Way';
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryRed,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.08,
+                                  vertical: screenHeight * 0.015,
+                                ),
+                              ),
+                              child: Text(
+                                'Mark as On The Way',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.045,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding:
+                              EdgeInsets.only(bottom: screenHeight * 0.015),
+                          child: Text(
+                            "Click this button once the driver has picked up the order.",
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.032,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -433,7 +504,7 @@ class OrderDetailsPage extends StatelessWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
             Divider(thickness: screenHeight * 0.001),
             Text(
               'Payment Summary:',
@@ -473,7 +544,7 @@ class OrderDetailsPage extends StatelessWidget {
               ),
             _buildDetailRow("Total", orderData['Total'], screenWidth,
                 isTotal: true),
-            if (isHistory && orderData['Driver_ID'] != null)
+            if (widget.isHistory && orderData['Driver_ID'] != null)
               Column(
                 children: [
                   Divider(thickness: screenHeight * 0.001),

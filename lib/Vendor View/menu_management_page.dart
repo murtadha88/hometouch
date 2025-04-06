@@ -9,7 +9,7 @@ import 'package:hometouch/Vendor%20View/edit_product_page.dart';
 class FoodMenuPage extends StatefulWidget {
   final String vendorId;
 
-  const FoodMenuPage({required this.vendorId, Key? key}) : super(key: key);
+  const FoodMenuPage({required this.vendorId, super.key});
 
   @override
   State<FoodMenuPage> createState() => _FoodMenuPageState();

@@ -11,6 +11,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,6 +23,8 @@ class MyApp extends StatelessWidget {
 }
 
 class PollPage extends StatefulWidget {
+  const PollPage({super.key});
+
   @override
   _PollPageState createState() => _PollPageState();
 }
@@ -152,7 +156,9 @@ class _PollPageState extends State<PollPage> {
 
       _titleController.clear();
       _questionController.clear();
-      _choiceControllers.forEach((c) => c.clear());
+      for (var c in _choiceControllers) {
+        c.clear();
+      }
       _startDate = DateTime.now();
       _endDate = DateTime.now().add(Duration(days: 1));
       setState(() {
@@ -614,7 +620,7 @@ class _PollPageState extends State<PollPage> {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                         ElevatedButton.icon(
                           icon: Icon(Icons.add,
                               color: Colors.white, size: screenWidth * 0.06),

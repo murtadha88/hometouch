@@ -103,7 +103,6 @@ class _AccountPageState extends State<AccountPage> {
       if (jsonResponse['success'] == true) {
         String imageUrl = jsonResponse['data']['link'];
 
-        // Save Imgur URL to Firestore
         await FirebaseFirestore.instance
             .collection('Customer')
             .doc(FirebaseAuth.instance.currentUser!.uid)

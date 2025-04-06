@@ -6,7 +6,7 @@ import 'order_details_page.dart';
 const Color primaryRed = Color(0xFFBF0000);
 
 class OrderManagementPage extends StatefulWidget {
-  const OrderManagementPage({Key? key}) : super(key: key);
+  const OrderManagementPage({super.key});
 
   @override
   State<OrderManagementPage> createState() => _OrderManagementPageState();
@@ -42,7 +42,8 @@ class _OrderManagementPageState extends State<OrderManagementPage>
     Query query = _firestore
         .collection('order')
         .where('Accepted', isNull: false)
-        .where('Vendor_ID', isEqualTo: _user?.uid);
+        .where('Vendor_ID', isEqualTo: _user?.uid)
+        .orderBy('Order_Number', descending: true);
 
     if (selectedHistoryStatus != "All") {
       if (selectedHistoryStatus == "In Progress") {
@@ -269,8 +270,9 @@ class _OrderManagementPageState extends State<OrderManagementPage>
     return StreamBuilder<QuerySnapshot>(
       stream: requestsStream,
       builder: (context, snapshot) {
-        if (snapshot.hasError)
+        if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -404,8 +406,9 @@ class _OrderManagementPageState extends State<OrderManagementPage>
     return StreamBuilder<QuerySnapshot>(
       stream: historyStream,
       builder: (context, snapshot) {
-        if (snapshot.hasError)
+        if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }

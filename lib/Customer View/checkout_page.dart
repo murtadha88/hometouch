@@ -211,15 +211,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           FirebaseFirestore.instance.collection('order').doc("#$orderNumber");
 
       await orderRef.set({
-        "Customer_ID": user.uid,
         "Order_Number": "#$orderNumber",
+        "Customer_ID": user.uid,
         "Driver_ID": nearestDriverId,
         "Vendor_ID": vendorId,
         "Items": widget.cartItems,
         "Subtotal": roundedSubTotal,
         "Tax": roundedTax,
         "Total": roundedTotal,
+        "Total_Vendor_Revenue": vendorRevenue,
         "Total_Points_Used": widget.totalPoints,
+        "Total_HomeTouch_Revenue": homeTouchCut,
         "Payment_Method": selectedPaymentMethod == 0
             ? "Card"
             : selectedPaymentMethod == 1
@@ -245,13 +247,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
         }
       });
 
-      _waitForOrderAcceptance(orderRef.id, vendorId);
+      _waitForOrderAcceptance(orderRef.id, vendorId, nearestDriverId);
     } catch (e) {
       print("Error placing order: $e");
     }
   }
 
-  Future<void> _waitForOrderAcceptance(String orderId, String vendorId) async {
+  Future<void> _waitForOrderAcceptance(
+      String orderId, String vendorId, String nearestDriverId) async {
     int secondsRemaining = 300;
 
     showDialog(
@@ -328,6 +331,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   'Label': DateFormat('E').format(now),
                   'Date': Timestamp.fromDate(today),
                 }, SetOptions(merge: true));
+
+                if (nearestDriverId != "Pending") {
+                  final driverRef = FirebaseFirestore.instance
+                      .collection('Driver')
+                      .doc(nearestDriverId);
+
+                  await driverRef.update({
+                    'Total_Orders': FieldValue.increment(1),
+                    'Total_Revenue': FieldValue.increment(widget.deliveryCost),
+                  });
+
+                  final driverSalesDataRef = driverRef
+                      .collection('Sales_Data')
+                      .doc(DateFormat('yyyy-MM-dd').format(DateTime.now()));
+
+                  await driverSalesDataRef.set({
+                    'Orders': FieldValue.increment(1),
+                    'Revenue': FieldValue.increment(widget.deliveryCost),
+                    'Day': DateFormat('d').format(DateTime.now()),
+                    'Label': DateFormat('E').format(DateTime.now()),
+                    'Date': Timestamp.now(),
+                  }, SetOptions(merge: true));
+                }
 
                 _showSuccessDialog();
 

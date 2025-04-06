@@ -48,10 +48,10 @@ class _AddProductPageState extends State<AddProductPage> {
 
   bool _isButtonEnabled = false;
 
-  List<TextEditingController> _addOnNameControllers = [];
-  List<TextEditingController> _addOnPriceControllers = [];
+  final List<TextEditingController> _addOnNameControllers = [];
+  final List<TextEditingController> _addOnPriceControllers = [];
 
-  List<TextEditingController> _removeControllers = [];
+  final List<TextEditingController> _removeControllers = [];
 
   @override
   void initState() {

@@ -10,7 +10,7 @@ import 'package:image_picker/image_picker.dart';
 const Color primaryRed = Color(0xFFBF0000);
 
 class PromotionDiscountPage extends StatefulWidget {
-  const PromotionDiscountPage({Key? key}) : super(key: key);
+  const PromotionDiscountPage({super.key});
 
   @override
   _PromotionDiscountPageState createState() => _PromotionDiscountPageState();
@@ -197,7 +197,7 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
       TextEditingController();
   DateTime? _discountStartDate;
   DateTime? _discountEndDate;
-  List<Map<String, dynamic>> _vendorProducts = [];
+  final List<Map<String, dynamic>> _vendorProducts = [];
   final Set<String> _selectedProductIds = {};
 
   final ScrollController _scrollController = ScrollController();
@@ -253,7 +253,9 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
     if (discountPercentage <= 0 ||
         _discountStartDate == null ||
         _discountEndDate == null ||
-        _selectedProductIds.isEmpty) return;
+        _selectedProductIds.isEmpty) {
+      return;
+    }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     try {
