@@ -3,12 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
 import 'package:hometouch/Common%20Pages/setting_page.dart';
-import 'package:hometouch/Common%20Pages/review_page.dart';
-import 'package:hometouch/Vendor%20View/discount_promotion_page.dart';
-import 'package:hometouch/Vendor%20View/menu_management_page.dart';
-import 'package:hometouch/Vendor%20View/orders_management_page.dart';
-import 'package:hometouch/Vendor%20View/poll_management_page.dart';
-import 'package:hometouch/Vendor%20View/vendor_dashboard_page.dart';
+import 'package:hometouch/Driver%20View/driver_dashboard_page.dart';
+import 'package:hometouch/Driver%20View/driver_profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hometouch/Common%20Pages/role_page.dart';
 
@@ -215,7 +211,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => VendorDashboard()),
+                                  builder: (context) => DriverDashboard()),
                             );
                           },
                         ),
@@ -223,14 +219,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           context,
                           index: 1,
                           icon: Icons.assignment,
-                          label: 'Orders Management',
+                          label: 'Orders',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => OrderManagementPage()),
+                                  builder: (context) => DriverDashboard()),
                             );
                           },
                         ),
@@ -238,32 +234,14 @@ class _DrawerScreenState extends State<DrawerScreen> {
                           context,
                           index: 2,
                           icon: Icons.menu,
-                          label: 'Menu Management',
+                          label: 'Profile',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => FoodMenuPage(
-                                        vendorId: userId,
-                                      )),
-                            );
-                          },
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          index: 4,
-                          icon: Icons.local_offer,
-                          label: 'Promotions & Discounts',
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      PromotionDiscountPage()),
+                                  builder: (context) => DriverProfilePage()),
                             );
                           },
                         ),
@@ -295,40 +273,6 @@ class _DrawerScreenState extends State<DrawerScreen> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) => SettingsPage()),
-                            );
-                          },
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          index: 7,
-                          icon: Icons.thumb_up,
-                          label: 'Reviews and Rating',
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReviewPage(
-                                  vendorId: userId,
-                                  isVendor: true,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          index: 8,
-                          icon: Icons.poll,
-                          label: 'Poll Management',
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => PollPage()),
                             );
                           },
                         ),

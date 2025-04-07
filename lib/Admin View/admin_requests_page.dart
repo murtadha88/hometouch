@@ -78,6 +78,7 @@ class _AdminRequestsPageState extends State<AdminRequestsPage>
           "Location": requestData['Location'],
           "Driver_License": requestData['Driver_License'],
           "Car_Ownership": requestData['Car_Ownership'],
+          "Photo": null,
         });
       } else if (requestData['Role'] == 'Vendor') {
         await FirebaseFirestore.instance.collection('vendor').doc(docId).set({

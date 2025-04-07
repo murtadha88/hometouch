@@ -75,7 +75,7 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
       setState(() {
         driverName = driverDoc.get('Name') ?? "Driver Name";
         driverImage =
-            driverDoc.get('Image') ?? "https://i.imgur.com/OtAn7hT.jpeg";
+            driverDoc.get('Photo') ?? "https://i.imgur.com/OtAn7hT.jpeg";
         totalOrders = driverDoc.get('Total_Orders') ?? 0;
         totalRevenue = (driverDoc.get('Total_Revenue') ?? 0.0).toDouble();
         isBusy = driverDoc.get('isBusy') ?? false;
