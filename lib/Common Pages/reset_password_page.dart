@@ -1,9 +1,5 @@
-import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import '../Customer View/verification_page.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   const ResetPasswordPage({super.key});
@@ -66,75 +62,33 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     });
   }
 
-  String _generateVerificationCode() {
-    final random = Random();
-    return List.generate(6, (_) => random.nextInt(10).toString()).join();
-  }
-
-  Future<void> sendEmailWithMailjet(
-      String email, String verificationCode) async {
-    final apiKey = '523ea479515a4b4a9d0117d2b0cf2131';
-    final apiSecret = '69cd5a711861a632953d078742bb62e0';
-    final url = Uri.parse('https://api.mailjet.com/v3.1/send');
-
-    final body = {
-      "Messages": [
-        {
-          "From": {"Email": "hometouch.bahrain@gmail.com", "Name": "HomeTouch"},
-          "To": [
-            {"Email": email, "Name": "User"}
-          ],
-          "Subject": "Your Verification Code",
-          "TextPart": "Your verification code is $verificationCode",
-          "HTMLPart":
-              "<h3>Your verification code is <strong>$verificationCode</strong></h3>"
-        }
-      ]
-    };
-
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization':
-            'Basic ${base64Encode(utf8.encode('$apiKey:$apiSecret'))}',
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200) {
-      print("Email sent successfully.");
-    } else {
-      print("Failed to send email: ${response.statusCode}");
-      print("Response body: ${response.body}");
-    }
-  }
-
-  Future<void> _sendCode() async {
+  Future<void> _sendResetEmail() async {
     if (_formKey.currentState!.validate()) {
       await _checkEmailExists(_emailController.text.trim());
       if (!_isEmailValid) return;
 
-      final code = _generateVerificationCode();
-      await sendEmailWithMailjet(_emailController.text.trim(), code);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Verification code sent to ${_emailController.text.trim()}.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VerificationPage(
-            email: _emailController.text.trim(),
-            verificationCode: code,
+      try {
+        await _auth.sendPasswordResetEmail(
+          email: _emailController.text.trim(),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Password reset email sent to ${_emailController.text.trim()}.',
+            ),
+            backgroundColor: Colors.green,
           ),
-        ),
-      );
+        );
+        // Optionally, navigate back to the login page:
+        Navigator.pop(context);
+      } on FirebaseAuthException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: ${e.message}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -248,7 +202,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     _buildEmailInputField(screenWidth, screenHeight),
                     SizedBox(height: screenHeight * 0.03),
                     ElevatedButton(
-                      onPressed: _isButtonDisabled ? null : _sendCode,
+                      onPressed: _isButtonDisabled ? null : _sendResetEmail,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isButtonDisabled
                             ? Colors.grey
@@ -262,7 +216,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         minimumSize: Size.fromHeight(screenHeight * 0.07),
                       ),
                       child: Text(
-                        'Send Code',
+                        'Reset Password',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.045,

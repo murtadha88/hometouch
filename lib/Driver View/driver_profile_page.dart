@@ -201,11 +201,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
             );
             return;
           }
-          // Update email in Firebase Auth after successful reauthentication.
           await user.updateEmail(newEmail);
         }
 
-        // Update the driver info in Firestore.
         await FirebaseFirestore.instance
             .collection('Driver')
             .doc(user.uid)
