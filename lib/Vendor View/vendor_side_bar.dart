@@ -5,6 +5,7 @@ import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
 import 'package:hometouch/Common%20Pages/setting_page.dart';
 import 'package:hometouch/Common%20Pages/review_page.dart';
 import 'package:hometouch/Vendor%20View/discount_promotion_page.dart';
+import 'package:hometouch/Vendor%20View/vendor_profile_page.dart';
 import 'package:hometouch/Vendor%20View/menu_management_page.dart';
 import 'package:hometouch/Vendor%20View/orders_management_page.dart';
 import 'package:hometouch/Vendor%20View/poll_management_page.dart';
@@ -253,6 +254,21 @@ class _DrawerScreenState extends State<DrawerScreen> {
                         ),
                         _buildDrawerItem(
                           context,
+                          index: 6,
+                          icon: Icons.person,
+                          label: 'Profile',
+                          screenWidth: screenWidth,
+                          screenHeight: screenHeight,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => VendorProfilePage()),
+                            );
+                          },
+                        ),
+                        _buildDrawerItem(
+                          context,
                           index: 4,
                           icon: Icons.local_offer,
                           label: 'Promotions & Discounts',
@@ -280,21 +296,6 @@ class _DrawerScreenState extends State<DrawerScreen> {
                               MaterialPageRoute(
                                   builder: (context) =>
                                       ChatListPage(currentUserId: userId)),
-                            );
-                          },
-                        ),
-                        _buildDrawerItem(
-                          context,
-                          index: 6,
-                          icon: Icons.settings,
-                          label: 'Settings',
-                          screenWidth: screenWidth,
-                          screenHeight: screenHeight,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => SettingsPage()),
                             );
                           },
                         ),
@@ -329,6 +330,21 @@ class _DrawerScreenState extends State<DrawerScreen> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) => PollPage()),
+                            );
+                          },
+                        ),
+                        _buildDrawerItem(
+                          context,
+                          index: 6,
+                          icon: Icons.settings,
+                          label: 'Settings',
+                          screenWidth: screenWidth,
+                          screenHeight: screenHeight,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => SettingsPage()),
                             );
                           },
                         ),

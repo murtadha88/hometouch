@@ -233,7 +233,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                         _buildDrawerItem(
                           context,
                           index: 2,
-                          icon: Icons.menu,
+                          icon: Icons.person,
                           label: 'Profile',
                           screenWidth: screenWidth,
                           screenHeight: screenHeight,

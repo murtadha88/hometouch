@@ -47,10 +47,152 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // Custom reauthentication dialog with in-dialog error message.
+  Future<bool> _showReauthenticateDialog(String currentAuthEmail) async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        TextEditingController passwordController = TextEditingController();
+        String? errorMessage;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              contentPadding: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.03,
+                horizontal: screenWidth * 0.05,
+              ),
+              title: Container(
+                padding: EdgeInsets.all(screenWidth * 0.05),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFBF0000),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock,
+                  color: Colors.white,
+                  size: screenWidth * 0.12,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Reauthenticate',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: screenWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  Text(
+                    'Please enter your password to update your email:',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w300,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      errorText: errorMessage,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: const Text('Cancel',
+                      style: TextStyle(color: Colors.black)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white, // White background
+                    elevation: 2, // Shadow effect
+                    shadowColor: Colors.grey,
+                  ),
+                  onPressed: () async {
+                    String password = passwordController.text.trim();
+                    if (password.isEmpty) {
+                      setState(() {
+                        errorMessage = 'Password cannot be empty.';
+                      });
+                      return;
+                    }
+                    AuthCredential credential = EmailAuthProvider.credential(
+                      email: currentAuthEmail,
+                      password: password,
+                    );
+                    try {
+                      await FirebaseAuth.instance.currentUser!
+                          .reauthenticateWithCredential(credential);
+                      Navigator.of(context).pop(true);
+                    } on FirebaseAuthException catch (e) {
+                      setState(() {
+                        if (e.code == 'wrong-password') {
+                          errorMessage = 'The password is incorrect.';
+                        } else {
+                          errorMessage =
+                              'Reauthentication failed: ${e.message}';
+                        }
+                      });
+                    }
+                  },
+                  child: const Text(
+                    'Confirm',
+                    style: TextStyle(
+                      color: Color(0xFFBF0000),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((value) => value ?? false);
+  }
+
   Future<void> _updateUserInfo() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
+        String newEmail = _userEmailController.text.trim();
+        String currentAuthEmail = user.email ?? '';
+
+        // If the email has changed, perform reauthentication.
+        if (newEmail != currentAuthEmail) {
+          bool reauthSuccess =
+              await _showReauthenticateDialog(currentAuthEmail);
+          if (!reauthSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Reauthentication cancelled. Email was not updated.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          // Update the email in Firebase Auth after successful reauthentication.
+          await user.updateEmail(newEmail);
+        }
+
+        // Update the user info in Firestore.
         await FirebaseFirestore.instance
             .collection('Customer')
             .doc(user.uid)
@@ -66,6 +208,12 @@ class _ProfilePageState extends State<ProfilePage> {
           userPhone = _userPhoneController.text;
           _isEditable = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully.'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } catch (e) {
         print('Error updating user info: $e');
       }
@@ -90,7 +238,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFFBF0000),
+                  color: const Color(0xFFBF0000),
                 ),
                 alignment: Alignment.center,
                 padding: EdgeInsets.only(
@@ -194,7 +342,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       label,
                       style: TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
+                        color: Colors.black,
                         fontWeight: FontWeight.bold,
                         fontSize: screenWidth * 0.045,
                       ),
@@ -211,7 +359,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                         child: Icon(
                           Icons.edit_note_outlined,
-                          color: Color(0xFFBF0000),
+                          color: const Color(0xFFBF0000),
                           size: screenWidth * 0.07,
                         ),
                       ),
@@ -223,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Color(0xFFBF0000),
+                      color: const Color(0xFFBF0000),
                       width: 2.0,
                     ),
                     borderRadius: BorderRadius.circular(8.0),
@@ -234,7 +382,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: TextField(
                           controller: controller,
                           readOnly: !_isEditable,
-                          decoration: InputDecoration(border: InputBorder.none),
+                          decoration:
+                              const InputDecoration(border: InputBorder.none),
                           style: TextStyle(
                               fontSize: screenWidth * 0.04,
                               color: _isEditable ? Colors.black : Colors.grey),
@@ -260,14 +409,14 @@ class _ProfilePageState extends State<ProfilePage> {
           child: ElevatedButton(
             onPressed: _updateUserInfo,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFBF0000),
-              textStyle: TextStyle(fontWeight: FontWeight.bold),
+              backgroundColor: const Color(0xFFBF0000),
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
               padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8.0),
               ),
             ),
-            child: Text(
+            child: const Text(
               'Save',
               style: TextStyle(color: Colors.white),
             ),
@@ -286,13 +435,13 @@ class _ProfilePageState extends State<ProfilePage> {
               });
             },
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Color(0xFFBF0000)),
+              side: const BorderSide(color: Color(0xFFBF0000)),
               padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8.0),
               ),
             ),
-            child: Text(
+            child: const Text(
               'Cancel',
               style: TextStyle(color: Color(0xFFBF0000)),
             ),
@@ -314,13 +463,13 @@ class _ProfilePageState extends State<ProfilePage> {
           EdgeInsets.symmetric(vertical: 0, horizontal: screenWidth * 0.04),
       leading: Icon(
         icon,
-        color: Color(0xFFBF0000),
+        color: const Color(0xFFBF0000),
         size: screenWidth * 0.06,
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: Color.fromARGB(255, 0, 0, 0),
+          color: Colors.black,
           fontSize: screenWidth * 0.04,
         ),
       ),
@@ -328,7 +477,7 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: EdgeInsets.only(right: screenWidth * 0.04),
         child: Icon(
           Icons.arrow_forward_ios,
-          color: Color(0xFFBF0000),
+          color: const Color(0xFFBF0000),
           size: screenWidth * 0.04,
         ),
       ),

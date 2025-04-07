@@ -61,10 +61,151 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     }
   }
 
+  Future<bool> _showReauthenticateDialog(String currentAuthEmail) async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        TextEditingController passwordController = TextEditingController();
+        String? errorMessage;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              contentPadding: EdgeInsets.symmetric(
+                vertical: screenHeight * 0.03,
+                horizontal: screenWidth * 0.05,
+              ),
+              title: Container(
+                padding: EdgeInsets.all(screenWidth * 0.05),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFBF0000),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock,
+                  color: Colors.white,
+                  size: screenWidth * 0.12,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Reauthenticate',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: screenWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.01),
+                  Text(
+                    'Please enter your password to update your email:',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w300,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      errorText: errorMessage,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false); // Cancel reauthentication
+                  },
+                  child: const Text('Cancel',
+                      style: TextStyle(color: Colors.black)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white, // White background
+                    elevation: 2, // Shadow effect
+                    shadowColor: Colors.grey,
+                  ),
+                  onPressed: () async {
+                    String password = passwordController.text.trim();
+                    if (password.isEmpty) {
+                      setState(() {
+                        errorMessage = 'Password cannot be empty.';
+                      });
+                      return;
+                    }
+                    AuthCredential credential = EmailAuthProvider.credential(
+                      email: currentAuthEmail,
+                      password: password,
+                    );
+                    try {
+                      await FirebaseAuth.instance.currentUser!
+                          .reauthenticateWithCredential(credential);
+                      Navigator.of(context).pop(true);
+                    } on FirebaseAuthException catch (e) {
+                      setState(() {
+                        if (e.code == 'wrong-password') {
+                          errorMessage = 'The password is incorrect.';
+                        } else {
+                          errorMessage =
+                              'Reauthentication failed: ${e.message}';
+                        }
+                      });
+                    }
+                  },
+                  child: const Text(
+                    'Confirm',
+                    style: TextStyle(
+                      color: Color(0xFFBF0000),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((value) => value ?? false);
+  }
+
   Future<void> _updateDriverInfo() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
+        String newEmail = _driverEmailController.text.trim();
+        String currentAuthEmail = user.email ?? '';
+
+        // If the email has changed, perform reauthentication.
+        if (newEmail != currentAuthEmail) {
+          bool reauthSuccess =
+              await _showReauthenticateDialog(currentAuthEmail);
+          if (!reauthSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Reauthentication cancelled. Email was not updated.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+          // Update email in Firebase Auth after successful reauthentication.
+          await user.updateEmail(newEmail);
+        }
+
+        // Update the driver info in Firestore.
         await FirebaseFirestore.instance
             .collection('Driver')
             .doc(user.uid)
@@ -79,8 +220,20 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
           driverPhone = _driverPhoneController.text;
           isEditable = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully.'),
+            backgroundColor: Colors.green,
+          ),
+        );
       } catch (e) {
         print("Error updating driver info: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update driver profile.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -92,12 +245,11 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
     File file = File(pickedFile.path);
 
     try {
-      // Create a multipart POST request to Imgur API.
       var request = http.MultipartRequest(
         'POST',
         Uri.parse("https://api.imgur.com/3/upload"),
       );
-      request.headers['Authorization'] = 'Client-ID YOUR_CLIENT_ID';
+      request.headers['Authorization'] = 'Client-ID ca25aec45d48f73';
       request.files.add(await http.MultipartFile.fromPath('image', file.path));
 
       var response = await request.send();
@@ -183,7 +335,7 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       body: isLoading
           ? Center(
               child: CircularProgressIndicator(
-                color: Color(0xFFBF0000),
+                color: const Color(0xFFBF0000),
               ),
             )
           : SingleChildScrollView(
