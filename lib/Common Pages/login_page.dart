@@ -42,6 +42,22 @@ class _LoginPageState extends State<LoginPage> {
       );
       User? user = userCredential.user;
 
+      if (_emailController.text != 'ali@gmail.com' &&
+          _emailController.text != 'admin@gmail.com' &&
+          _emailController.text != 'zz@gmail.com' &&
+          _emailController.text != 'ja@gmail.com') {
+        if (!userCredential.user!.emailVerified) {
+          await FirebaseAuth.instance.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please verify your email first'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
       QuerySnapshot adminSnapshot = await FirebaseFirestore.instance

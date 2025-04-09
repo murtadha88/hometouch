@@ -425,18 +425,33 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
     IconData? arrowIcon,
     bool showSinceYesterday = true,
   }) {
+    final cardHeight = screenHeight * 0.13;
+    final padding = screenHeight * 0.012;
+    final borderRadius = screenHeight * 0.012;
+    final shadowBlur = screenHeight * 0.005;
+    final shadowOffset = screenHeight * 0.0025;
+
+    final titleSize = screenHeight * 0.015;
+    final valueSizeNormal = screenHeight * 0.021;
+    final valueSizeLarge = screenHeight * 0.025;
+    final smallTextSize = screenHeight * 0.0135;
+    final iconSize = screenHeight * 0.015;
+
+    final smallSpacing = screenHeight * 0.01;
+    final tinySpacing = screenHeight * 0.005;
+
     return Container(
-      padding: const EdgeInsets.all(12.0),
+      padding: EdgeInsets.all(padding),
       width: width,
-      height: 100,
+      height: cardHeight,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
           BoxShadow(
             color: Colors.black26,
-            blurRadius: 4,
-            offset: Offset(2, 2),
+            blurRadius: shadowBlur,
+            offset: Offset(shadowOffset, shadowOffset),
           )
         ],
       ),
@@ -445,39 +460,40 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: titleSize,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFBF0000),
+              color: const Color(0xFFBF0000),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: smallSpacing),
           Text(
             value,
             style: TextStyle(
-              fontSize: showSinceYesterday ? 17 : 20,
+              fontSize: showSinceYesterday ? valueSizeNormal : valueSizeLarge,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: smallSpacing),
           Row(
             children: [
               if (showSinceYesterday) ...[
                 if (percentageColor != null && arrowIcon != null)
-                  Icon(arrowIcon, size: 12, color: percentageColor),
-                const SizedBox(width: 4),
+                  Icon(arrowIcon, size: iconSize, color: percentageColor),
+                SizedBox(width: tinySpacing),
                 Text(
                   percentage,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: smallTextSize,
                     fontWeight: FontWeight.bold,
                     color: percentageColor ?? Colors.black,
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Text(
+                SizedBox(width: tinySpacing),
+                Text(
                   "Since Yesterday",
-                  style: TextStyle(fontSize: 11, color: Colors.black),
+                  style:
+                      TextStyle(fontSize: smallTextSize, color: Colors.black),
                 ),
               ],
             ],

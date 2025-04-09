@@ -356,8 +356,8 @@ class _DrawerScreenState extends State<DrawerScreen> {
       padding: EdgeInsets.only(
         top: screenHeight * 0.02,
         bottom: screenHeight * 0.05,
-        left: screenWidth * 0.2,
-        right: screenWidth * 0.2,
+        left: screenWidth * 0.17,
+        right: screenWidth * 0.17,
       ),
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(

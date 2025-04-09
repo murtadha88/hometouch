@@ -79,6 +79,9 @@ class _AdminRequestsPageState extends State<AdminRequestsPage>
           "Driver_License": requestData['Driver_License'],
           "Car_Ownership": requestData['Car_Ownership'],
           "Photo": null,
+          "isBusy": true,
+          "Total_Orders": 0,
+          "Total_Revenue": 0,
         });
       } else if (requestData['Role'] == 'Vendor') {
         await FirebaseFirestore.instance.collection('vendor').doc(docId).set({
@@ -95,6 +98,9 @@ class _AdminRequestsPageState extends State<AdminRequestsPage>
           "Open_Time_Period2": requestData['Open_Time_Period2'],
           "Close_Time_Period2": requestData['Close_Time_Period2'],
           "CR_Number": requestData['CR_Number'],
+          "Total_Orders": 0,
+          "Total_Revenue": 0,
+          "Rating": 0,
         });
       }
 

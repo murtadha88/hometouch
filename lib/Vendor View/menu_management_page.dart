@@ -282,13 +282,14 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            _buildPriceDisplay(item, screenWidth),
+                            Expanded(
+                              child: _buildPriceDisplay(item, screenWidth),
+                            ),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+                                  padding: EdgeInsets.only(left: 30),
                                   icon: Icon(
                                     Icons.edit,
                                     size: screenWidth * 0.055,
@@ -308,8 +309,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                   },
                                 ),
                                 IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
                                   icon: Icon(
                                     Icons.delete,
                                     size: screenWidth * 0.055,

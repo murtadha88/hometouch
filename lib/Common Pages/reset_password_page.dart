@@ -62,6 +62,93 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     });
   }
 
+  void _showSuccessDialog() {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(
+            vertical: screenHeight * 0.03,
+            horizontal: screenWidth * 0.05,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.05),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFBF0000),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: screenWidth * 0.12,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              Text(
+                'Reset Email Sent!',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.05,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenHeight * 0.01),
+              Text(
+                'A reset email has been sent to your inbox.\nPlease check your email to reset your password.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: screenWidth * 0.035,
+                  fontWeight: FontWeight.w300,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.03),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFBF0000),
+                  padding: EdgeInsets.symmetric(
+                    vertical: screenHeight * 0.02,
+                    horizontal: screenWidth * 0.1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: screenWidth * 0.045,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _sendResetEmail() async {
     if (_formKey.currentState!.validate()) {
       await _checkEmailExists(_emailController.text.trim());
@@ -71,16 +158,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         await _auth.sendPasswordResetEmail(
           email: _emailController.text.trim(),
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Password reset email sent to ${_emailController.text.trim()}.',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Optionally, navigate back to the login page:
-        Navigator.pop(context);
+        _showSuccessDialog();
       } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

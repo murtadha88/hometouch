@@ -382,10 +382,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               ? GeoPoint(
                   _locationData!['latitude']!, _locationData!['longitude']!)
               : null,
-          'Open_Time_Period1':
-              _openTime1?.format(context),
-          'Close_Time_Period1':
-              _closeTime1?.format(context),
+          'Open_Time_Period1': _openTime1?.format(context),
+          'Close_Time_Period1': _closeTime1?.format(context),
           'Two_Periods': _twoPeriods,
           'Open_Time_Period2': _twoPeriods && _openTime2 != null
               ? _openTime2!.format(context)
@@ -422,13 +420,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
             .set(requestData);
       }
 
-      _showSuccessDialog();
-
-      if (widget.role == 'customer') {
-        Future.delayed(const Duration(seconds: 3), () {
-          Navigator.pop(context);
-          Navigator.pop(context);
-        });
+      final User? user = userCredential.user;
+      if (user != null) {
+        await user.sendEmailVerification();
+        _showVerificationDialog();
       }
     } catch (e) {
       print('Error creating user: $e');
@@ -441,10 +436,10 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     }
   }
 
-  void _showSuccessDialog() {
-    final isCustomer = widget.role == 'customer';
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+  void _showVerificationDialog() {
+    final bool isCustomer = widget.role == 'customer';
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
 
     showDialog(
       context: context,
@@ -456,6 +451,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
             vertical: screenHeight * 0.03,
             horizontal: screenWidth * 0.05,
           ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          ),
           title: Container(
             padding: EdgeInsets.all(screenWidth * 0.05),
             decoration: const BoxDecoration(
@@ -463,7 +461,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.check,
+              Icons.email,
               color: Colors.white,
               size: screenWidth * 0.12,
             ),
@@ -472,7 +470,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                isCustomer ? 'Sign Up Success' : 'Request Received',
+                'Verify Your Email',
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: screenWidth * 0.05,
@@ -482,9 +480,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               SizedBox(height: screenHeight * 0.02),
               Text(
                 isCustomer
-                    ? 'Please wait. You will be directed to the login page.'
-                    : 'Your request has been submitted successfully!\n\n'
-                        'Please wait for our response to join us.',
+                    ? 'A verification link has been sent to your email. Please check your inbox and verify your email address.'
+                    : 'A verification link has been sent to your email. Please verify your email address to complete your request.\n\nPlease wait for our acceptance of your request.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
@@ -493,34 +490,31 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                 ),
               ),
               SizedBox(height: screenHeight * 0.03),
-              if (isCustomer)
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFBF0000)),
-                )
-              else
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.pop(context); // Return to login
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFBF0000),
-                    padding: EdgeInsets.symmetric(
-                      vertical: screenHeight * 0.02,
-                      horizontal: screenWidth * 0.1,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFBF0000),
+                  padding: EdgeInsets.symmetric(
+                    vertical: screenHeight * 0.02,
+                    horizontal: screenWidth * 0.1,
                   ),
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
+                child: Text(
+                  'Continue',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Poppins',
+                    fontSize: screenWidth * 0.045,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ],
           ),
         );
