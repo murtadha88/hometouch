@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
 import 'package:hometouch/Common%20Pages/setting_page.dart';
 import 'package:hometouch/Driver%20View/driver_dashboard_page.dart';
+import 'package:hometouch/Driver%20View/driver_orders_page.dart';
 import 'package:hometouch/Driver%20View/driver_profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hometouch/Common%20Pages/role_page.dart';
@@ -226,7 +227,7 @@ class _DrawerScreenState extends State<DrawerScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => DriverDashboard()),
+                                  builder: (context) => DriverOrdersPage()),
                             );
                           },
                         ),

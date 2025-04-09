@@ -36,6 +36,15 @@
   <string>fb-messenger-share-api</string>
 </array>
 
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We need access to your location to track your delivery progress.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need access to your location.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+  		<string>location</string>
+	</array>
+
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -61,6 +61,7 @@ dependencies:
   syncfusion_flutter_charts: ^28.2.9
   syncfusion_flutter_gauges: ^28.2.9
   cached_network_image: ^3.4.1
+  # flutter_background_geolocation: ^4.16.9
 
 dev_dependencies:
   flutter_test:
@@ -106,6 +107,7 @@ flutter:
     - assets/customer.png
     - assets/homeFoodTruck.png
     - assets/driver.png
+    - assets/vendor_pin.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
