@@ -7,30 +7,15 @@ import 'package:geolocator/geolocator.dart'
     hide LocationAccuracy, AndroidSettings;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hometouch/Common%20Pages/chat_page.dart';
+import 'package:hometouch/Driver%20View/driver_orders_page.dart';
 import 'package:url_launcher/url_launcher.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-
-// // Import background_locator_2 packages.
-// import 'package:background_locator_2/background_locator.dart';
-// import 'package:background_locator_2/location_dto.dart';
-// import 'package:background_locator_2/settings/locator_settings.dart';
-// import 'package:background_locator_2/settings/android_settings.dart';
-// import 'package:background_locator_2/settings/ios_settings.dart';
+import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
+    as bg;
 
 const Color primaryRed = Color(0xFFBF0000);
 
-// void backgroundCallback(LocationDto locationDto) async {
-//   final prefs = await SharedPreferences.getInstance();
-//   final driverId = prefs.getString('driverId');
-//   if (driverId != null) {
-//     await FirebaseFirestore.instance.collection("Driver").doc(driverId).update(
-//         {"Location": GeoPoint(locationDto.latitude, locationDto.longitude)});
-//   }
-// }
-
 class OrderTrackingPage extends StatefulWidget {
   final String orderId;
-
   const OrderTrackingPage({Key? key, required this.orderId}) : super(key: key);
 
   @override
@@ -46,40 +31,35 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   bool isLoading = true;
   final Set<Marker> _markers = {};
 
-  // Driver details
   String driverName = "Loading...";
   String driverPhone = "Loading...";
   String driverPhoto = "";
   LatLng? driverLocation;
 
-  // Vendor details
   String vendorName = "Loading...";
   String vendorPhone = "Loading...";
   String vendorPhoto = "";
   LatLng? vendorLocation;
 
-  // Customer details
   String customerName = "Loading...";
   String customerPhone = "Loading...";
   String customerPhoto = "";
   LatLng? customerLocation;
 
   StreamSubscription<DocumentSnapshot>? _driverLocationSubscription;
-  Timer? _locationTimer; // For foreground UI updates.
   Timer? _refreshTimer;
+  Timer? _locationTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchOrderDetails();
-    // Start foreground location tracking (every 3 seconds).
+    _initBackgroundGeolocation();
     _startDriverLocationTracking();
-    // Refresh order details every 10 seconds.
+
     _refreshTimer = Timer.periodic(Duration(seconds: 10), (timer) {
       if (mounted) _fetchOrderDetails();
     });
-    // Initialize background location tracking.
-    // initBackgroundLocator();
   }
 
   @override
@@ -87,35 +67,58 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     _locationTimer?.cancel();
     _refreshTimer?.cancel();
     _driverLocationSubscription?.cancel();
-    // Optionally unregister background locator.
-    // BackgroundLocator.unRegisterLocationUpdate();
+    bg.BackgroundGeolocation.removeListeners();
     super.dispose();
   }
 
-  // Future<void> initBackgroundLocator() async {
-  //   await BackgroundLocator.initialize();
-  //   await BackgroundLocator.registerLocationUpdate(
-  //     backgroundCallback,
-  //     androidSettings: AndroidSettings(
-  //       accuracy: LocationAccuracy.NAVIGATION,
-  //       interval: 3000,
-  //       distanceFilter: 10.0,
-  //       androidNotificationSettings: AndroidNotificationSettings(
-  //         notificationChannelName: 'Tracking Channel',
-  //         notificationTitle: 'Tracking Driver',
-  //         notificationMsg: 'Background location tracking is active.',
-  //         notificationIcon: 'ic_notification',
-  //       ),
-  //     ),
-  //     iosSettings: IOSSettings(
-  //       accuracy: LocationAccuracy.NAVIGATION,
-  //       distanceFilter: 10.0,
-  //     ),
-  //     autoStop: false,
-  //   );
-  // }
+  void _initBackgroundGeolocation() {
+    bg.BackgroundGeolocation.onLocation((bg.Location location) async {
+      print('[Background] Location: ${location.coords}');
+      final driverId = FirebaseAuth.instance.currentUser?.uid;
+      if (driverId != null) {
+        await FirebaseFirestore.instance
+            .collection("Driver")
+            .doc(driverId)
+            .update({
+          "Location":
+              GeoPoint(location.coords.latitude, location.coords.longitude),
+        });
+      }
+      if (mounted) {
+        setState(() {
+          driverLocation =
+              LatLng(location.coords.latitude, location.coords.longitude);
+          _updateDriverMarker(driverLocation!);
+        });
+      }
+    });
 
-  /// Fetch order details from Firestore.
+    bg.BackgroundGeolocation.onMotionChange((bg.Location location) {
+      print('[Motion Change] location: ${location.coords}');
+    });
+
+    bg.BackgroundGeolocation.ready(
+      bg.Config(
+        desiredAccuracy: bg.Config.DESIRED_ACCURACY_HIGH,
+        distanceFilter: 10.0,
+        stopOnTerminate: false,
+        startOnBoot: true,
+        debug: true,
+        logLevel: bg.Config.LOG_LEVEL_VERBOSE,
+        notification: bg.Notification(
+          title: "Tracking Driver",
+          text: "Background location tracking is active",
+          channelName: "Driver Location",
+        ),
+      ),
+    ).then((bg.State state) {
+      print("[ready] BackgroundGeolocation ready: enabled=${state.enabled}");
+      if (!state.enabled) {
+        bg.BackgroundGeolocation.start();
+      }
+    });
+  }
+
   Future<void> _fetchOrderDetails() async {
     try {
       DocumentSnapshot orderSnapshot = await FirebaseFirestore.instance
@@ -152,7 +155,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-  /// Listen to the driver's document and update driver info.
   Future<void> _fetchDriverDetails(String driverId) async {
     try {
       _driverLocationSubscription = FirebaseFirestore.instance
@@ -182,7 +184,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-  /// Fetch vendor details from Firestore.
   Future<void> _fetchVendorDetails(String vendorId) async {
     try {
       DocumentSnapshot vendorSnapshot = await FirebaseFirestore.instance
@@ -209,7 +210,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-  /// Fetch customer details from Firestore.
   Future<void> _fetchCustomerDetails(String customerId) async {
     try {
       DocumentSnapshot customerSnapshot = await FirebaseFirestore.instance
@@ -231,7 +231,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-  /// Foreground tracking: update location every 3 seconds using Geolocator.
   void _startDriverLocationTracking() {
     if (orderData != null &&
         orderData?["Driver_ID"] != null &&
@@ -262,8 +261,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       }
     });
   }
-
-  // MARKER UPDATE FUNCTIONS
 
   Future<BitmapDescriptor> _getDriverMarkerIcon() async {
     return await BitmapDescriptor.fromAssetImage(
@@ -332,8 +329,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     });
   }
 
-  // COMMUNICATION FUNCTIONS
-
   Future<void> _handleShowLocation(LatLng location) async {
     final String url =
         'https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}';
@@ -352,7 +347,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
     String driverId = user.uid;
     String vendorId = orderData?["Vendor_ID"] ?? "";
-
     if (vendorId.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Vendor not available.")));
@@ -413,7 +407,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
     String driverId = user.uid;
     String customerId = orderData?["Customer_ID"] ?? "";
-
     if (customerId.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Customer not available.")));
@@ -480,14 +473,160 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-  /// Build contact info with smaller chat/call buttons and a third location button.
+  void _showDeliveredConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+          title: Text(
+            'Confirm Delivery',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: primaryRed,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Are you sure you want to mark this order as delivered?',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: primaryRed),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                      },
+                      child: Text(
+                        'No',
+                        style: TextStyle(
+                          color: primaryRed,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryRed,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => DriverOrdersPage()),
+                        );
+                        await _handleDeliveredOrder();
+                      },
+                      child: const Text(
+                        'Yes',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleDeliveredOrder() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('order')
+          .doc(widget.orderId)
+          .update({
+        "Status": "Delivered",
+      });
+
+      final String driverId = FirebaseAuth.instance.currentUser!.uid;
+
+      QuerySnapshot pendingOrdersSnapshot = await FirebaseFirestore.instance
+          .collection('order')
+          .where("Driver_ID", isEqualTo: "Pending")
+          .get();
+
+      final List<DocumentSnapshot> pendingOrders = pendingOrdersSnapshot.docs
+          .where((doc) => doc.id != widget.orderId)
+          .toList();
+
+      if (pendingOrders.isNotEmpty) {
+        DocumentSnapshot nextOrder = pendingOrders.first;
+        await FirebaseFirestore.instance
+            .collection('order')
+            .doc(nextOrder.id)
+            .update({
+          "Driver_ID": driverId,
+          "assignmentTimestamp": FieldValue.serverTimestamp(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Another pending order has been assigned to you. You have 3 minutes to decide.",
+            ),
+          ),
+        );
+      } else {
+        await FirebaseFirestore.instance
+            .collection('Driver')
+            .doc(driverId)
+            .update({"isBusy": false});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Order delivered successfully! No other pending orders available.",
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error delivering order: ${e.toString()}")),
+      );
+    }
+  }
+
   Widget _buildContactInfo(double screenWidth, double screenHeight) {
     final double buttonRadius = screenWidth * 0.05;
     final double iconSize = screenWidth * 0.05;
-
     return Column(
       children: [
-        // Vendor Contact Info Row
         Row(
           children: [
             CircleAvatar(
@@ -518,7 +657,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                 ],
               ),
             ),
-            // Chat Button
             IconButton(
               icon: CircleAvatar(
                 backgroundColor: primaryRed,
@@ -531,7 +669,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               ),
               onPressed: _handleChatWithVendor,
             ),
-            // Call Button
             IconButton(
               icon: CircleAvatar(
                 backgroundColor: primaryRed,
@@ -544,7 +681,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               ),
               onPressed: () => _handleCall(vendorPhone),
             ),
-            // Location Button
             if (vendorLocation != null)
               IconButton(
                 icon: CircleAvatar(
@@ -564,7 +700,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           height: screenHeight * 0.02,
           thickness: screenHeight * 0.002,
         ),
-        // Customer Contact Info Row
         Row(
           children: [
             CircleAvatar(
@@ -595,7 +730,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                 ],
               ),
             ),
-            // Chat Button
             IconButton(
               icon: CircleAvatar(
                 backgroundColor: primaryRed,
@@ -608,7 +742,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               ),
               onPressed: _handleChatWithCustomer,
             ),
-            // Call Button
             IconButton(
               icon: CircleAvatar(
                 backgroundColor: primaryRed,
@@ -621,7 +754,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
               ),
               onPressed: () => _handleCall(customerPhone),
             ),
-            // Location Button
             if (customerLocation != null)
               IconButton(
                 icon: CircleAvatar(
@@ -707,7 +839,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         ));
       }
     }
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(children: rowChildren),
@@ -836,10 +967,11 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                             color: primaryRed,
                           ),
                           padding: EdgeInsets.only(
-                              left: screenWidth * 0.052,
-                              top: screenWidth * 0.03,
-                              right: screenWidth * 0.03,
-                              bottom: screenWidth * 0.03),
+                            left: screenWidth * 0.04,
+                            top: screenWidth * 0.02,
+                            right: screenWidth * 0.02,
+                            bottom: screenWidth * 0.02,
+                          ),
                           child: Icon(
                             Icons.arrow_back_ios,
                             color: Colors.white,
@@ -850,7 +982,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                     ),
                   ),
                 ),
-                // Draggable bottom sheet for contact info and additional order details.
                 DraggableScrollableSheet(
                   initialChildSize: 0.5,
                   minChildSize: 0.5,
@@ -911,6 +1042,22 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                               style: TextStyle(
                                 fontSize: screenWidth * 0.045,
                                 fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.02),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryRed,
+                                foregroundColor: Colors.white,
+                                minimumSize: Size(double.infinity, 50),
+                              ),
+                              onPressed: _showDeliveredConfirmationDialog,
+                              child: Text(
+                                "Delivered",
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.045,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],

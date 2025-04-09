@@ -86,6 +86,94 @@ class _DriverOrdersPageState extends State<DriverOrdersPage>
             builder: (context) => OrderTrackingPage(orderId: orderId)));
   }
 
+  void _showRejectConfirmationDialog(String orderId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+          title: Text(
+            'Confirm Rejection',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: primaryRed,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Are you sure you want to reject this order?',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // "No" Button
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: primaryRed),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                      },
+                      child: Text(
+                        'No',
+                        style: TextStyle(
+                          color: primaryRed,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // "Yes" Button
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryRed,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        await _rejectOrder(orderId);
+                      },
+                      child: const Text(
+                        'Yes',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _rejectOrder(String orderId) async {
     try {
       await FirebaseFirestore.instance.collection('order').doc(orderId).update({
@@ -277,8 +365,11 @@ class _DriverOrdersPageState extends State<DriverOrdersPage>
                   SizedBox(width: screenWidth * 0.02),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed:
-                          canReject ? () => _rejectOrder(orderDoc.id) : null,
+                      onPressed: canReject
+                          ? () {
+                              _showRejectConfirmationDialog(orderDoc.id);
+                            }
+                          : null,
                       style: OutlinedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: canReject ? primaryRed : Colors.grey,
@@ -360,15 +451,20 @@ class _DriverOrdersPageState extends State<DriverOrdersPage>
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: primaryRed,
                 ),
                 alignment: Alignment.center,
-                padding: EdgeInsets.only(
-                    top: screenHeight * 0.001, left: screenWidth * 0.02),
-                child: Icon(Icons.arrow_back_ios,
-                    color: Colors.white, size: screenWidth * 0.055),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                      top: screenHeight * 0.001, left: screenWidth * 0.02),
+                  child: Icon(
+                    Icons.arrow_back_ios,
+                    color: Colors.white,
+                    size: screenWidth * 0.055,
+                  ),
+                ),
               ),
             ),
           ),

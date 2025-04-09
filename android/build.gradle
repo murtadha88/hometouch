@@ -1,7 +1,15 @@
+ext {
+    appCompatVersion = "1.4.2"          
+    playServicesLocationVersion = "21.3.0" 
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url "${project(':flutter_background_geolocation').projectDir}/libs" }
+        maven { url 'https://developer.huawei.com/repo/' }
+        maven { url "${project(':background_fetch').projectDir}/libs" }
     }
 }
 
@@ -21,9 +29,11 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url "${project(':flutter_background_geolocation').projectDir}/libs" }
+        maven { url 'https://developer.huawei.com/repo/' }
+        maven { url "${project(':background_fetch').projectDir}/libs" }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.2.1'
     }
 }
-

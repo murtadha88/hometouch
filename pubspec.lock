@@ -33,6 +33,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  background_fetch:
+    dependency: "direct main"
+    description:
+      name: background_fetch
+      sha256: "442e82f508708be89fd0cc7e1dc3b27bc7c6c8c39a47967ccb7ed1c57b9108b5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.8"
   boolean_selector:
     dependency: transitive
     description:
@@ -318,6 +326,15 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_background_geolocation:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: "74f4a7d39bcc0a8aceb40c805a2f36cd6b4c0d32"
+      url: "https://github.com/transistorsoft/flutter_background_geolocation.git"
+    source: git
+    version: "4.16.9"
   flutter_background_service:
     dependency: "direct main"
     description:

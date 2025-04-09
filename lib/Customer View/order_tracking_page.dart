@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hometouch/Common%20Pages/chat_page.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 const Color primaryRed = Color(0xFFBF0000);
 
@@ -21,17 +21,26 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   late GoogleMapController mapController;
   Map<String, dynamic>? orderData;
   Map<String, dynamic>? driverData;
+  Map<String, dynamic>? vendorData; // <-- New vendor data
   bool isLoading = true;
   final Set<Marker> _markers = {};
 
+  // Driver details
   String driverName = "Loading...";
   String driverPhone = "Loading...";
   String driverPhoto = "";
   LatLng? driverLocation;
 
-  LatLng? customerLocation;
-  StreamSubscription<DocumentSnapshot>? _driverLocationSubscription;
+  // Vendor details
+  String vendorName = "Loading...";
+  String vendorPhone = "Loading...";
+  String vendorPhoto = "";
+  LatLng? vendorLocation;
 
+  // Customer details
+  LatLng? customerLocation;
+
+  StreamSubscription<DocumentSnapshot>? _driverLocationSubscription;
   Timer? _refreshTimer;
 
   @override
@@ -39,11 +48,13 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     super.initState();
     _fetchOrderDetails();
 
-    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+    // Refresh every 3 seconds
+    _refreshTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       if (mounted) {
         _fetchOrderDetails();
-        _updateDriverMarker(driverLocation!);
-        setState(() {});
+        if (driverLocation != null) {
+          _updateDriverMarker(driverLocation!);
+        }
       }
     });
   }
@@ -72,6 +83,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         isLoading = false;
       });
 
+      // Fetch vendor details if Vendor_ID exists.
+      if (orderData?["Vendor_ID"] != null) {
+        _fetchVendorDetails(orderData!["Vendor_ID"]);
+      }
+
+      // Fetch driver details if a driver is assigned.
       if (orderData?["Driver_ID"] != null &&
           orderData?["Driver_ID"] != "Pending") {
         _fetchDriverDetails(orderData?["Driver_ID"]);
@@ -79,9 +96,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         print("❌ No driver assigned yet.");
       }
 
+      // Get customer location (from order's Customer_Address field)
       if (orderData?["Customer_Address"] != null) {
         final address = orderData?["Customer_Address"];
-
         if (address["Location"] is GeoPoint) {
           GeoPoint geoPoint = address["Location"];
           customerLocation = LatLng(geoPoint.latitude, geoPoint.longitude);
@@ -103,15 +120,12 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         if (driverSnapshot.exists && driverSnapshot.data() != null) {
           Map<String, dynamic> driverData =
               driverSnapshot.data() as Map<String, dynamic>;
-
           setState(() {
             this.driverData = driverData;
-
             driverName = driverData["Name"] ?? "Unknown";
             driverPhone = driverData["Phone"]?.toString() ?? "No phone";
             driverPhoto = driverData["Photo"] ??
                 "https://randomuser.me/api/portraits/men/1.jpg";
-
             if (driverData["Location"] is GeoPoint) {
               GeoPoint location = driverData["Location"];
               driverLocation = LatLng(location.latitude, location.longitude);
@@ -125,6 +139,34 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
+  Future<void> _fetchVendorDetails(String vendorId) async {
+    try {
+      DocumentSnapshot vendorSnapshot = await FirebaseFirestore.instance
+          .collection("vendor")
+          .doc(vendorId)
+          .get();
+      if (vendorSnapshot.exists && vendorSnapshot.data() != null) {
+        Map<String, dynamic> data =
+            vendorSnapshot.data() as Map<String, dynamic>;
+        setState(() {
+          vendorData = data;
+          vendorName = data["Name"] ?? "Unknown Vendor";
+          vendorPhone = data["Phone"]?.toString() ?? "No phone";
+          vendorPhoto = data["Logo"] ?? "https://via.placeholder.com/50";
+          if (data["Location"] is GeoPoint) {
+            GeoPoint loc = data["Location"];
+            vendorLocation = LatLng(loc.latitude, loc.longitude);
+            _updateVendorMarker(vendorLocation!);
+          }
+        });
+      }
+    } catch (e) {
+      print("Error fetching vendor details: $e");
+    }
+  }
+
+  // MARKER UPDATE FUNCTIONS
+
   Future<BitmapDescriptor> _getDriverMarkerIcon() async {
     return await BitmapDescriptor.fromAssetImage(
       const ImageConfiguration(size: Size(100, 100)),
@@ -134,8 +176,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   Future<void> _updateDriverMarker(LatLng location) async {
     final BitmapDescriptor customDriverMarker = await _getDriverMarkerIcon();
-
     setState(() {
+      _markers.removeWhere((marker) => marker.markerId.value == "driver");
       _markers.add(
         Marker(
           markerId: const MarkerId("driver"),
@@ -157,14 +199,36 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   void _updateCustomerMarker(LatLng location) async {
     final BitmapDescriptor customCustomerMarker =
         await _getCustomerMarkerIcon();
-
     setState(() {
+      _markers.removeWhere((marker) => marker.markerId.value == "customer");
       _markers.add(
         Marker(
           markerId: const MarkerId("customer"),
           position: location,
           icon: customCustomerMarker,
           infoWindow: const InfoWindow(title: "Customer Location"),
+        ),
+      );
+    });
+  }
+
+  Future<BitmapDescriptor> _getVendorMarkerIcon() async {
+    return await BitmapDescriptor.fromAssetImage(
+      const ImageConfiguration(size: Size(100, 100)),
+      'assets/vendor_pin.png',
+    );
+  }
+
+  void _updateVendorMarker(LatLng location) async {
+    final BitmapDescriptor customVendorMarker = await _getVendorMarkerIcon();
+    setState(() {
+      _markers.removeWhere((marker) => marker.markerId.value == "vendor");
+      _markers.add(
+        Marker(
+          markerId: const MarkerId("vendor"),
+          position: location,
+          icon: customVendorMarker,
+          infoWindow: const InfoWindow(title: "Vendor Location"),
         ),
       );
     });
@@ -235,261 +299,189 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     }
   }
 
-//   void updateDriverLocation() async {
-//   Location location = Location();
+  Future<void> _handleChatWithVendor() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || vendorData == null) return;
 
-//   bool _serviceEnabled = await location.serviceEnabled();
-//   if (!_serviceEnabled) {
-//     _serviceEnabled = await location.requestService();
-//     if (!_serviceEnabled) {
-//       print("❌ Location services are disabled.");
-//       return;
-//     }
-//   }
+    String customerId = user.uid;
+    String vendorId = orderData?["Vendor_ID"] ?? "";
 
-//   PermissionStatus _permissionGranted = await location.hasPermission();
-//   if (_permissionGranted == PermissionStatus.denied) {
-//     _permissionGranted = await location.requestPermission();
-//     if (_permissionGranted != PermissionStatus.granted) {
-//       print("❌ Location permissions are denied.");
-//       return;
-//     }
-//   }
+    if (vendorId.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Vendor not available.")));
+      return;
+    }
 
-//   location.onLocationChanged.listen((LocationData currentLocation) async {
-//     if (currentLocation.latitude != null &&
-//         currentLocation.longitude != null) {
-//       await FirebaseFirestore.instance
-//           .collection("Driver")
-//           .doc("eJXF01SPCo4QK3UApmpR") // Replace with actual driver ID
-//           .update({
-//         "Location":
-//             GeoPoint(currentLocation.latitude!, currentLocation.longitude!)
-//       });
-//       print(
-//           "📍 Driver Location Updated: ${currentLocation.latitude}, ${currentLocation.longitude}");
-//     }
-//   });
-// }
+    QuerySnapshot chatQuery = await FirebaseFirestore.instance
+        .collection("chat")
+        .where("participants", arrayContains: customerId)
+        .get();
 
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    String? existingChatId;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: primaryRed,
-                strokeWidth: screenWidth * 0.015,
-              ),
-            )
-          : Stack(
-              children: [
-                orderData?["Status"] != "On The Way"
-                    ? Padding(
-                        padding: EdgeInsets.only(
-                            top: screenWidth * 0.17,
-                            right: screenWidth * 0.1,
-                            bottom: screenWidth * 0.1,
-                            left: screenWidth * 0.1),
-                        child: Image.network(
-                          "https://i.imgur.com/jqcE474.jpeg",
-                          fit: BoxFit.cover,
-                          height: screenHeight * 0.5,
-                        ))
-                    : driverLocation != null
-                        ? GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: driverLocation ??
-                                  customerLocation ??
-                                  LatLng(26.0, 50.0),
-                              zoom: 14,
-                            ),
-                            markers: _markers,
-                            onMapCreated: (controller) {
-                              mapController = controller;
-                            },
-                          )
-                        : Center(
-                            child: Text(
-                              "Driver location not available",
-                              style: TextStyle(fontSize: screenWidth * 0.045),
-                            ),
-                          ),
-                SafeArea(
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: Padding(
-                      padding: EdgeInsets.all(screenWidth * 0.06),
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: primaryRed,
-                          ),
-                          padding: EdgeInsets.only(
-                              left: screenWidth * 0.052,
-                              top: screenWidth * 0.03,
-                              right: screenWidth * 0.03,
-                              bottom: screenWidth * 0.03),
-                          child: Icon(
-                            Icons.arrow_back_ios,
-                            color: Colors.white,
-                            size: screenHeight * 0.025,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                DraggableScrollableSheet(
-                  initialChildSize: 0.4,
-                  minChildSize: 0.4,
-                  maxChildSize: 0.6,
-                  builder: (context, scrollController) {
-                    return Container(
-                      padding: EdgeInsets.all(screenWidth * 0.044),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(screenWidth * 0.055),
-                          topRight: Radius.circular(screenWidth * 0.055),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: screenWidth * 0.033,
-                            offset: Offset(0, screenHeight * 0.003),
-                          ),
-                        ],
-                      ),
-                      child: SingleChildScrollView(
-                        controller: scrollController,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildDriverInfo(screenWidth, screenHeight),
-                            Divider(
-                              height: screenHeight * 0.02,
-                              thickness: screenHeight * 0.002,
-                            ),
-                            _buildOrderStatus(screenWidth, screenHeight),
-                            Divider(
-                              height: screenHeight * 0.02,
-                              thickness: screenHeight * 0.002,
-                            ),
-                            _buildOrderItems(screenWidth, screenHeight),
-                            Divider(
-                              height: screenHeight * 0.02,
-                              thickness: screenHeight * 0.002,
-                            ),
-                            if (orderData?["Total_Points_Used"] != null &&
-                                orderData?["Total_Points_Used"] > 0)
-                              Padding(
-                                padding: EdgeInsets.only(
-                                    bottom: screenHeight * 0.01),
-                                child: Text(
-                                  "Points Used: ${orderData?["Total_Points_Used"]} Points",
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.045,
-                                    fontWeight: FontWeight.bold,
-                                    color: primaryRed, // Display in red
-                                  ),
-                                ),
-                              ),
-                            Text(
-                              "Total: ${orderData?["Total"].toString()} BHD",
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.045,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-    );
+    for (var doc in chatQuery.docs) {
+      List<dynamic> participants = doc["participants"];
+      if (participants.contains(vendorId)) {
+        existingChatId = doc.id;
+        break;
+      }
+    }
+
+    if (existingChatId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatPage(
+            chatId: existingChatId ?? "",
+            currentUserId: customerId,
+          ),
+        ),
+      );
+    } else {
+      DocumentReference newChatRef =
+          FirebaseFirestore.instance.collection("chat").doc();
+      await newChatRef.set({
+        "Last_Message": "",
+        "Last_Message_Time": FieldValue.serverTimestamp(),
+        "Seen": false,
+        "Unread_Count": 0,
+        "User1": customerId,
+        "User2": vendorId,
+        "participants": [customerId, vendorId],
+      });
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatPage(
+            chatId: newChatRef.id,
+            currentUserId: customerId,
+          ),
+        ),
+      );
+    }
   }
 
-  Widget _buildDriverInfo(double screenWidth, double screenHeight) {
-    return Row(
+  Future<void> _handleCall(String phone) async {
+    if (phone.isNotEmpty) {
+      final Uri callUri = Uri(scheme: 'tel', path: phone);
+      if (await canLaunchUrl(callUri)) {
+        await launchUrl(callUri);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Could not launch phone dialer")));
+      }
+    }
+  }
+
+  Widget _buildContactInfo(double screenWidth, double screenHeight) {
+    final double buttonRadius = screenWidth * 0.05;
+    final double iconSize = screenWidth * 0.05;
+    return Column(
       children: [
-        CircleAvatar(
-          backgroundImage: NetworkImage(driverPhoto),
-          radius: screenWidth * 0.066,
-        ),
-        SizedBox(width: screenWidth * 0.033),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                driverName,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: screenWidth * 0.044,
-                  color: Colors.black,
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.007),
-              Text(
-                "Phone: $driverPhone",
-                style: TextStyle(
-                  fontSize: screenWidth * 0.038,
-                  color: Colors.black54,
-                ),
-              ),
-            ],
-          ),
-        ),
-        IconButton(
-          icon: CircleAvatar(
-            backgroundColor: primaryRed,
-            radius: screenWidth * 0.06,
-            child: Icon(
-              Icons.chat,
-              color: Colors.white,
-              size: screenWidth * 0.06,
+        Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: NetworkImage(vendorPhoto),
+              radius: screenWidth * 0.066,
             ),
-          ),
-          onPressed: _handleChatWithDriver,
-        ),
-        IconButton(
-          icon: CircleAvatar(
-            backgroundColor: primaryRed,
-            radius: screenWidth * 0.06,
-            child: Icon(
-              Icons.call,
-              color: Colors.white,
-              size: screenWidth * 0.06,
-            ),
-          ),
-          onPressed: () async {
-            final phone = driverData?["Phone"]?.toString() ?? "";
-            if (phone.isNotEmpty) {
-              final Uri callUri = Uri(scheme: 'tel', path: phone);
-              if (await canLaunchUrl(callUri)) {
-                await launchUrl(callUri);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      "Could not launch phone dialer",
-                      style: TextStyle(fontSize: screenWidth * 0.035),
+            SizedBox(width: screenWidth * 0.033),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    vendorName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: screenWidth * 0.044,
+                      color: Colors.black,
                     ),
                   ),
-                );
-              }
-            }
-          },
+                  SizedBox(height: screenHeight * 0.007),
+                  Text(
+                    "Phone: $vendorPhone",
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.038,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Chat Button for Vendor
+            IconButton(
+              icon: CircleAvatar(
+                backgroundColor: primaryRed,
+                radius: buttonRadius,
+                child: Icon(Icons.chat, color: Colors.white, size: iconSize),
+              ),
+              onPressed: _handleChatWithVendor,
+            ),
+            // Call Button for Vendor
+            IconButton(
+              icon: CircleAvatar(
+                backgroundColor: primaryRed,
+                radius: buttonRadius,
+                child: Icon(Icons.call, color: Colors.white, size: iconSize),
+              ),
+              onPressed: () => _handleCall(vendorPhone),
+            ),
+          ],
+        ),
+        Divider(
+          height: screenHeight * 0.02,
+          thickness: screenHeight * 0.002,
+        ),
+        // Driver Contact Info Row
+        Row(
+          children: [
+            CircleAvatar(
+              backgroundImage: NetworkImage(driverPhoto),
+              radius: screenWidth * 0.066,
+            ),
+            SizedBox(width: screenWidth * 0.033),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    driverName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: screenWidth * 0.044,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: screenHeight * 0.007),
+                  Text(
+                    "Phone: $driverPhone",
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.038,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Chat Button for Driver
+            IconButton(
+              icon: CircleAvatar(
+                backgroundColor: primaryRed,
+                radius: buttonRadius,
+                child: Icon(Icons.chat, color: Colors.white, size: iconSize),
+              ),
+              onPressed: _handleChatWithDriver,
+            ),
+            // Call Button for Driver
+            IconButton(
+              icon: CircleAvatar(
+                backgroundColor: primaryRed,
+                radius: buttonRadius,
+                child: Icon(Icons.call, color: Colors.white, size: iconSize),
+              ),
+              onPressed: () => _handleCall(driverPhone),
+            ),
+          ],
         ),
       ],
     );
@@ -498,7 +490,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   Widget _buildOrderStatus(double screenWidth, double screenHeight) {
     int currentStep;
     final String status = orderData?["Status"] ?? "Order Placed";
-
     if (status == "Order Placed") {
       currentStep = 1;
     } else if (status == "Preparing") {
@@ -510,7 +501,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     } else {
       currentStep = 1;
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -544,7 +534,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       {"label": "On The Way", "icon": Icons.delivery_dining},
       {"label": "Delivered", "icon": Icons.home},
     ];
-
     List<Widget> rowChildren = [];
     for (int i = 0; i < steps.length; i++) {
       final isCompleted = (i + 1) <= currentStep;
@@ -563,13 +552,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         ));
       }
     }
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: rowChildren,
-      ),
+      child: Row(children: rowChildren),
     );
   }
 
@@ -616,6 +601,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   }
 
   Widget _buildOrderItems(double screenWidth, double screenHeight) {
+    List items = orderData?["Items"] as List? ?? [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -626,26 +612,159 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        ...List.generate(
-          (orderData?["Items"] as List).length,
-          (index) {
-            var item = orderData?["Items"][index];
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.005),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                      child: Text(item["name"],
-                          style: TextStyle(fontSize: screenWidth * 0.038))),
-                  Text("${item["price"].toString()} BHD",
-                      style: TextStyle(fontSize: screenWidth * 0.038)),
-                ],
-              ),
-            );
-          },
-        ),
+        ...List.generate(items.length, (index) {
+          var item = items[index];
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: screenHeight * 0.005),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                    child: Text(item["name"],
+                        style: TextStyle(fontSize: screenWidth * 0.038))),
+                Text("${item["price"].toString()} BHD x${item['quantity']}",
+                    style: TextStyle(fontSize: screenWidth * 0.038)),
+              ],
+            ),
+          );
+        }),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: primaryRed,
+                strokeWidth: screenWidth * 0.015,
+              ),
+            )
+          : Stack(
+              children: [
+                driverLocation != null
+                    ? GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: driverLocation ??
+                              customerLocation ??
+                              vendorLocation ??
+                              LatLng(26.0, 50.0),
+                          zoom: 14,
+                        ),
+                        markers: _markers,
+                        onMapCreated: (controller) {
+                          mapController = controller;
+                        },
+                      )
+                    : Center(
+                        child: Text(
+                          "Driver location not available",
+                          style: TextStyle(fontSize: screenWidth * 0.045),
+                        ),
+                      ),
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: EdgeInsets.all(screenWidth * 0.06),
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primaryRed,
+                          ),
+                          padding: EdgeInsets.only(
+                            left: screenWidth * 0.04,
+                            top: screenWidth * 0.02,
+                            right: screenWidth * 0.02,
+                            bottom: screenWidth * 0.02,
+                          ),
+                          child: Icon(
+                            Icons.arrow_back_ios,
+                            color: Colors.white,
+                            size: screenHeight * 0.025,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                DraggableScrollableSheet(
+                  initialChildSize: 0.5,
+                  minChildSize: 0.5,
+                  maxChildSize: 0.8,
+                  builder: (context, scrollController) {
+                    return Container(
+                      padding: EdgeInsets.all(screenWidth * 0.044),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(screenWidth * 0.055),
+                          topRight: Radius.circular(screenWidth * 0.055),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: screenWidth * 0.033,
+                            offset: Offset(0, screenHeight * 0.003),
+                          ),
+                        ],
+                      ),
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildContactInfo(screenWidth, screenHeight),
+                            Divider(
+                              height: screenHeight * 0.02,
+                              thickness: screenHeight * 0.002,
+                            ),
+                            _buildOrderStatus(screenWidth, screenHeight),
+                            Divider(
+                              height: screenHeight * 0.02,
+                              thickness: screenHeight * 0.002,
+                            ),
+                            _buildOrderItems(screenWidth, screenHeight),
+                            Divider(
+                              height: screenHeight * 0.02,
+                              thickness: screenHeight * 0.002,
+                            ),
+                            if (orderData?["Total_Points_Used"] != null &&
+                                orderData?["Total_Points_Used"] > 0)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                    bottom: screenHeight * 0.01),
+                                child: Text(
+                                  "Points Used: ${orderData?["Total_Points_Used"]} Points",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryRed,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              "Total: ${orderData?["Total"].toString()} BHD",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.045,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
     );
   }
 }

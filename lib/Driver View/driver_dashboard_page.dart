@@ -528,8 +528,8 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
           child: Row(
             children: [
               Container(
-                width: screenWidth * 0.22,
-                height: screenHeight * 0.1,
+                width: screenWidth * 0.227,
+                height: screenHeight * 0.115,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(7.0),
                   image: DecorationImage(
