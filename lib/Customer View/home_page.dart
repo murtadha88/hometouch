@@ -7,6 +7,7 @@ import 'address_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'menu_page.dart';
+import 'package:intl/intl.dart';
 
 class HomeTouchScreen extends StatefulWidget {
   final int initialIndex;
@@ -176,6 +177,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
           .where('Customer_ID', isEqualTo: userId)
           .get();
 
+      List<Map<String, dynamic>> vendors = [];
+
       if (ordersQuery.docs.isNotEmpty) {
         final Map<String, int> vendorOrderCount = {};
 
@@ -188,7 +191,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
         final sortedVendors = vendorOrderCount.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
-
         final sortedVendorIds =
             sortedVendors.map((entry) => entry.key).toList();
 
@@ -197,7 +199,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
             .where(FieldPath.documentId, whereIn: sortedVendorIds)
             .get();
 
-        final vendors = vendorsQuery.docs.map((doc) {
+        vendors = vendorsQuery.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id;
           data['Order_Count'] = vendorOrderCount[doc.id] ?? 0;
@@ -206,25 +208,74 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
         vendors.sort((a, b) =>
             (b['Order_Count'] as int).compareTo(a['Order_Count'] as int));
+      } else {
+        final topVendorsQuery = await FirebaseFirestore.instance
+            .collection('vendor')
+            .orderBy('Rating', descending: true)
+            .limit(3)
+            .get();
 
-        return vendors;
+        vendors = topVendorsQuery.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
       }
 
-      final topVendorsQuery = await FirebaseFirestore.instance
-          .collection('vendor')
-          .orderBy('Rating', descending: true)
-          .limit(3)
-          .get();
+      final openVendors =
+          vendors.where((vendor) => isVendorOpenNow(vendor)).toList();
 
-      return topVendorsQuery.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).toList();
+      return openVendors;
     } catch (e) {
       print('❌ Error fetching recommended vendors: $e');
       return [];
     }
+  }
+
+  DateTime parseTime(String timeStr) {
+    final now = DateTime.now();
+    final parsed = DateFormat("hh:mm a").parse(timeStr);
+    return DateTime(now.year, now.month, now.day, parsed.hour, parsed.minute);
+  }
+
+  bool isTimeWithinRange(DateTime now, DateTime start, DateTime end) {
+    if (end.isAfter(start)) {
+      return now.isAfter(start) && now.isBefore(end);
+    } else {
+      return now.isAfter(start) || now.isBefore(end);
+    }
+  }
+
+  bool isVendorOpenNow(Map<String, dynamic> vendorData) {
+    // Check that the primary period fields exist and are non-empty.
+    if (!vendorData.containsKey("Open_Time_Period1") ||
+        vendorData["Open_Time_Period1"] == null ||
+        vendorData["Open_Time_Period1"].toString().trim().isEmpty ||
+        !vendorData.containsKey("Close_Time_Period1") ||
+        vendorData["Close_Time_Period1"] == null ||
+        vendorData["Close_Time_Period1"].toString().trim().isEmpty) {
+      return false;
+    }
+
+    final now = DateTime.now();
+
+    final open1 = parseTime(vendorData["Open_Time_Period1"]);
+    final close1 = parseTime(vendorData["Close_Time_Period1"]);
+    final isOpenPeriod1 = isTimeWithinRange(now, open1, close1);
+
+    bool isOpenPeriod2 = false;
+    if (vendorData.containsKey("Open_Time_Period2") &&
+        vendorData["Open_Time_Period2"] != null &&
+        vendorData["Open_Time_Period2"].toString().trim().isNotEmpty &&
+        vendorData.containsKey("Close_Time_Period2") &&
+        vendorData["Close_Time_Period2"] != null &&
+        vendorData["Close_Time_Period2"].toString().trim().isNotEmpty) {
+      final open2 = parseTime(vendorData["Open_Time_Period2"]);
+      final close2 = parseTime(vendorData["Close_Time_Period2"]);
+      isOpenPeriod2 = isTimeWithinRange(now, open2, close2);
+    }
+
+    return isOpenPeriod1 || isOpenPeriod2;
   }
 
   Future<void> fetchAllVendors() async {
@@ -232,12 +283,15 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
       final vendorsSnapshot =
           await FirebaseFirestore.instance.collection('vendor').get();
 
+      final all = vendorsSnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+
       setState(() {
-        allVendors = vendorsSnapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return data;
-        }).toList();
+        allVendors =
+            all.where((vendorData) => isVendorOpenNow(vendorData)).toList();
         filteredVendors = allVendors;
       });
     } catch (e) {
@@ -276,9 +330,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
           final Map<String, int> vendorOrderCount = {};
           for (var orderDoc in ordersSnapshot.docs) {
-            final vendorRef = orderDoc['Vendor_ID'] as DocumentReference?;
-            if (vendorRef != null) {
-              final vendorId = vendorRef.id;
+            final vendorId = orderDoc.data()['Vendor_ID'];
+            if (vendorId != null && vendorId.toString().trim().isNotEmpty) {
               vendorOrderCount[vendorId] =
                   (vendorOrderCount[vendorId] ?? 0) + 1;
             }
@@ -286,12 +339,17 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
           final sortedVendors = vendorOrderCount.entries.toList()
             ..sort((a, b) => b.value.compareTo(a.value));
-          final topVendorIds =
-              sortedVendors.take(10).map((entry) => entry.key).toList();
+          final topVendorIds = sortedVendors.map((entry) => entry.key).toList();
 
           filtered = filtered
               .where((vendor) => topVendorIds.contains(vendor['id']))
               .toList();
+
+          filtered.sort((a, b) {
+            final aCount = vendorOrderCount[a['id']] ?? 0;
+            final bCount = vendorOrderCount[b['id']] ?? 0;
+            return bCount.compareTo(aCount);
+          });
         } else {
           double minRating = 0.0;
           double maxRating = 5.0;
@@ -315,6 +373,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
           filtered = filtered
               .where((vendor) =>
+                  vendor['Rating'] != null &&
                   vendor['Rating'] >= minRating &&
                   vendor['Rating'] <= maxRating)
               .toList();

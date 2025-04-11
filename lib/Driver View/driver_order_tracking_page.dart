@@ -103,7 +103,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         distanceFilter: 10.0,
         stopOnTerminate: false,
         startOnBoot: true,
-        debug: true,
+        debug: false,
         logLevel: bg.Config.LOG_LEVEL_VERBOSE,
         notification: bg.Notification(
           title: "Tracking Driver",

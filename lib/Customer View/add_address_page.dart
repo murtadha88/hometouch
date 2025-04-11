@@ -106,6 +106,14 @@ class _AddAddressPageState extends State<AddAddressPage> {
   }
 
   Future<void> _saveAddress() async {
+    if (selectedType == 'Building') {
+      if (!_buildingFormKey.currentState!.validate()) return;
+    } else if (selectedType == 'Apartment') {
+      if (!_apartmentFormKey.currentState!.validate()) return;
+    } else if (selectedType == 'Office') {
+      if (!_officeFormKey.currentState!.validate()) return;
+    }
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final customerRef =
