@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -48,10 +49,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
   double homeTouchCut = 0;
   double roundedVendorRevenue = 0;
 
+  double finalDeliveryCost = 0.0;
+
   @override
   void initState() {
     super.initState();
     _checkSubscriptionVoucher();
+    _calculateDeliveryCost();
   }
 
   @override
@@ -102,6 +106,51 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
+  Future<void> _calculateDeliveryCost() async {
+    if (widget.cartItems.isNotEmpty) {
+      String vendorId = widget.cartItems.first["vendorId"].toString();
+      DocumentSnapshot vendorSnapshot = await FirebaseFirestore.instance
+          .collection('vendor')
+          .doc(vendorId)
+          .get();
+
+      if (vendorSnapshot.exists && vendorSnapshot.get('Location') != null) {
+        GeoPoint vendorLocation = vendorSnapshot.get('Location') as GeoPoint;
+        GeoPoint customerLocation = widget.selectedAddress.location;
+        double distance = calculateDistance(vendorLocation, customerLocation);
+
+        double cost = 0.0;
+        if (distance <= 5) {
+          cost = 0.4;
+        } else {
+          double extraDistance = distance - 5;
+          int extraUnits = (extraDistance / 3).ceil();
+          cost = 0.4 + extraUnits * 0.1;
+        }
+        setState(() {
+          finalDeliveryCost = cost;
+        });
+      }
+    }
+  }
+
+  double calculateDistance(GeoPoint pos1, GeoPoint pos2) {
+    const double earthRadius = 6371;
+    double lat1 = pos1.latitude * (math.pi / 180);
+    double lon1 = pos1.longitude * (math.pi / 180);
+    double lat2 = pos2.latitude * (math.pi / 180);
+    double lon2 = pos2.longitude * (math.pi / 180);
+    double dLat = lat2 - lat1;
+    double dLon = lon2 - lon1;
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
+  }
+
   Future<int> _getNextOrderNumber() async {
     final orderCollection = FirebaseFirestore.instance.collection('order');
     final querySnapshot = await orderCollection.get();
@@ -117,27 +166,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
     }
     return maxOrderNumber + 1;
-  }
-
-  double calculateDistance(GeoPoint pos1, GeoPoint pos2) {
-    const double earthRadius = 6371;
-
-    double lat1 = pos1.latitude * (math.pi / 180);
-    double lon1 = pos1.longitude * (math.pi / 180);
-    double lat2 = pos2.latitude * (math.pi / 180);
-    double lon2 = pos2.longitude * (math.pi / 180);
-
-    double dLat = lat2 - lat1;
-    double dLon = lon2 - lon1;
-
-    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(lat1) *
-            math.cos(lat2) *
-            math.sin(dLon / 2) *
-            math.sin(dLon / 2);
-    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-
-    return earthRadius * c;
   }
 
   Future<void> _placeOrder() async {
@@ -193,11 +221,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       if (nearestDriverId == null) {
         print("No available drivers nearby");
         nearestDriverId = "Pending";
-      } else {
-        await FirebaseFirestore.instance
-            .collection('Driver')
-            .doc(nearestDriverId)
-            .update({'isBusy': true});
       }
 
       homeTouchCut = widget.subtotal * 0.15;
@@ -205,7 +228,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       roundedVendorRevenue = double.parse(vendorRevenue.toStringAsFixed(3));
       double roundedTotal = double.parse(widget.total.toStringAsFixed(3));
       double roundedSubTotal = double.parse(widget.subtotal.toStringAsFixed(3));
-      double roundedTax = double.parse(widget.tax.toStringAsFixed(3));
 
       DocumentReference orderRef =
           FirebaseFirestore.instance.collection('order').doc("#$orderNumber");
@@ -217,7 +239,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
         "Vendor_ID": vendorId,
         "Items": widget.cartItems,
         "Subtotal": roundedSubTotal,
-        "Tax": roundedTax,
         "Total": roundedTotal,
         "Total_Vendor_Revenue": vendorRevenue,
         "Total_Points_Used": widget.totalPoints,
@@ -228,6 +249,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ? "Benefit Pay"
                 : "Cash",
         "Delivery_Type": useDelivery == true ? "Delivery" : "Pickup",
+        "Deilvery_Cost": finalDeliveryCost,
         "Time": selectedTime == true ? "Now" : "Scheduled",
         "Schedule_Time":
             scheduleTime != null ? Timestamp.fromDate(scheduleTime!) : null,
@@ -339,7 +361,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                   await driverRef.update({
                     'Total_Orders': FieldValue.increment(1),
-                    'Total_Revenue': FieldValue.increment(widget.deliveryCost),
+                    'Total_Revenue': FieldValue.increment(finalDeliveryCost),
+                    'isBusy': true,
                   });
 
                   final driverSalesDataRef = driverRef
@@ -348,7 +371,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                   await driverSalesDataRef.set({
                     'Orders': FieldValue.increment(1),
-                    'Revenue': FieldValue.increment(widget.deliveryCost),
+                    'Revenue': FieldValue.increment(finalDeliveryCost),
                     'Day': DateFormat('d').format(DateTime.now()),
                     'Label': DateFormat('E').format(DateTime.now()),
                     'Date': Timestamp.now(),
@@ -866,11 +889,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     bool isPayEnabled = useDelivery != null && selectedTime != null;
 
     double subtotalAfterDiscount = widget.subtotal - discount;
-    double taxAfterDiscount = subtotalAfterDiscount / 10;
 
     double totalAfterDiscount = subtotalAfterDiscount +
-        taxAfterDiscount +
-        ((useDelivery ?? false) ? widget.deliveryCost : 0.0);
+        ((useDelivery ?? false) ? finalDeliveryCost : 0.0);
 
     return Scaffold(
       appBar: PreferredSize(
@@ -1060,17 +1081,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
             buildSummaryRow(
               'Delivery Cost',
               (useDelivery ?? false)
-                  ? 'BHD ${widget.deliveryCost.toStringAsFixed(3)}'
+                  ? 'BHD ${finalDeliveryCost.toStringAsFixed(3)}'
                   : 'BHD 0.000',
             ),
-            buildSummaryRow(
-                'Tax', 'BHD ${taxAfterDiscount.toStringAsFixed(3)}'),
             Divider(thickness: 1, color: Colors.grey),
             buildSummaryRow('Total Points', 'Points ${widget.totalPoints}',
                 isBold: true, isPoints: true),
             buildSummaryRow(
               'Total Amount',
-              'BHD ${(totalAfterDiscount - ((useDelivery ?? false) ? 0.000 : widget.deliveryCost)).toStringAsFixed(3)}',
+              'BHD ${totalAfterDiscount.toStringAsFixed(3)}',
               isBold: true,
             ),
             SizedBox(height: screenHeight * 0.02),

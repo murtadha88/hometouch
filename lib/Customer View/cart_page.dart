@@ -76,15 +76,12 @@ class _CartPageState extends State<CartPage> {
           .get();
 
       if (subscriptionSnapshot.docs.isNotEmpty) {
-        print(
-            "✅ Subscription found for user: ${subscriptionSnapshot.docs.length}");
         var subscriptionData =
             subscriptionSnapshot.docs.first.data() as Map<String, dynamic>;
 
         Timestamp startDate = subscriptionData["Start_Date"];
         Timestamp endDate = subscriptionData["End_Date"];
         int freeDeliveryNo = subscriptionData["Free_Delivery_No"] ?? 0;
-        print("✅ Free deliveries left: $freeDeliveryNo");
 
         DateTime now = DateTime.now();
 
@@ -92,7 +89,7 @@ class _CartPageState extends State<CartPage> {
             now.isBefore(endDate.toDate()) &&
             freeDeliveryNo > 0) {
           setState(() {
-            deliveryCost = 0.000; // Apply free delivery
+            deliveryCost = 0.000;
           });
         }
       }
@@ -372,20 +369,18 @@ class _CartPageState extends State<CartPage> {
                           },
                         ),
                       ),
+                      Divider(
+                          thickness: screenHeight * 0.001,
+                          color: Colors.grey[300]),
                       Container(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.only(
+                            top: 6, left: 16, right: 16, bottom: 16),
                         color: Colors.white,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _buildSummaryRow("Subtotal", subtotal),
-                            _buildSummaryRow("Delivery Cost", deliveryCost),
-                            _buildSummaryRow("Tax", tax),
-                            const Divider(),
+                            _buildSummaryRow("Subtoal", subtotal, isBold: true),
                             _buildPointsRow("Total Points Used", totalPoints,
-                                isBold: true),
-                            _buildSummaryRow(
-                                "Total Price (BHD)", total.toDouble(),
                                 isBold: true),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -393,14 +388,14 @@ class _CartPageState extends State<CartPage> {
                                 final selectedAddress =
                                     await showModalBottomSheet(
                                   context: context,
-                                  isScrollControlled:
-                                      true, // Allows the bottom sheet to expand fully
-                                  backgroundColor: Colors
-                                      .transparent, // Removes the default white background
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
                                   builder: (BuildContext context) {
                                     return AddressDialog(
-                                      screenWidth: screenWidth,
-                                      screenHeight: screenHeight,
+                                      screenWidth:
+                                          MediaQuery.of(context).size.width,
+                                      screenHeight:
+                                          MediaQuery.of(context).size.height,
                                       onClose: () {
                                         Navigator.pop(context);
                                       },
@@ -414,10 +409,10 @@ class _CartPageState extends State<CartPage> {
                                       builder: (context) => CheckoutPage(
                                         cartItems: cartItems,
                                         subtotal: subtotal,
-                                        deliveryCost: deliveryCost,
-                                        tax: tax,
+                                        deliveryCost: 0.0,
+                                        tax: 0.0,
                                         totalPoints: totalPoints,
-                                        total: total,
+                                        total: subtotal,
                                         selectedAddress: selectedAddress,
                                       ),
                                     ),
