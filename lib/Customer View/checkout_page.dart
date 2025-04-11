@@ -249,7 +249,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ? "Benefit Pay"
                 : "Cash",
         "Delivery_Type": useDelivery == true ? "Delivery" : "Pickup",
-        "Deilvery_Cost": finalDeliveryCost,
+        "Deilvery_Cost": double.parse(finalDeliveryCost.toStringAsFixed(3)),
         "Time": selectedTime == true ? "Now" : "Scheduled",
         "Schedule_Time":
             scheduleTime != null ? Timestamp.fromDate(scheduleTime!) : null,
@@ -361,7 +361,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                   await driverRef.update({
                     'Total_Orders': FieldValue.increment(1),
-                    'Total_Revenue': FieldValue.increment(finalDeliveryCost),
+                    'Total_Revenue': FieldValue.increment(
+                        double.parse(finalDeliveryCost.toStringAsFixed(3))),
                     'isBusy': true,
                   });
 
@@ -371,7 +372,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                   await driverSalesDataRef.set({
                     'Orders': FieldValue.increment(1),
-                    'Revenue': FieldValue.increment(finalDeliveryCost),
+                    'Revenue': FieldValue.increment(
+                        double.parse(finalDeliveryCost.toStringAsFixed(3))),
                     'Day': DateFormat('d').format(DateTime.now()),
                     'Label': DateFormat('E').format(DateTime.now()),
                     'Date': Timestamp.now(),

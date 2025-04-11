@@ -122,7 +122,97 @@ class _OrdersPageState extends State<OrdersPage>
     }
   }
 
-  void _cancelOrder(String orderId) async {
+  void showCancelOrderDialog(BuildContext context, String orderId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+          title: const Text(
+            'Cancel Order?',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFBF0000),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                alignment: Alignment.center,
+                child: const Text(
+                  'Are you sure you want to cancel this order?',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFFBF0000)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await _cancelOrder(orderId);
+                      },
+                      child: const Text(
+                        'Yes',
+                        style: TextStyle(
+                          color: Color(0xFFBF0000),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFBF0000),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context); // dismiss the dialog
+                      },
+                      child: const Text(
+                        'No',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _cancelOrder(String orderId) async {
     try {
       final orderRef =
           FirebaseFirestore.instance.collection('order').doc(orderId);
@@ -134,6 +224,8 @@ class _OrdersPageState extends State<OrdersPage>
       final totalAmount = orderData['Total_Vendor_Revenue'] as double;
       final vendorId = orderData['Vendor_ID'] as String;
       final orderDate = (orderData['Order_Date'] as Timestamp).toDate();
+      final deliveryCost =
+          double.parse(orderData['Deilvery_Cost'].toStringAsFixed(3));
 
       final vendorRef =
           FirebaseFirestore.instance.collection('vendor').doc(vendorId);
@@ -145,7 +237,6 @@ class _OrdersPageState extends State<OrdersPage>
       final monthYear = DateFormat('yyyy-MM').format(orderDate);
       final monthlySalesRef =
           vendorRef.collection('Monthly_Sales').doc(monthYear);
-
       await monthlySalesRef.update({
         'Orders': FieldValue.increment(-1),
         'Sales': FieldValue.increment(-totalAmount),
@@ -153,21 +244,30 @@ class _OrdersPageState extends State<OrdersPage>
 
       final dayDate = DateFormat('yyyy-MM-dd').format(orderDate);
       final salesDataRef = vendorRef.collection('Sales_Data').doc(dayDate);
-
       await salesDataRef.update({
         'Orders': FieldValue.increment(-1),
         'Sales': FieldValue.increment(-totalAmount),
       });
 
-      final driverId = orderData['Driver_ID'];
+      final driverId = orderData['Driver_ID'] as String?;
       if (driverId != null && driverId != "Pending" && driverId.isNotEmpty) {
-        await FirebaseFirestore.instance
-            .collection('Driver')
-            .doc(driverId)
-            .update({'isBusy': false});
+        final driverRef =
+            FirebaseFirestore.instance.collection('Driver').doc(driverId);
+        await driverRef.update({
+          'Total_Orders': FieldValue.increment(-1),
+          'Total_Revenue': FieldValue.increment(-deliveryCost),
+          'isBusy': false,
+        });
+
+        final driverSalesDataRef =
+            driverRef.collection('Sales_Data').doc(dayDate);
+        await driverSalesDataRef.set({
+          'Orders': FieldValue.increment(-1),
+          'Revenue': FieldValue.increment(-deliveryCost),
+        }, SetOptions(merge: true));
       }
 
-      final customerId = orderData['Customer_ID'];
+      final customerId = orderData['Customer_ID'] as String;
       if (orderData['Accepted'] == true) {
         await FirebaseFirestore.instance
             .collection('Customer')
@@ -219,7 +319,7 @@ class _OrdersPageState extends State<OrdersPage>
         });
       }
 
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const CartPage()),
       );
@@ -370,7 +470,8 @@ class _OrdersPageState extends State<OrdersPage>
                       Expanded(
                         child: OutlinedButton(
                           onPressed: canCancel
-                              ? () => _cancelOrder(order['orderId'])
+                              ? () => showCancelOrderDialog(
+                                  context, order['orderId'])
                               : null,
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,
