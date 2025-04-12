@@ -11,6 +11,7 @@ import 'package:hometouch/Driver%20View/driver_orders_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
+import 'package:intl/intl.dart';
 
 const Color primaryRed = Color(0xFFBF0000);
 
@@ -1023,6 +1024,20 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                               height: screenHeight * 0.02,
                               thickness: screenHeight * 0.002,
                             ),
+                            if (orderData != null &&
+                                orderData!["Schedule_Time"] != null)
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                    vertical: screenHeight * 0.01),
+                                child: Text(
+                                  "Scheduled Time: ${DateFormat('dd MMM yyyy, hh:mm a').format((orderData!["Schedule_Time"] as Timestamp).toDate())}",
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontWeight: FontWeight.bold,
+                                    color: primaryRed,
+                                  ),
+                                ),
+                              ),
                             if (orderData?["Total_Points_Used"] != null &&
                                 orderData?["Total_Points_Used"] > 0)
                               Padding(

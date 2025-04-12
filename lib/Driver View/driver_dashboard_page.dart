@@ -433,8 +433,8 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
 
     final titleSize = screenHeight * 0.015;
     final valueSizeNormal = screenHeight * 0.021;
-    final valueSizeLarge = screenHeight * 0.025;
-    final smallTextSize = screenHeight * 0.0135;
+    final valueSizeLarge = screenHeight * 0.023;
+    final smallTextSize = screenHeight * 0.0125;
     final iconSize = screenHeight * 0.015;
 
     final smallSpacing = screenHeight * 0.01;

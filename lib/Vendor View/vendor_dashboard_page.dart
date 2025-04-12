@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-// import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'vendor_side_bar.dart';
 
 class VendorDashboard extends StatefulWidget {

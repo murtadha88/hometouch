@@ -47,11 +47,13 @@ class _OrderManagementPageState extends State<OrderManagementPage>
 
     if (selectedHistoryStatus != "All") {
       if (selectedHistoryStatus == "In Progress") {
-        query = query.where('Status', whereIn: ['Preparing', 'On The Way']);
+        query = query.where('Status',
+            whereIn: ['Preparing', 'On The Way', 'Ready For Pickup']);
       } else if (selectedHistoryStatus == "Rejected") {
         query = query.where('Status', whereIn: ['Cancelled', 'Rejected']);
       } else {
-        query = query.where('Status', whereIn: ['Delivered', 'Compeleted']);
+        query = query
+            .where('Status', whereIn: ['Delivered', 'Compeleted', 'Picked Up']);
       }
     }
 
@@ -542,10 +544,12 @@ class _OrderManagementPageState extends State<OrderManagementPage>
     Color textColor = Colors.black;
     switch (status) {
       case 'Delivered':
+      case 'Picked Up':
         textColor = Colors.green;
         break;
       case 'Preparing':
       case 'On The Way':
+      case 'Ready For Pickup':
         textColor = Colors.orange;
         break;
       case 'Rejected':

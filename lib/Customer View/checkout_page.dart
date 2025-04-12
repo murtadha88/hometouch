@@ -197,30 +197,73 @@ class _CheckoutPageState extends State<CheckoutPage> {
         return;
       }
 
-      QuerySnapshot driversSnapshot = await FirebaseFirestore.instance
-          .collection('Driver')
-          .where('isBusy', isEqualTo: false)
-          .get();
-
-      List<QueryDocumentSnapshot> drivers = driversSnapshot.docs;
-
       String? nearestDriverId;
-      double minDistance = double.infinity;
+      if (useDelivery == true) {
+        QuerySnapshot driversSnapshot = await FirebaseFirestore.instance
+            .collection('Driver')
+            .where('isBusy', isEqualTo: false)
+            .get();
 
-      for (var driverDoc in drivers) {
-        GeoPoint? driverGeoPoint = driverDoc.get('Location') as GeoPoint?;
-        if (driverGeoPoint == null) continue;
+        List<QueryDocumentSnapshot> drivers = driversSnapshot.docs;
+        double minDistance = double.infinity;
 
-        double distance = calculateDistance(vendorLocation, driverGeoPoint);
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestDriverId = driverDoc.id;
+        DateTime newOrderTime = scheduleTime ?? DateTime.now();
+
+        for (var driverDoc in drivers) {
+          GeoPoint? driverGeoPoint = driverDoc.get('Location') as GeoPoint?;
+          if (driverGeoPoint == null) continue;
+
+          QuerySnapshot scheduledOrdersSnapshot = await FirebaseFirestore
+              .instance
+              .collection('order')
+              .where('Driver_ID', isEqualTo: driverDoc.id)
+              .where('Schedule_Time', isNotEqualTo: null)
+              .get();
+
+          bool conflict = false;
+          if (scheduleTime == null) {
+            for (var order in scheduledOrdersSnapshot.docs) {
+              var orderScheduleField = order.get('Schedule_Time');
+              if (orderScheduleField == null) continue;
+              Timestamp orderTimestamp = orderScheduleField as Timestamp;
+              print("gggggggggggggggggggggggggggggggggggggggggg");
+              print(orderTimestamp);
+              DateTime existingOrderTime = orderTimestamp.toDate();
+              if (existingOrderTime
+                  .isBefore(DateTime.now().add(Duration(hours: 1)))) {
+                conflict = true;
+                break;
+              }
+            }
+          } else {
+            for (var order in scheduledOrdersSnapshot.docs) {
+              var orderScheduleField = order.get('Schedule_Time');
+              if (orderScheduleField == null) continue;
+              Timestamp orderTimestamp = orderScheduleField as Timestamp;
+              DateTime existingOrderTime = orderTimestamp.toDate();
+
+              if (newOrderTime.difference(existingOrderTime).abs() <
+                  Duration(hours: 1)) {
+                conflict = true;
+                break;
+              }
+            }
+          }
+          if (conflict) continue;
+
+          double distance = calculateDistance(vendorLocation, driverGeoPoint);
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestDriverId = driverDoc.id;
+          }
         }
-      }
 
-      if (nearestDriverId == null) {
-        print("No available drivers nearby");
-        nearestDriverId = "Pending";
+        if (nearestDriverId == null) {
+          print("No available drivers nearby");
+          nearestDriverId = "Pending";
+        }
+      } else {
+        nearestDriverId = null;
       }
 
       homeTouchCut = widget.subtotal * 0.15;
@@ -269,7 +312,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         }
       });
 
-      _waitForOrderAcceptance(orderRef.id, vendorId, nearestDriverId);
+      _waitForOrderAcceptance(orderRef.id, vendorId, nearestDriverId ?? "");
     } catch (e) {
       print("Error placing order: $e");
     }
@@ -354,17 +397,32 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   'Date': Timestamp.fromDate(today),
                 }, SetOptions(merge: true));
 
-                if (nearestDriverId != "Pending") {
+                if (nearestDriverId != "" && nearestDriverId != "Pending") {
                   final driverRef = FirebaseFirestore.instance
                       .collection('Driver')
                       .doc(nearestDriverId);
 
-                  await driverRef.update({
+                  bool markDriverBusy = false;
+                  if (scheduleTime == null) {
+                    markDriverBusy = true;
+                  } else {
+                    if (scheduleTime!.isBefore(
+                        DateTime.now().add(const Duration(hours: 1)))) {
+                      markDriverBusy = true;
+                    }
+                  }
+
+                  Map<String, dynamic> driverUpdateData = {
                     'Total_Orders': FieldValue.increment(1),
                     'Total_Revenue': FieldValue.increment(
                         double.parse(finalDeliveryCost.toStringAsFixed(3))),
-                    'isBusy': true,
-                  });
+                  };
+
+                  if (markDriverBusy) {
+                    driverUpdateData['isBusy'] = true;
+                  }
+
+                  await driverRef.update(driverUpdateData);
 
                   final driverSalesDataRef = driverRef
                       .collection('Sales_Data')

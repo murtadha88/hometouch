@@ -234,6 +234,20 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     });
   }
 
+  Future<void> _openVendorLocationInMaps() async {
+    if (vendorLocation != null) {
+      final String googleMapsUrl =
+          "https://www.google.com/maps/search/?api=1&query=${vendorLocation!.latitude},${vendorLocation!.longitude}";
+      final Uri uri = Uri.parse(googleMapsUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Could not open Google Maps")));
+      }
+    }
+  }
+
   Future<void> _handleChatWithDriver() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || driverData == null) return;
@@ -374,129 +388,148 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   }
 
   Widget _buildContactInfo(double screenWidth, double screenHeight) {
+    bool isPickup = orderData?["Delivery_Type"] == "Pickup";
     final double buttonRadius = screenWidth * 0.05;
     final double iconSize = screenWidth * 0.05;
-    return Column(
+
+    Widget vendorRow = Row(
       children: [
-        Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(vendorPhoto),
-              radius: screenWidth * 0.066,
-            ),
-            SizedBox(width: screenWidth * 0.033),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    vendorName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.044,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.007),
-                  Text(
-                    "Phone: $vendorPhone",
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.038,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Chat Button for Vendor
-            IconButton(
-              icon: CircleAvatar(
-                backgroundColor: primaryRed,
-                radius: buttonRadius,
-                child: Icon(Icons.chat, color: Colors.white, size: iconSize),
-              ),
-              onPressed: _handleChatWithVendor,
-            ),
-            // Call Button for Vendor
-            IconButton(
-              icon: CircleAvatar(
-                backgroundColor: primaryRed,
-                radius: buttonRadius,
-                child: Icon(Icons.call, color: Colors.white, size: iconSize),
-              ),
-              onPressed: () => _handleCall(vendorPhone),
-            ),
-          ],
+        CircleAvatar(
+          backgroundImage: NetworkImage(vendorPhoto),
+          radius: screenWidth * 0.066,
         ),
-        Divider(
-          height: screenHeight * 0.02,
-          thickness: screenHeight * 0.002,
+        SizedBox(width: screenWidth * 0.033),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                vendorName,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: screenWidth * 0.044,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.007),
+              Text(
+                "Phone: $vendorPhone",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.038,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
         ),
-        // Driver Contact Info Row
-        Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(driverPhoto),
-              radius: screenWidth * 0.066,
-            ),
-            SizedBox(width: screenWidth * 0.033),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    driverName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.044,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.007),
-                  Text(
-                    "Phone: $driverPhone",
-                    style: TextStyle(
-                      fontSize: screenWidth * 0.038,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Chat Button for Driver
-            IconButton(
-              icon: CircleAvatar(
-                backgroundColor: primaryRed,
-                radius: buttonRadius,
-                child: Icon(Icons.chat, color: Colors.white, size: iconSize),
-              ),
-              onPressed: _handleChatWithDriver,
-            ),
-            // Call Button for Driver
-            IconButton(
-              icon: CircleAvatar(
-                backgroundColor: primaryRed,
-                radius: buttonRadius,
-                child: Icon(Icons.call, color: Colors.white, size: iconSize),
-              ),
-              onPressed: () => _handleCall(driverPhone),
-            ),
-          ],
+        IconButton(
+          icon: CircleAvatar(
+            backgroundColor: primaryRed,
+            radius: buttonRadius,
+            child: Icon(Icons.chat, color: Colors.white, size: iconSize),
+          ),
+          onPressed: _handleChatWithVendor,
         ),
+        IconButton(
+          icon: CircleAvatar(
+            backgroundColor: primaryRed,
+            radius: buttonRadius,
+            child: Icon(Icons.call, color: Colors.white, size: iconSize),
+          ),
+          onPressed: () => _handleCall(vendorPhone),
+        ),
+        if (isPickup)
+          IconButton(
+            icon: CircleAvatar(
+              backgroundColor: primaryRed,
+              radius: buttonRadius,
+              child:
+                  Icon(Icons.location_on, color: Colors.white, size: iconSize),
+            ),
+            onPressed: () {
+              _openVendorLocationInMaps();
+            },
+          ),
       ],
     );
+
+    if (!isPickup) {
+      return Column(
+        children: [
+          vendorRow,
+          Divider(
+            height: screenHeight * 0.02,
+            thickness: screenHeight * 0.002,
+          ),
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: NetworkImage(driverPhoto),
+                radius: screenWidth * 0.066,
+              ),
+              SizedBox(width: screenWidth * 0.033),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      driverName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: screenWidth * 0.044,
+                        color: Colors.black,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.007),
+                    Text(
+                      "Phone: $driverPhone",
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.038,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: CircleAvatar(
+                  backgroundColor: primaryRed,
+                  radius: buttonRadius,
+                  child: Icon(Icons.chat, color: Colors.white, size: iconSize),
+                ),
+                onPressed: _handleChatWithDriver,
+              ),
+              IconButton(
+                icon: CircleAvatar(
+                  backgroundColor: primaryRed,
+                  radius: buttonRadius,
+                  child: Icon(Icons.call, color: Colors.white, size: iconSize),
+                ),
+                onPressed: () => _handleCall(driverPhone),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else {
+      return vendorRow;
+    }
   }
 
   Widget _buildOrderStatus(double screenWidth, double screenHeight) {
+    bool isPickup = orderData?["Delivery_Type"] == "Pickup";
     int currentStep;
     final String status = orderData?["Status"] ?? "Order Placed";
+
     if (status == "Order Placed") {
       currentStep = 1;
     } else if (status == "Preparing") {
       currentStep = 2;
-    } else if (status == "On The Way") {
+    } else if ((status == "On The Way" && !isPickup) ||
+        (status == "Ready For Pickup" && isPickup)) {
       currentStep = 3;
-    } else if (status == "Delivered") {
+    } else if ((status == "Delivered" && !isPickup) ||
+        (status == "Picked Up" && isPickup)) {
       currentStep = 4;
     } else {
       currentStep = 1;
@@ -517,6 +550,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           totalSteps: 4,
           screenWidth: screenWidth,
           screenHeight: screenHeight,
+          isPickup: isPickup,
         ),
       ],
     );
@@ -527,13 +561,22 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     required int totalSteps,
     required double screenWidth,
     required double screenHeight,
+    required bool isPickup,
   }) {
-    final steps = [
-      {"label": "Order Placed", "icon": Icons.check_circle},
-      {"label": "Preparing", "icon": Icons.restaurant_menu},
-      {"label": "On The Way", "icon": Icons.delivery_dining},
-      {"label": "Delivered", "icon": Icons.home},
-    ];
+    final List<Map<String, dynamic>> steps = isPickup
+        ? [
+            {"label": "Order Placed", "icon": Icons.check_circle},
+            {"label": "Preparing", "icon": Icons.restaurant_menu},
+            {"label": "Ready For Pickup", "icon": Icons.store},
+            {"label": "Picked Up", "icon": Icons.check},
+          ]
+        : [
+            {"label": "Order Placed", "icon": Icons.check_circle},
+            {"label": "Preparing", "icon": Icons.restaurant_menu},
+            {"label": "On The Way", "icon": Icons.delivery_dining},
+            {"label": "Delivered", "icon": Icons.home},
+          ];
+
     List<Widget> rowChildren = [];
     for (int i = 0; i < steps.length; i++) {
       final isCompleted = (i + 1) <= currentStep;
@@ -647,7 +690,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             )
           : Stack(
               children: [
-                driverLocation != null
+                driverLocation != null || vendorLocation != null
                     ? GoogleMap(
                         initialCameraPosition: CameraPosition(
                           target: driverLocation ??

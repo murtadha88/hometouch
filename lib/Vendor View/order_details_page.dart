@@ -404,62 +404,144 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                             'N/A',
                         screenWidth),
                   _orderDetailItem("Status", orderData['Status'], screenWidth),
-                  if (orderData['Status'] == "Preparing" &&
-                      orderData['Accepted'] == true)
+                  if (orderData['Accepted'] == true)
                     Column(
                       children: [
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              vertical: screenHeight * 0.02),
-                          child: Center(
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                await FirebaseFirestore.instance
-                                    .collection('order')
-                                    .doc(orderData['Order_Number'])
-                                    .update({'Status': 'On The Way'});
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          'Order status updated to On The Way')),
-                                );
-
-                                // Refresh the page by updating the local orderData and calling setState
-                                setState(() {
-                                  orderData['Status'] = 'On The Way';
-                                });
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryRed,
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: screenWidth * 0.08,
-                                  vertical: screenHeight * 0.015,
+                        if (orderData['Delivery_Type'] == "Pickup")
+                          // For Pickup orders: provide different buttons based on current status.
+                          if (orderData['Status'] == "Preparing")
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: screenHeight * 0.02),
+                              child: Center(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    await FirebaseFirestore.instance
+                                        .collection('order')
+                                        .doc(orderData['Order_Number'])
+                                        .update({'Status': 'Ready For Pickup'});
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Order status updated to Ready For Pickup')),
+                                    );
+                                    setState(() {
+                                      orderData['Status'] = 'Ready For Pickup';
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryRed,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.08,
+                                      vertical: screenHeight * 0.015,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Mark as Ready For Pickup',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.045,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                'Mark as On The Way',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.045,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                            )
+                          else if (orderData['Status'] == "Ready For Pickup")
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: screenHeight * 0.02),
+                              child: Center(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    await FirebaseFirestore.instance
+                                        .collection('order')
+                                        .doc(orderData['Order_Number'])
+                                        .update({'Status': 'Picked Up'});
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Order status updated to Picked Up')),
+                                    );
+                                    setState(() {
+                                      orderData['Status'] = 'Picked Up';
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryRed,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.08,
+                                      vertical: screenHeight * 0.015,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Customer Picked Up the order',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.045,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            Container(), // Optionally, show nothing if the status is something else.
+                        // For Delivery orders, apply your existing logic.
+                        if (orderData['Delivery_Type'] != "Pickup")
+                          if (orderData['Status'] == "Preparing")
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: screenHeight * 0.02),
+                              child: Center(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    await FirebaseFirestore.instance
+                                        .collection('order')
+                                        .doc(orderData['Order_Number'])
+                                        .update({'Status': 'On The Way'});
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Order status updated to On The Way')),
+                                    );
+                                    setState(() {
+                                      orderData['Status'] = 'On The Way';
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryRed,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.08,
+                                      vertical: screenHeight * 0.015,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Mark as On The Way',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.045,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        Padding(
-                          padding:
-                              EdgeInsets.only(bottom: screenHeight * 0.015),
-                          child: Text(
-                            "Click this button once the driver has picked up the order.",
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.032,
-                              color: Colors.grey[600],
+                        // Optional helper text for delivery orders.
+                        if (orderData['Delivery_Type'] != "Pickup" &&
+                            orderData['Status'] == "Preparing")
+                          Padding(
+                            padding:
+                                EdgeInsets.only(bottom: screenHeight * 0.015),
+                            child: Text(
+                              "Click this button once the driver has picked up the order.",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.032,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                        ),
                       ],
                     ),
                 ],

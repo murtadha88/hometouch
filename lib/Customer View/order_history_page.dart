@@ -17,8 +17,10 @@ Color getStatusBackground(String status) {
     case 'preparing':
       return Colors.yellow.shade100;
     case 'on the way':
+    case 'ready for pickup':
       return Colors.yellow.shade100;
     case 'delivered':
+    case 'picked up':
       return Colors.green.shade100;
     default:
       return Colors.grey.shade200;
@@ -33,8 +35,10 @@ Color getStatusTextColor(String status) {
     case 'preparing':
       return Colors.yellow.shade800;
     case 'on the way':
+    case 'ready for pickup':
       return Colors.yellow.shade800;
     case 'delivered':
+    case 'picked up':
       return Colors.green;
     default:
       return primaryRed;
@@ -104,7 +108,9 @@ class _OrdersPageState extends State<OrdersPage>
 
         String status = order["Status"].toString().toLowerCase();
 
-        if (status == "preparing" || status == "on the way") {
+        if (status == "preparing" ||
+            status == "on the way" ||
+            status == "ready for pickup") {
           ongoing.add(order);
         } else {
           history.add(order);
@@ -352,7 +358,11 @@ class _OrdersPageState extends State<OrdersPage>
     }
 
     return ListView.separated(
-      padding: EdgeInsets.all(screenWidth * 0.04),
+      padding: EdgeInsets.only(
+          top: screenWidth * 0.04,
+          left: screenWidth * 0.02,
+          right: screenWidth * 0.02,
+          bottom: screenWidth * 0.04),
       itemCount: orders.length,
       separatorBuilder: (context, index) =>
           SizedBox(height: screenHeight * 0.02),
@@ -375,7 +385,11 @@ class _OrdersPageState extends State<OrdersPage>
           elevation: 4,
           color: Colors.white,
           child: Padding(
-            padding: EdgeInsets.all(screenWidth * 0.04),
+            padding: EdgeInsets.only(
+                top: screenWidth * 0.04,
+                left: screenWidth * 0.02,
+                right: screenWidth * 0.02,
+                bottom: screenWidth * 0.04),
             child: Column(
               children: [
                 ListTile(
