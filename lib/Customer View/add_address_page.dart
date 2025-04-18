@@ -115,26 +115,70 @@ class _AddAddressPageState extends State<AddAddressPage> {
     }
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final customerRef =
-          FirebaseFirestore.instance.collection('Customer').doc(user.uid);
-      final addressRef = customerRef.collection('address').doc();
+    if (user == null) return;
 
-      await addressRef.set({
-        'Name': selectedType == 'Building'
-            ? _addressNameControllerBuilding.text
-            : selectedType == 'Apartment'
-                ? _addressNameControllerApartment.text
-                : _addressNameControllerOffice.text,
-        'Building': int.tryParse(_buildingController.text) ?? 0,
-        'Road': int.tryParse(_roadController.text) ?? 0,
-        'Block': int.tryParse(_blockController.text) ?? 0,
-        'Location':
-            GeoPoint(_currentLocation.latitude, _currentLocation.longitude),
-      });
+    final customerRef =
+        FirebaseFirestore.instance.collection('Customer').doc(user.uid);
+    final addressRef = customerRef.collection('address').doc();
 
-      Navigator.pop(context);
+    final data = <String, dynamic>{
+      'Name': selectedType == 'Building'
+          ? _addressNameControllerBuilding.text.trim()
+          : selectedType == 'Apartment'
+              ? _addressNameControllerApartment.text.trim()
+              : _addressNameControllerOffice.text.trim(),
+      'Building': int.tryParse(_buildingController.text) ?? 0,
+      'Road': int.tryParse(_roadController.text) ?? 0,
+      'Block': int.tryParse(_blockController.text) ?? 0,
+      'Location': GeoPoint(
+        _currentLocation.latitude,
+        _currentLocation.longitude,
+      ),
+      'AdditionalDirection': (selectedType == 'Building'
+                  ? _additionalDirectionControllerBuilding.text
+                  : selectedType == 'Apartment'
+                      ? _additionalDirectionControllerApartment.text
+                      : _additionalDirectionControllerOffice.text)
+              .trim()
+              .isEmpty
+          ? null
+          : (selectedType == 'Building'
+              ? _additionalDirectionControllerBuilding.text.trim()
+              : selectedType == 'Apartment'
+                  ? _additionalDirectionControllerApartment.text.trim()
+                  : _additionalDirectionControllerOffice.text.trim()),
+    };
+
+    if (selectedType == 'Apartment') {
+      if (_apartmentController.text.trim().isNotEmpty) {
+        data['Apartment'] = int.tryParse(_apartmentController.text) ??
+            _apartmentController.text.trim();
+      }
+      if (_floorController.text.trim().isNotEmpty) {
+        data['Floor'] =
+            int.tryParse(_floorController.text) ?? _floorController.text.trim();
+      }
     }
+
+    if (selectedType == 'Office') {
+      if (_officeController.text.trim().isNotEmpty) {
+        data['Office_No'] = int.tryParse(_officeController.text) ??
+            _officeController.text.trim();
+      }
+      if (_floorController.text.trim().isNotEmpty) {
+        data['Floor'] =
+            int.tryParse(_floorController.text) ?? _floorController.text.trim();
+      }
+      if (_companyController.text.trim().isNotEmpty) {
+        data['Company_Name'] = _companyController.text.trim();
+      }
+    }
+
+    data.removeWhere((key, value) => value == null);
+
+    await addressRef.set(data);
+
+    Navigator.pop(context);
   }
 
   @override
