@@ -7,6 +7,7 @@ import 'package:hometouch/Common%20Pages/role_page.dart';
 import 'package:hometouch/Customer%20View/bottom_nav_bar.dart';
 import 'package:hometouch/Customer%20View/cart_page.dart';
 import 'package:hometouch/Common%20Pages/chat_hisotry_page.dart';
+import 'package:hometouch/Customer%20View/customer_dashboard_page.dart';
 import 'package:hometouch/Customer%20View/favorite_page.dart';
 import 'package:hometouch/Customer%20View/profile_page.dart';
 import 'package:hometouch/Common%20Pages/setting_page.dart';
@@ -132,7 +133,10 @@ class _AccountPageState extends State<AccountPage> {
 
     return WillPopScope(
       onWillPop: () async {
-        return !widget.isFromNavBar;
+        if (widget.isFromNavBar) {
+          return false;
+        }
+        return true;
       },
       child: Scaffold(
         appBar: PreferredSize(
@@ -241,7 +245,7 @@ class _AccountPageState extends State<AccountPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => SettingsPage()),
+                                  builder: (context) => CustomerDashboard()),
                             );
                           }
                         : null,

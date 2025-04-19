@@ -51,6 +51,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   double finalDeliveryCost = 0.0;
 
+  double totalAfterDiscount = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -355,12 +357,30 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 Navigator.pop(context);
                 _clearCart(user.uid);
 
-                await FirebaseFirestore.instance
+                DocumentReference customerRef = FirebaseFirestore.instance
                     .collection('Customer')
-                    .doc(user.uid)
-                    .update({
+                    .doc(user.uid);
+
+                await customerRef.update({
+                  'Total_Orders': FieldValue.increment(1),
+                  'Total_Expensive': FieldValue.increment(totalAfterDiscount),
                   'Loyalty_Points': FieldValue.increment(100),
                 });
+
+                final now = DateTime.now();
+                final firstDayOfMonth = DateTime(now.year, now.month, 1);
+
+                final monthlySalesRef = customerRef
+                    .collection('Monthly_Sales')
+                    .doc(DateFormat('yyyy-MM').format(firstDayOfMonth));
+
+                await monthlySalesRef.set({
+                  'Orders': FieldValue.increment(1),
+                  'Total_Expensive': FieldValue.increment(totalAfterDiscount),
+                  'Month': now.month.toString(),
+                  'Year': now.year.toString(),
+                  'Date': Timestamp.fromDate(firstDayOfMonth),
+                }, SetOptions(merge: true));
 
                 final vendorRef = FirebaseFirestore.instance
                     .collection('vendor')
@@ -370,13 +390,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   'Total_Revenue': FieldValue.increment(roundedVendorRevenue),
                 });
 
-                final now = DateTime.now();
-                final firstDayOfMonth = DateTime(now.year, now.month, 1);
-                final monthlySalesRef = vendorRef
+                final monthlySalesRef2 = vendorRef
                     .collection('Monthly_Sales')
                     .doc(DateFormat('yyyy-MM').format(firstDayOfMonth));
 
-                await monthlySalesRef.set({
+                await monthlySalesRef2.set({
                   'Orders': FieldValue.increment(1),
                   'Sales': FieldValue.increment(roundedVendorRevenue),
                   'Month': now.month.toString(),
@@ -950,7 +968,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     double subtotalAfterDiscount = widget.subtotal - discount;
 
-    double totalAfterDiscount = subtotalAfterDiscount +
+    totalAfterDiscount = subtotalAfterDiscount +
         ((useDelivery ?? false) ? finalDeliveryCost : 0.0);
 
     return Scaffold(
