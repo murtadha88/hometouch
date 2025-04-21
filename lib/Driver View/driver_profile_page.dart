@@ -46,7 +46,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
           driverEmail = doc['Email'] ?? 'Not Available';
           driverPhone = doc['Phone'] ?? 'Not Available';
           driverPhotoUrl = doc['Photo'] ?? "";
-          // Pre-fill text controllers.
           _driverNameController.text = driverName;
           _driverEmailController.text = driverEmail;
           _driverPhoneController.text = driverPhone;
@@ -125,15 +124,15 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(false); // Cancel reauthentication
+                    Navigator.of(context).pop(false);
                   },
                   child: const Text('Cancel',
                       style: TextStyle(color: Colors.black)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white, // White background
-                    elevation: 2, // Shadow effect
+                    backgroundColor: Colors.white,
+                    elevation: 2,
                     shadowColor: Colors.grey,
                   ),
                   onPressed: () async {
@@ -187,7 +186,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
         String newEmail = _driverEmailController.text.trim();
         String currentAuthEmail = user.email ?? '';
 
-        // If the email has changed, perform reauthentication.
         if (newEmail != currentAuthEmail) {
           bool reauthSuccess =
               await _showReauthenticateDialog(currentAuthEmail);
@@ -257,7 +255,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       if (jsonResponse['success'] == true) {
         String imageUrl = jsonResponse['data']['link'];
 
-        // Save the new photo URL in the Driver document.
         await FirebaseFirestore.instance
             .collection('Driver')
             .doc(FirebaseAuth.instance.currentUser!.uid)
@@ -341,7 +338,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Profile image with upload button
                   Center(
                     child: Stack(
                       alignment: Alignment.bottomRight,
@@ -386,7 +382,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                   SizedBox(height: screenHeight * 0.01),
                   Center(child: Text(driverEmail)),
                   SizedBox(height: screenHeight * 0.04),
-                  // Editable text fields for Name, Email, Phone
                   _buildEditableTextField('Name', _driverNameController, true,
                       screenWidth, screenHeight),
                   _buildEditableTextField('Email', _driverEmailController,
@@ -410,7 +405,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Label row with an optional edit icon
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -426,7 +420,6 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      // Pre-fill controllers with current values before enabling edit.
                       _driverNameController.text = driverName;
                       _driverEmailController.text = driverEmail;
                       _driverPhoneController.text = driverPhone;

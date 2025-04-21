@@ -90,7 +90,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                 products.add(productData);
               }
             } catch (e) {
-              print("❌ Error fetching product details: $e");
+              print("Error fetching product details: $e");
             }
           }
         }
@@ -103,7 +103,7 @@ class _FavoritesPageState extends State<FavoritesPage>
         isLoading = false;
       });
     } catch (e) {
-      print("❌ Error fetching favorites: $e");
+      print("Error fetching favorites: $e");
     }
   }
 
@@ -125,10 +125,8 @@ class _FavoritesPageState extends State<FavoritesPage>
         favoriteProducts
             .removeWhere((item) => item['Favorite_ID'] == favoriteId);
       });
-
-      print("✅ Favorite successfully removed: $favoriteId");
     } catch (e) {
-      print("❌ Error removing favorite: $e");
+      print("Error removing favorite: $e");
     }
   }
 
@@ -165,8 +163,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           });
         }
       } else {
-        print("🛒 Vendor_ID before adding to cart: ${item["Vendor_ID"]}");
-
         await cartRef.add({
           "name": item["Name"],
           "price": item["Price"] ?? 0.000,
@@ -182,7 +178,7 @@ class _FavoritesPageState extends State<FavoritesPage>
         MaterialPageRoute(builder: (context) => const CartPage()),
       );
     } catch (e) {
-      print("❌ Error reordering item: $e");
+      print("Error reordering item: $e");
     }
   }
 
@@ -210,7 +206,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           categoryId = item["Category_ID"];
         }
       } catch (e) {
-        print("❌ Error fetching category ID: $e");
+        print("Error fetching category ID: $e");
       }
 
       Navigator.push(

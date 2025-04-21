@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hometouch/Customer%20View/order_tracking_page.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -352,7 +353,7 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
                           _buildCurrentOrderCard(
                             screenWidth: screenWidth,
                             screenHeight: screenHeight,
-                            orderNumber: currentOrder!['Order_Number'] ?? '#47',
+                            orderNumber: currentOrder!['Order_Number'] ?? '#00',
                             customerName:
                                 currentOrder!['Customer_Name'] ?? 'Customer',
                             totalPrice: currentOrder!['Total'] ?? 0.0,
@@ -517,7 +518,11 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
           horizontal: screenWidth * 0.0, vertical: screenHeight * 0.01),
       child: GestureDetector(
         onTap: () {
-          print("Card Tapped!");
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      OrderTrackingPage(orderId: orderNumber)));
         },
         child: Card(
           color: Colors.white,
@@ -558,9 +563,6 @@ class _DriverOrdersChartState extends State<DriverOrdersChart> {
                         ),
                         SizedBox(width: screenWidth * 0.09),
                         GestureDetector(
-                          onTap: () {
-                            print("ID $orderNumber Clicked!");
-                          },
                           child: Text(
                             orderNumber,
                             style: TextStyle(

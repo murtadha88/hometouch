@@ -30,8 +30,8 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
 
   int monthlyOrders = 0;
   double monthlyExpensive = 0.0;
-  int yesterdayOrders = 0;
-  double yesterdaySpend = 0.0;
+  int previousMonthOrders = 0;
+  double previousMonthExpensive = 0.0;
   int totalOrders = 0;
   double totalExpensive = 0.0;
 
@@ -64,73 +64,81 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
       });
     }
 
-    DateTime now = DateTime.now();
-    DateTime startOfMonth = DateTime(now.year, now.month, 1);
-
-    QuerySnapshot salesSnapshot = await FirebaseFirestore.instance
+    QuerySnapshot expensiveSnapshot = await FirebaseFirestore.instance
         .collection('Customer')
         .doc(customerId)
-        .collection('Monthly_Sales')
-        .where('Date', isGreaterThanOrEqualTo: startOfMonth)
+        .collection('Monthly_Expensive')
         .orderBy('Date', descending: true)
+        .limit(2)
         .get();
 
-    List<OrderData> tempData = [];
-    for (var doc in salesSnapshot.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      tempData.add(OrderData(
-        DateFormat('MMM').format(data['Date'].toDate()),
-        data['Orders'] ?? 0,
-        (data['Total_Expensive'] ?? 0.0).toDouble(),
-      ));
+    List<Map<String, dynamic>> months = [];
+
+    if (expensiveSnapshot.docs.isNotEmpty) {
+      months = expensiveSnapshot.docs
+          .map((d) => d.data() as Map<String, dynamic>)
+          .toList();
+
+      monthlyOrders = months[0]['Orders'] ?? 0;
+      monthlyExpensive = (months[0]['Expensive'] ?? 0.0).toDouble();
+      if (months.length > 1) {
+        previousMonthOrders = months[1]['Orders'] ?? 0;
+        previousMonthExpensive = (months[1]['Expensive'] ?? 0.0).toDouble();
+      }
     }
 
-    DateTime yesterday = now.subtract(const Duration(days: 1));
-    DocumentSnapshot yesterdayDoc = await FirebaseFirestore.instance
-        .collection('Customer')
-        .doc(customerId)
-        .collection('Sales_Data')
-        .doc(DateFormat('yyyy-MM-dd').format(yesterday))
-        .get();
-
     setState(() {
-      orderData = tempData;
-      monthlyOrders = orderData.isNotEmpty ? orderData.first.orders : 0;
-      monthlyExpensive = orderData.isNotEmpty ? orderData.first.revenue : 0.0;
-      yesterdayOrders = yesterdayDoc.exists ? yesterdayDoc.get('Orders') : 0;
-      yesterdaySpend = yesterdayDoc.exists
-          ? (yesterdayDoc.get('Total_Expensive') ?? 0.0).toDouble()
-          : 0.0;
+      orderData = months
+          .map((m) => OrderData(
+                DateFormat('MMM').format((m['Date'] as Timestamp).toDate()),
+                m['Orders'] ?? 0,
+                (m['Expensive'] ?? 0.0).toDouble(),
+              ))
+          .toList();
 
-      if (orderData.isNotEmpty) {
-        highestSpend = orderData
-            .map((e) => e.revenue)
-            .reduce((a, b) => a > b ? a : b)
-            .toDouble();
-      }
+      highestSpend = orderData.isNotEmpty
+          ? orderData.map((e) => e.revenue).reduce((a, b) => a > b ? a : b)
+          : 0.0;
 
       isLoading = false;
     });
   }
 
   Map<String, dynamic> getTotalMonthlyOrder() {
-    double dailyPercentageOrderChange = yesterdayOrders > 0
-        ? ((monthlyOrders - yesterdayOrders) / yesterdayOrders) * 100
+    final double change = previousMonthExpensive > 0
+        ? ((monthlyExpensive - previousMonthExpensive) /
+                previousMonthExpensive) *
+            100
         : 0.0;
+    final bool up = change >= 0;
 
-    Color dailyPercentageColor =
-        dailyPercentageOrderChange >= 0 ? Colors.green : Colors.red;
-    IconData dailyArrowIcon = dailyPercentageOrderChange >= 0
-        ? Icons.arrow_upward
-        : Icons.arrow_downward;
+    Color monthlyPercentageColor = up ? Colors.green : Colors.red;
+    IconData monthlyArrowIcon = up ? Icons.arrow_upward : Icons.arrow_downward;
 
     return {
-      "dailyOrders": monthlyOrders.toString(),
-      "dailySpend": monthlyExpensive.toStringAsFixed(3),
-      "dailyPercentageOrderChange":
-          "${dailyPercentageOrderChange.toStringAsFixed(1)}%",
-      "dailyPercentageColor": dailyPercentageColor,
-      "dailyArrowIcon": dailyArrowIcon,
+      "monthlyOrders": monthlyOrders.toString(),
+      "monthlyExpensive": monthlyExpensive.toStringAsFixed(3),
+      "change": "${change.toStringAsFixed(1)}%",
+      "monthlyPercentageColor": monthlyPercentageColor,
+      "monthlyArrowIcon": monthlyArrowIcon,
+    };
+  }
+
+  Map<String, dynamic> getTotalMonthlyExpensive() {
+    final double diff = monthlyExpensive - previousMonthExpensive;
+    final double changePct = previousMonthExpensive > 0
+        ? (diff / previousMonthExpensive) * 100
+        : 0.0;
+
+    final bool spentMore = diff > 0;
+    final Color color = spentMore ? Colors.red : Colors.green;
+    final IconData icon = spentMore ? Icons.arrow_upward : Icons.arrow_downward;
+
+    return {
+      "value": monthlyExpensive.toStringAsFixed(3),
+      "change": "${changePct.abs().toStringAsFixed(1)}%",
+      "color": color,
+      "icon": icon,
     };
   }
 
@@ -141,6 +149,7 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
     double cardWidth = (screenWidth - 70) / 2;
 
     var monthlyOrdersData = getTotalMonthlyOrder();
+    final spendDataMetrics = getTotalMonthlyExpensive();
 
     return Scaffold(
       appBar: PreferredSize(
@@ -230,25 +239,22 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
                           children: <Widget>[
                             _buildCard(
                               "Monthly Orders",
-                              monthlyOrdersData["dailyOrders"] ?? "0",
-                              monthlyOrdersData["dailyPercentageOrderChange"] ??
-                                  "0%",
+                              monthlyOrdersData["monthlyOrders"] ?? "0",
+                              monthlyOrdersData["change"] ?? "0%",
                               cardWidth,
                               screenHeight,
                               percentageColor:
-                                  monthlyOrdersData["dailyPercentageColor"],
-                              arrowIcon: monthlyOrdersData["dailyArrowIcon"],
+                                  monthlyOrdersData["monthlyPercentageColor"],
+                              arrowIcon: monthlyOrdersData["monthlyArrowIcon"],
                             ),
                             _buildCard(
-                              "Monthly Expensive",
-                              "BHD ${monthlyOrdersData["dailySpend"]}",
-                              monthlyOrdersData["dailyPercentageOrderChange"] ??
-                                  "0%",
+                              "Monthly Spend",
+                              "BHD ${spendDataMetrics["value"]}",
+                              spendDataMetrics["change"],
                               cardWidth,
                               screenHeight,
-                              percentageColor:
-                                  monthlyOrdersData["dailyPercentageColor"],
-                              arrowIcon: monthlyOrdersData["dailyArrowIcon"],
+                              percentageColor: spendDataMetrics["color"],
+                              arrowIcon: spendDataMetrics["icon"],
                             ),
                             _buildCard(
                                 "Total Orders",
@@ -258,16 +264,16 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
                                 screenHeight,
                                 percentageColor: Colors.green,
                                 arrowIcon: Icons.arrow_upward,
-                                showSinceYesterday: false),
+                                showSinceLastMonth: false),
                             _buildCard(
-                                "Total Expensive",
+                                "Total Spend",
                                 "BHD ${totalExpensive.toStringAsFixed(3)}",
                                 "+${(totalExpensive * 0.1).toStringAsFixed(1)}%",
                                 cardWidth,
                                 screenHeight,
                                 percentageColor: Colors.green,
                                 arrowIcon: Icons.arrow_upward,
-                                showSinceYesterday: false),
+                                showSinceLastMonth: false),
                           ],
                         ),
                         SizedBox(height: screenHeight * 0.02),
@@ -276,12 +282,13 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8.0),
                             child: Text(
-                              "Monthly Orders Data",
+                              "Monthly Spend Data",
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          _buildMonthlySalesChart(screenWidth, screenHeight),
+                          _buildMonthlyExpensiveChart(
+                              screenWidth, screenHeight),
                         ],
                       ],
                     ),
@@ -300,7 +307,7 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
     double screenHeight, {
     Color? percentageColor,
     IconData? arrowIcon,
-    bool showSinceYesterday = true,
+    bool showSinceLastMonth = true,
   }) {
     final cardHeight = screenHeight * 0.13;
     final padding = screenHeight * 0.012;
@@ -311,7 +318,7 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
     final titleSize = screenHeight * 0.015;
     final valueSizeNormal = screenHeight * 0.021;
     final valueSizeLarge = screenHeight * 0.023;
-    final smallTextSize = screenHeight * 0.0125;
+    final smallTextSize = screenHeight * 0.01;
     final iconSize = screenHeight * 0.015;
 
     final smallSpacing = screenHeight * 0.01;
@@ -347,14 +354,14 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
           Text(
             value,
             style: TextStyle(
-              fontSize: showSinceYesterday ? valueSizeNormal : valueSizeLarge,
+              fontSize: showSinceLastMonth ? valueSizeNormal : valueSizeLarge,
               fontWeight: FontWeight.bold,
             ),
           ),
           SizedBox(height: smallSpacing),
           Row(
             children: [
-              if (showSinceYesterday) ...[
+              if (showSinceLastMonth) ...[
                 if (percentageColor != null && arrowIcon != null)
                   Icon(arrowIcon, size: iconSize, color: percentageColor),
                 SizedBox(width: tinySpacing),
@@ -368,7 +375,7 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
                 ),
                 SizedBox(width: tinySpacing),
                 Text(
-                  "Since Yesterday",
+                  "Since Last Month",
                   style:
                       TextStyle(fontSize: smallTextSize, color: Colors.black),
                 ),
@@ -380,7 +387,7 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
     );
   }
 
-  Widget _buildMonthlySalesChart(double screenWidth, double screenHeight) {
+  Widget _buildMonthlyExpensiveChart(double screenWidth, double screenHeight) {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.04),
       decoration: BoxDecoration(
@@ -397,7 +404,7 @@ class _CustomerOrdersChartState extends State<CustomerOrdersChart> {
       child: Column(
         children: [
           const Text(
-            "Monthly Orders",
+            "Monthly Spend",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(

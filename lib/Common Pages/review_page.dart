@@ -108,7 +108,7 @@ class _ReviewPageState extends State<ReviewPage> {
 
       return reviews;
     } catch (e) {
-      print("❌ Error fetching reviews: $e");
+      print("Error fetching reviews: $e");
       return [];
     }
   }
@@ -232,7 +232,6 @@ class _ReviewPageState extends State<ReviewPage> {
 
   Future<void> _updateAverageRating() async {
     if (widget.vendorId == null && widget.productId == null) {
-      print("ERROR: No Vendor or Product ID provided.");
       return;
     }
 
@@ -266,7 +265,6 @@ class _ReviewPageState extends State<ReviewPage> {
             .doc(widget.vendorId);
       } else {
         if (widget.categoryId == null) {
-          print("ERROR: categoryId is required for updating product rating.");
           return;
         }
 
@@ -306,7 +304,7 @@ class _ReviewPageState extends State<ReviewPage> {
 
       await targetRef.update({"Rating": averageRating});
     } catch (e) {
-      print("❌ Error updating average rating: $e");
+      print("Error updating average rating: $e");
     }
   }
 

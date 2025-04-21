@@ -23,7 +23,6 @@ class HomeTouchScreen extends StatefulWidget {
   State<HomeTouchScreen> createState() => _HomeTouchScreenState();
 }
 
-//----------------------- Variables-----------------------
 class _HomeTouchScreenState extends State<HomeTouchScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -227,7 +226,7 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
 
       return openVendors;
     } catch (e) {
-      print('❌ Error fetching recommended vendors: $e');
+      print('Error fetching recommended vendors: $e');
       return [];
     }
   }
@@ -247,7 +246,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
   }
 
   bool isVendorOpenNow(Map<String, dynamic> vendorData) {
-    // Check that the primary period fields exist and are non-empty.
     if (!vendorData.containsKey("Open_Time_Period1") ||
         vendorData["Open_Time_Period1"] == null ||
         vendorData["Open_Time_Period1"].toString().trim().isEmpty ||
@@ -805,7 +803,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                         screenHeight: screenHeight,
                         title: vendor['Name'] ?? "Unknown",
                         rating: vendor['Rating']?.toString() ?? "0.0",
-                        price: "BHD 0.600",
                         imageUrl: vendor['Logo']?.isNotEmpty == true
                             ? vendor['Logo']
                             : 'https://via.placeholder.com/150',
@@ -1200,7 +1197,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                       screenHeight: screenHeight,
                       title: vendor['Name'] ?? "Unknown",
                       rating: vendor['Rating']?.toString() ?? "0.0",
-                      price: "BHD 0.600",
                       imageUrl: vendor['Logo']?.isNotEmpty == true
                           ? vendor['Logo']
                           : 'https://via.placeholder.com/150',
@@ -1259,7 +1255,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                         screenHeight: screenHeight,
                         title: vendor['Name'] ?? "Unknown",
                         rating: vendor['Rating']?.toString() ?? "0.0",
-                        price: "BHD 0.600",
                         imageUrl: vendor['Logo']?.isNotEmpty == true
                             ? vendor['Logo']
                             : 'https://via.placeholder.com/150',
@@ -1287,7 +1282,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     required double screenHeight,
     required String title,
     required String rating,
-    required String price,
     required String imageUrl,
     required Function() onCardTap,
     required String vendorId,
@@ -1296,7 +1290,9 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     final isFavorite = favoriteVendors.contains(vendorId);
     return Padding(
       padding: EdgeInsets.symmetric(
-          horizontal: screenWidth * 0.04, vertical: screenHeight * 0.01),
+        horizontal: screenWidth * 0.02,
+        vertical: screenHeight * 0.005,
+      ),
       child: Stack(
         children: [
           GestureDetector(
@@ -1342,14 +1338,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                             Text(" $rating"),
                           ],
                         ),
-                        Row(
-                          children: [
-                            const Icon(Icons.delivery_dining,
-                                size: 16, color: Color(0xFFBF0000)),
-                            SizedBox(width: screenWidth * 0.01),
-                            Text(" $price"),
-                          ],
-                        ),
                       ],
                     ),
                   ],
@@ -1380,7 +1368,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     required double screenHeight,
     required String title,
     required String rating,
-    required String price,
     required String imageUrl,
     required Function() onCardTap,
     required String vendorId,
@@ -1389,8 +1376,8 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
     final isFavorite = favoriteVendors.contains(vendorId);
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04,
-        vertical: screenHeight * 0.01,
+        horizontal: screenWidth * 0.02,
+        vertical: screenHeight * 0.005,
       ),
       child: Stack(
         children: [
@@ -1435,14 +1422,6 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                                 size: 16, color: Color(0xFFBF0000)),
                             SizedBox(width: screenWidth * 0.01),
                             Text(" $rating"),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Icon(Icons.delivery_dining,
-                                size: 16, color: Color(0xFFBF0000)),
-                            SizedBox(width: screenWidth * 0.01),
-                            Text(" $price"),
                           ],
                         ),
                       ],

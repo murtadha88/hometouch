@@ -408,7 +408,6 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                     Column(
                       children: [
                         if (orderData['Delivery_Type'] == "Pickup")
-                          // For Pickup orders: provide different buttons based on current status.
                           if (orderData['Status'] == "Preparing")
                             Padding(
                               padding: EdgeInsets.symmetric(
@@ -486,8 +485,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                               ),
                             )
                           else
-                            Container(), // Optionally, show nothing if the status is something else.
-                        // For Delivery orders, apply your existing logic.
+                            Container(),
                         if (orderData['Delivery_Type'] != "Pickup")
                           if (orderData['Status'] == "Preparing")
                             Padding(
@@ -527,7 +525,6 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                                 ),
                               ),
                             ),
-                        // Optional helper text for delivery orders.
                         if (orderData['Delivery_Type'] != "Pickup" &&
                             orderData['Status'] == "Preparing")
                           Padding(

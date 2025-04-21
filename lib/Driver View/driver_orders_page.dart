@@ -120,7 +120,6 @@ class _DriverOrdersPageState extends State<DriverOrdersPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // "No" Button
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -143,7 +142,6 @@ class _DriverOrdersPageState extends State<DriverOrdersPage>
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // "Yes" Button
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(

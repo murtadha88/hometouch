@@ -187,7 +187,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
           .get();
 
       if (!vendorSnapshot.exists) {
-        print("Vendor not found");
         return;
       }
 
@@ -195,7 +194,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       if (vendorSnapshot.get('Location') != null) {
         vendorLocation = vendorSnapshot.get('Location') as GeoPoint;
       } else {
-        print("Vendor location not available");
         return;
       }
 
@@ -228,8 +226,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
               var orderScheduleField = order.get('Schedule_Time');
               if (orderScheduleField == null) continue;
               Timestamp orderTimestamp = orderScheduleField as Timestamp;
-              print("gggggggggggggggggggggggggggggggggggggggggg");
-              print(orderTimestamp);
               DateTime existingOrderTime = orderTimestamp.toDate();
               if (existingOrderTime
                   .isBefore(DateTime.now().add(Duration(hours: 1)))) {
@@ -271,8 +267,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       homeTouchCut = widget.subtotal * 0.15;
       vendorRevenue = widget.subtotal - homeTouchCut;
       roundedVendorRevenue = double.parse(vendorRevenue.toStringAsFixed(3));
-      double roundedTotal = double.parse(widget.total.toStringAsFixed(3));
-      double roundedSubTotal = double.parse(widget.subtotal.toStringAsFixed(3));
+      final double roundedSubtotal =
+          double.parse(widget.subtotal.toStringAsFixed(3));
+      final double roundedTot =
+          double.parse((widget.total + finalDeliveryCost).toStringAsFixed(3));
 
       DocumentReference orderRef =
           FirebaseFirestore.instance.collection('order').doc("#$orderNumber");
@@ -283,11 +281,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
         "Driver_ID": nearestDriverId,
         "Vendor_ID": vendorId,
         "Items": widget.cartItems,
-        "Subtotal": roundedSubTotal,
-        "Total": roundedTotal,
-        "Total_Vendor_Revenue": vendorRevenue,
+        "Subtotal": roundedSubtotal,
+        "Total": roundedTot,
+        "Total_Vendor_Revenue": double.parse(vendorRevenue.toStringAsFixed(3)),
         "Total_Points_Used": widget.totalPoints,
-        "Total_HomeTouch_Revenue": homeTouchCut,
+        "Total_HomeTouch_Revenue":
+            double.parse(homeTouchCut.toStringAsFixed(3)),
         "Payment_Method": selectedPaymentMethod == 0
             ? "Card"
             : selectedPaymentMethod == 1
@@ -330,7 +329,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            timer ??= Timer.periodic(Duration(seconds: 1), (t) async {
+            timer?.cancel();
+            timer = null;
+
+            timer = Timer.periodic(Duration(seconds: 1), (t) async {
               if (!mounted) {
                 t.cancel();
                 return;
@@ -352,7 +354,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
               if (user == null) return;
 
               if (acceptedStatus == true) {
-                print("Order accepted");
                 t.cancel();
                 Navigator.pop(context);
                 _clearCart(user.uid);
@@ -371,12 +372,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 final firstDayOfMonth = DateTime(now.year, now.month, 1);
 
                 final monthlySalesRef = customerRef
-                    .collection('Monthly_Sales')
+                    .collection('Monthly_Expensive')
                     .doc(DateFormat('yyyy-MM').format(firstDayOfMonth));
 
                 await monthlySalesRef.set({
                   'Orders': FieldValue.increment(1),
-                  'Total_Expensive': FieldValue.increment(totalAfterDiscount),
+                  'Expensive': FieldValue.increment(totalAfterDiscount),
                   'Month': now.month.toString(),
                   'Year': now.year.toString(),
                   'Date': Timestamp.fromDate(firstDayOfMonth),
@@ -462,7 +463,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
               }
 
               if (acceptedStatus == false) {
-                print("Order rejected");
                 t.cancel();
                 Navigator.pop(context);
                 _clearCart(user.uid);
@@ -477,7 +477,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
               }
 
               if (secondsRemaining <= 0) {
-                print("Order not accepted in time");
                 t.cancel();
                 Navigator.pop(context);
                 _clearCart(user.uid);
@@ -969,7 +968,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     double subtotalAfterDiscount = widget.subtotal - discount;
 
     totalAfterDiscount = subtotalAfterDiscount +
-        ((useDelivery ?? false) ? finalDeliveryCost : 0.0);
+        double.parse(finalDeliveryCost.toStringAsFixed(3));
 
     return Scaffold(
       appBar: PreferredSize(

@@ -62,8 +62,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               .get();
 
           if (productDoc.exists) {
-            print("✅ Product found: ${productDoc.id}");
-
             setState(() {
               productData = productDoc.data() as Map<String, dynamic>?;
               productData?["vendorId"] = vendorDoc.id;
@@ -84,7 +82,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         isLoading = false;
       });
     } catch (e) {
-      print("❌ Error fetching product details: $e");
+      print("Error fetching product details: $e");
       setState(() {
         isLoading = false;
       });
@@ -158,7 +156,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           .get();
 
       if (snapshot.docs.isEmpty) {
-        print("No reviews found for Product ID: ${widget.productId}");
         setState(() {
           reviews = [];
         });
@@ -207,8 +204,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Future<void> _checkFavoriteStatus() async {
     if (productData?["vendorId"] == null ||
         productData?["categoryId"] == null) {
-      print(
-          "ERROR: Vendor ID or Category ID is NULL! Cannot check favorite status.");
       return;
     }
 
@@ -219,8 +214,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         .doc(productData?["categoryId"])
         .collection("products")
         .doc(widget.productId);
-
-    print("Checking favorite status for: $productRef");
 
     var favoriteRef = FirebaseFirestore.instance
         .collection("Customer")
@@ -234,8 +227,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     setState(() {
       isFavorite = snapshot.docs.isNotEmpty;
     });
-
-    print("Favorite status: ${isFavorite ? 'YES' : 'NO'}");
   }
 
   void _toggleFavorite() async {
@@ -465,8 +456,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           ),
                           onPressed: () {
                             if (productData?["categoryId"] == null) {
-                              print(
-                                  "ERROR: categoryId is required to rate this product.");
                               return;
                             }
 

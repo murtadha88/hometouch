@@ -22,14 +22,12 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
   String vendorPhone = '';
   String? vendorLogo;
 
-  // Operating hours
   bool twoPeriods = false;
   String openTime1 = '';
   String closeTime1 = '';
   String openTime2 = '';
   String closeTime2 = '';
 
-  // Text controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -49,7 +47,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
     if (user == null) return;
 
     try {
-      // Fetch vendor document from Firestore
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('vendor')
           .doc(user.uid)
@@ -85,7 +82,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
     }
   }
 
-  // New reauthentication dialog that returns true if reauthentication succeeds
   Future<bool> _showReauthenticateDialog(String currentAuthEmail) async {
     return showDialog<bool>(
       context: context,
@@ -214,12 +210,9 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
       String newEmail = _emailController.text.trim();
       String currentAuthEmail = user.email ?? '';
 
-      // Check if the user changed their email
       if (newEmail != currentAuthEmail) {
-        // Show reauthentication dialog with custom design
         bool reauthSuccess = await _showReauthenticateDialog(currentAuthEmail);
         if (!reauthSuccess) {
-          // Reauthentication failed or was cancelled.
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content:
@@ -229,11 +222,9 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
           );
           return;
         }
-        // Update email after successful reauthentication
         await user.updateEmail(newEmail);
       }
 
-      // Update vendor info in Firestore
       await FirebaseFirestore.instance
           .collection('vendor')
           .doc(user.uid)
@@ -398,7 +389,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Logo with upload button
                   Center(
                     child: Stack(
                       alignment: Alignment.bottomRight,
@@ -432,7 +422,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.02),
-                  // Display vendor name and email
                   Center(
                     child: Text(
                       vendorName,
@@ -448,7 +437,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
                       child: Text(vendorEmail,
                           style: const TextStyle(color: Colors.black))),
                   SizedBox(height: screenHeight * 0.04),
-                  // Editable text fields
                   _buildEditableTextField(
                     label: 'Name',
                     controller: _nameController,
@@ -470,7 +458,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
                     screenWidth: screenWidth,
                     screenHeight: screenHeight,
                   ),
-                  // Switch for one or two operating periods
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -496,7 +483,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
                     ],
                   ),
                   SizedBox(height: screenHeight * 0.01),
-                  // Time pickers for Period 1
                   _buildTimePickerRow(
                     label: 'Open Time 1',
                     controller: _openTime1Controller,
@@ -509,7 +495,6 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
                     screenWidth: screenWidth,
                     screenHeight: screenHeight,
                   ),
-                  // Time pickers for Period 2 (if twoPeriods is true)
                   if (twoPeriods) ...[
                     SizedBox(height: screenHeight * 0.02),
                     _buildTimePickerRow(

@@ -21,23 +21,20 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   late GoogleMapController mapController;
   Map<String, dynamic>? orderData;
   Map<String, dynamic>? driverData;
-  Map<String, dynamic>? vendorData; // <-- New vendor data
+  Map<String, dynamic>? vendorData;
   bool isLoading = true;
   final Set<Marker> _markers = {};
 
-  // Driver details
   String driverName = "Loading...";
   String driverPhone = "Loading...";
   String driverPhoto = "";
   LatLng? driverLocation;
 
-  // Vendor details
   String vendorName = "Loading...";
   String vendorPhone = "Loading...";
   String vendorPhoto = "";
   LatLng? vendorLocation;
 
-  // Customer details
   LatLng? customerLocation;
 
   StreamSubscription<DocumentSnapshot>? _driverLocationSubscription;
@@ -48,7 +45,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     super.initState();
     _fetchOrderDetails();
 
-    // Refresh every 3 seconds
     _refreshTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       if (mounted) {
         _fetchOrderDetails();
@@ -74,7 +70,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           .get();
 
       if (!orderSnapshot.exists) {
-        print("❌ Order not found");
+        print("Order not found");
         return;
       }
 
@@ -83,20 +79,15 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         isLoading = false;
       });
 
-      // Fetch vendor details if Vendor_ID exists.
       if (orderData?["Vendor_ID"] != null) {
         _fetchVendorDetails(orderData!["Vendor_ID"]);
       }
 
-      // Fetch driver details if a driver is assigned.
       if (orderData?["Driver_ID"] != null &&
           orderData?["Driver_ID"] != "Pending") {
         _fetchDriverDetails(orderData?["Driver_ID"]);
-      } else {
-        print("❌ No driver assigned yet.");
       }
 
-      // Get customer location (from order's Customer_Address field)
       if (orderData?["Customer_Address"] != null) {
         final address = orderData?["Customer_Address"];
         if (address["Location"] is GeoPoint) {
@@ -164,8 +155,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       print("Error fetching vendor details: $e");
     }
   }
-
-  // MARKER UPDATE FUNCTIONS
 
   Future<BitmapDescriptor> _getDriverMarkerIcon() async {
     return await BitmapDescriptor.fromAssetImage(

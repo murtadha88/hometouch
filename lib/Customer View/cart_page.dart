@@ -55,7 +55,7 @@ class _CartPageState extends State<CartPage> {
         isLoading = false;
       });
     } catch (e) {
-      print("❌ Error fetching cart items: $e");
+      print("Error fetching cart items: $e");
       setState(() {
         isLoading = false;
       });
@@ -94,7 +94,7 @@ class _CartPageState extends State<CartPage> {
         }
       }
     } catch (e) {
-      print("❌ Error checking subscription: $e");
+      print("Error checking subscription: $e");
     }
   }
 
@@ -142,7 +142,7 @@ class _CartPageState extends State<CartPage> {
 
       _fetchCartItems();
     } catch (e) {
-      print("❌ Error updating quantity: $e");
+      print("Error updating quantity: $e");
     }
   }
 
@@ -160,7 +160,7 @@ class _CartPageState extends State<CartPage> {
 
       _fetchCartItems();
     } catch (e) {
-      print("❌ Error removing item: $e");
+      print("Error removing item: $e");
     }
   }
 

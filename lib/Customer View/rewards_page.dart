@@ -41,7 +41,7 @@ class _RewardsPageState extends State<RewardsPage> {
         });
       }
     } catch (e) {
-      print("❌ Error fetching user points: $e");
+      print("Error fetching user points: $e");
     }
   }
 
@@ -89,7 +89,7 @@ class _RewardsPageState extends State<RewardsPage> {
         isLoading = false;
       });
     } catch (e) {
-      print("❌ Error fetching reward products: $e");
+      print("Error fetching reward products: $e");
       setState(() {
         isLoading = false;
       });
@@ -111,7 +111,7 @@ class _RewardsPageState extends State<RewardsPage> {
         cartItemCount = cartSnapshot.docs.length;
       });
     } catch (e) {
-      print("❌ Error fetching cart count: $e");
+      print("Error fetching cart count: $e");
     }
   }
 

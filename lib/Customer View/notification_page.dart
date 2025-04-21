@@ -51,8 +51,6 @@ class NotificationPage extends StatelessWidget {
               })
           .toList();
 
-      print('Notification: $notifications');
-
       return notifications;
     } catch (e) {
       print("Error fetching notifications: $e");

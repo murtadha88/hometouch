@@ -74,7 +74,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
   void _initBackgroundGeolocation() {
     bg.BackgroundGeolocation.onLocation((bg.Location location) async {
-      print('[Background] Location: ${location.coords}');
       final driverId = FirebaseAuth.instance.currentUser?.uid;
       if (driverId != null) {
         await FirebaseFirestore.instance
@@ -95,7 +94,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     });
 
     bg.BackgroundGeolocation.onMotionChange((bg.Location location) {
-      print('[Motion Change] location: ${location.coords}');
+      print('Motion Change location: ${location.coords}');
     });
 
     bg.BackgroundGeolocation.ready(
@@ -113,7 +112,6 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         ),
       ),
     ).then((bg.State state) {
-      print("[ready] BackgroundGeolocation ready: enabled=${state.enabled}");
       if (!state.enabled) {
         bg.BackgroundGeolocation.start();
       }
@@ -128,7 +126,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
           .get();
 
       if (!orderSnapshot.exists) {
-        print("❌ Order not found");
+        print("Order not found");
         return;
       }
 

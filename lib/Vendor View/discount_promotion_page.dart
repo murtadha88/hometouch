@@ -261,7 +261,6 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
     try {
       for (var product in _vendorProducts) {
         if (_selectedProductIds.contains(product["id"])) {
-          print(product["categoryId"]);
           DocumentReference prodRef = _firestore
               .collection('vendor')
               .doc(user.uid)

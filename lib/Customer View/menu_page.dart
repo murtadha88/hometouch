@@ -37,7 +37,9 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
     _getCurrentUserId();
     _checkIfFavorite();
     _fetchCartItemCount();
-    _initializeUserAndCart();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeUserAndCart();
+    });
     _checkAndShowActivePoll();
   }
 
@@ -47,42 +49,133 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
       setState(() {
         customerId = user.uid;
       });
-      await _resetCartIfVendorMismatch();
+      final mismatch = await _hasVendorMismatch();
+      if (mismatch) {
+        final delete = await _showCartDeleteDialog();
+        if (delete == true) {
+          await _clearCart();
+        } else {
+          Navigator.of(context).pop();
+        }
+      }
       await _fetchCartItemCount();
     } else {
       print("No user is currently signed in.");
     }
   }
 
-  Future<void> _resetCartIfVendorMismatch() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final cartSnapshot = await FirebaseFirestore.instance
+  Future<bool> _hasVendorMismatch() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final cart = await FirebaseFirestore.instance
         .collection('Customer')
-        .doc(user.uid)
+        .doc(uid)
         .collection('cart')
         .get();
-
-    bool vendorMismatch = false;
-    for (var doc in cartSnapshot.docs) {
-      final data = doc.data();
-      if (data['vendorId'] != widget.vendorId) {
-        vendorMismatch = true;
-        break;
+    for (var doc in cart.docs) {
+      if (doc.data()['vendorId'] != widget.vendorId) {
+        return true;
       }
     }
+    return false;
+  }
 
-    if (vendorMismatch) {
-      for (var doc in cartSnapshot.docs) {
-        await doc.reference.delete();
-      }
-      setState(() {
-        cartItemCount = 0;
-        _fetchCartItemCount();
-      });
-      print("Cart has been reset due to vendor mismatch.");
+  Future<bool?> _showCartDeleteDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+          title: Text(
+            'Delete Current Cart?',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFBF0000),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 10),
+              Container(
+                alignment: Alignment.center,
+                child: Text(
+                  'Are you sure you want to delete the products in your currect cart?',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: Color(0xFFBF0000)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: Text(
+                        'Yes',
+                        style: TextStyle(
+                          color: Color(0xFFBF0000),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFBF0000),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text(
+                        'No',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _clearCart() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final batch = FirebaseFirestore.instance.batch();
+    final cartSnap = await FirebaseFirestore.instance
+        .collection('Customer')
+        .doc(uid)
+        .collection('cart')
+        .get();
+    for (var doc in cartSnap.docs) {
+      batch.delete(doc.reference);
     }
+    await batch.commit();
+    setState(() => cartItemCount = 0);
   }
 
   void _getCurrentUserId() {
@@ -308,7 +401,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
         cartItemCount = cartSnapshot.docs.length;
       });
     } catch (e) {
-      print("❌ Error fetching cart count: $e");
+      print("Error fetching cart count: $e");
     }
   }
 

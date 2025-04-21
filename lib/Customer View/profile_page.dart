@@ -47,7 +47,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // Custom reauthentication dialog with in-dialog error message.
   Future<bool> _showReauthenticateDialog(String currentAuthEmail) async {
     return showDialog<bool>(
       context: context,
@@ -119,8 +118,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white, // White background
-                    elevation: 2, // Shadow effect
+                    backgroundColor: Colors.white,
+                    elevation: 2,
                     shadowColor: Colors.grey,
                   ),
                   onPressed: () async {
@@ -174,7 +173,6 @@ class _ProfilePageState extends State<ProfilePage> {
         String newEmail = _userEmailController.text.trim();
         String currentAuthEmail = user.email ?? '';
 
-        // If the email has changed, perform reauthentication.
         if (newEmail != currentAuthEmail) {
           bool reauthSuccess =
               await _showReauthenticateDialog(currentAuthEmail);
@@ -188,11 +186,9 @@ class _ProfilePageState extends State<ProfilePage> {
             );
             return;
           }
-          // Update the email in Firebase Auth after successful reauthentication.
           await user.updateEmail(newEmail);
         }
 
-        // Update the user info in Firestore.
         await FirebaseFirestore.instance
             .collection('Customer')
             .doc(user.uid)

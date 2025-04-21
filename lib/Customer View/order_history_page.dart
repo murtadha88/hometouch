@@ -198,7 +198,7 @@ class _OrdersPageState extends State<OrdersPage>
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pop(context); // dismiss the dialog
+                        Navigator.pop(context);
                       },
                       child: const Text(
                         'No',
@@ -222,13 +222,14 @@ class _OrdersPageState extends State<OrdersPage>
     try {
       final orderRef =
           FirebaseFirestore.instance.collection('order').doc(orderId);
-      DocumentSnapshot orderSnapshot = await orderRef.get();
-
+      final orderSnapshot = await orderRef.get();
       if (!orderSnapshot.exists) return;
 
       final orderData = orderSnapshot.data() as Map<String, dynamic>;
-      final totalAmount = orderData['Total_Vendor_Revenue'] as double;
+      final total = orderData['Total'] as double;
+      final totalVendorRevenue = orderData['Total_Vendor_Revenue'] as double;
       final vendorId = orderData['Vendor_ID'] as String;
+      final customerId = orderData['Customer_ID'] as String;
       final orderDate = (orderData['Order_Date'] as Timestamp).toDate();
       final deliveryCost =
           double.parse(orderData['Deilvery_Cost'].toStringAsFixed(3));
@@ -237,22 +238,17 @@ class _OrdersPageState extends State<OrdersPage>
           FirebaseFirestore.instance.collection('vendor').doc(vendorId);
       await vendorRef.update({
         'Total_Orders': FieldValue.increment(-1),
-        'Total_Revenue': FieldValue.increment(-totalAmount),
+        'Total_Revenue': FieldValue.increment(-totalVendorRevenue),
       });
-
       final monthYear = DateFormat('yyyy-MM').format(orderDate);
-      final monthlySalesRef =
-          vendorRef.collection('Monthly_Sales').doc(monthYear);
-      await monthlySalesRef.update({
+      await vendorRef.collection('Monthly_Sales').doc(monthYear).update({
         'Orders': FieldValue.increment(-1),
-        'Sales': FieldValue.increment(-totalAmount),
+        'Sales': FieldValue.increment(-totalVendorRevenue),
       });
-
       final dayDate = DateFormat('yyyy-MM-dd').format(orderDate);
-      final salesDataRef = vendorRef.collection('Sales_Data').doc(dayDate);
-      await salesDataRef.update({
+      await vendorRef.collection('Sales_Data').doc(dayDate).update({
         'Orders': FieldValue.increment(-1),
-        'Sales': FieldValue.increment(-totalAmount),
+        'Sales': FieldValue.increment(-totalVendorRevenue),
       });
 
       final driverId = orderData['Driver_ID'] as String?;
@@ -264,24 +260,29 @@ class _OrdersPageState extends State<OrdersPage>
           'Total_Revenue': FieldValue.increment(-deliveryCost),
           'isBusy': false,
         });
-
-        final driverSalesDataRef =
-            driverRef.collection('Sales_Data').doc(dayDate);
-        await driverSalesDataRef.set({
+        await driverRef.collection('Sales_Data').doc(dayDate).set({
           'Orders': FieldValue.increment(-1),
           'Revenue': FieldValue.increment(-deliveryCost),
         }, SetOptions(merge: true));
       }
 
-      final customerId = orderData['Customer_ID'] as String;
+      final customerRef =
+          FirebaseFirestore.instance.collection('Customer').doc(customerId);
+      await customerRef.update({
+        'Total_Orders': FieldValue.increment(-1),
+        'Total_Expensive': FieldValue.increment(-total),
+      });
+      await customerRef.collection('Monthly_Expensive').doc(monthYear).set({
+        'Orders': FieldValue.increment(-1),
+        'Expensive': FieldValue.increment(-total),
+      }, SetOptions(merge: true));
+
       if (orderData['Accepted'] == true) {
-        await FirebaseFirestore.instance
-            .collection('Customer')
-            .doc(customerId)
+        await customerRef
             .update({'Loyalty_Points': FieldValue.increment(-100)});
       }
 
-      await orderRef.update({"Status": "Cancelled"});
+      await orderRef.update({'Status': 'Cancelled'});
 
       if (mounted) {
         _fetchOrders();
