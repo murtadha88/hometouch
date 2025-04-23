@@ -276,10 +276,38 @@ class _OrderManagementPageState extends State<OrderManagementPage>
           return Center(child: Text('Error: ${snapshot.error}'));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFBF0000)));
         }
 
         final orders = snapshot.data!.docs;
+
+        if (orders.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 32.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: screenWidth * 0.12,
+                    color: Colors.grey.shade400,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'No Order Requests',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      color: Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
         return ListView.separated(
           padding: EdgeInsets.all(screenWidth * 0.04),
@@ -412,7 +440,43 @@ class _OrderManagementPageState extends State<OrderManagementPage>
           return Center(child: Text('Error: ${snapshot.error}'));
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFBF0000)));
+        }
+
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty) {
+          return Column(
+            children: [
+              _buildStatusFilter(),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.1),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.history,
+                          size: screenWidth * 0.12,
+                          color: Colors.grey.shade400,
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                        Text(
+                          'No Past Orders',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.04,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
         }
 
         return Column(
@@ -421,18 +485,18 @@ class _OrderManagementPageState extends State<OrderManagementPage>
             Expanded(
               child: ListView.separated(
                 padding: EdgeInsets.all(screenWidth * 0.04),
-                itemCount: snapshot.data!.docs.length,
+                itemCount: docs.length,
                 separatorBuilder: (_, __) =>
                     SizedBox(height: screenHeight * 0.02),
                 itemBuilder: (context, index) {
-                  final order = snapshot.data!.docs[index];
+                  final order = docs[index];
                   final data = order.data() as Map<String, dynamic>;
 
                   return Card(
                     color: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(screenWidth * 0.03)),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    ),
                     elevation: 1,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -455,14 +519,19 @@ class _OrderManagementPageState extends State<OrderManagementPage>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text("Order ${data['Order_Number'] ?? ''}",
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: screenWidth * 0.04)),
                                   Text(
-                                      "${data['Total']?.toStringAsFixed(3)} BHD",
-                                      style: TextStyle(
-                                          fontSize: screenWidth * 0.035)),
+                                    "Order ${data['Order_Number'] ?? ''}",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: screenWidth * 0.04,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${(data['Total'] as num?)?.toStringAsFixed(3) ?? '0.000'} BHD",
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.035,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),

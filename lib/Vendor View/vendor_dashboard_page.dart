@@ -63,6 +63,8 @@ class _VendorDashboardState extends State<VendorDashboard> {
 
   String vendorId = "";
 
+  bool isLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -110,41 +112,42 @@ class _VendorDashboardState extends State<VendorDashboard> {
             .limit(2)
             .get();
 
-        if (vendorDoc.exists && salesSnapshot.docs.isNotEmpty) {
-          final vendorData = vendorDoc.data() as Map<String, dynamic>;
+        final vendorData = vendorDoc.data() as Map<String, dynamic>;
 
-          setState(() {
-            vendorName = vendorData['Name'] ?? "";
-            vendorLogo = vendorData['Logo'] ?? "";
-            vendorRating = vendorData['Rating'] ?? 0.0;
-            totalOrders = vendorData['Total_Orders'] ?? 0;
-            totalRevenue = (vendorData['Total_Revenue'] ?? 0.0).toDouble();
+        setState(() {
+          vendorName = vendorData['Name'] ?? "";
+          vendorLogo = vendorData['Logo'] ?? "";
+          vendorRating = vendorData['Rating'] ?? 0.0;
+          totalOrders = vendorData['Total_Orders'] ?? 0;
+          totalRevenue = (vendorData['Total_Revenue'] ?? 0.0).toDouble();
 
-            final monthlyDocs = monthlySnapshot.docs;
-            if (monthlyDocs.isNotEmpty) {
-              var currentMonthData =
-                  monthlyDocs[0].data() as Map<String, dynamic>;
-              currentMonthOrders = currentMonthData['Orders'] ?? 0;
-              currentMonthRevenue =
-                  (currentMonthData['Sales'] ?? 0.0).toDouble();
+          final monthlyDocs = monthlySnapshot.docs;
+          if (monthlyDocs.isNotEmpty) {
+            var currentMonthData =
+                monthlyDocs[0].data() as Map<String, dynamic>;
+            currentMonthOrders = currentMonthData['Orders'] ?? 0;
+            currentMonthRevenue = (currentMonthData['Sales'] ?? 0.0).toDouble();
 
-              if (monthlyDocs.length > 1) {
-                var prevMonthData =
-                    monthlyDocs[1].data() as Map<String, dynamic>;
-                previousMonthOrders = prevMonthData['Orders'] ?? 0;
-                previousMonthRevenue =
-                    (prevMonthData['Sales'] ?? 0.0).toDouble();
-              } else {
-                previousMonthOrders = 0;
-                previousMonthRevenue = 0.0;
-              }
+            if (monthlyDocs.length > 1) {
+              var prevMonthData = monthlyDocs[1].data() as Map<String, dynamic>;
+              previousMonthOrders = prevMonthData['Orders'] ?? 0;
+              previousMonthRevenue = (prevMonthData['Sales'] ?? 0.0).toDouble();
             } else {
-              currentMonthOrders = 0;
-              currentMonthRevenue = 0.0;
               previousMonthOrders = 0;
               previousMonthRevenue = 0.0;
             }
+            monthlyOrdersChange = calculatePercentageChange(
+                currentMonthOrders.toDouble(), previousMonthOrders.toDouble());
+            monthlyRevenueChange = calculatePercentageChange(
+                currentMonthRevenue, previousMonthRevenue);
+          } else {
+            currentMonthOrders = 0;
+            currentMonthRevenue = 0.0;
+            previousMonthOrders = 0;
+            previousMonthRevenue = 0.0;
+          }
 
+          if (salesSnapshot.docs.isNotEmpty) {
             salesData = salesSnapshot.docs.map((doc) {
               final data = doc.data() as Map<String, dynamic>;
               return SalesData(
@@ -179,19 +182,25 @@ class _VendorDashboardState extends State<VendorDashboard> {
             perDayRevenueChange =
                 calculatePercentageChange(perDayRevenue, yesterdayRevenue);
 
-            monthlyOrdersChange = calculatePercentageChange(
-                currentMonthOrders.toDouble(), previousMonthOrders.toDouble());
-            monthlyRevenueChange = calculatePercentageChange(
-                currentMonthRevenue, previousMonthRevenue);
-
             highestSales = salesData.isNotEmpty
                 ? salesData.map((e) => e.sales).reduce(max)
                 : 0.0;
-          });
-        }
+          } else {
+            perDayOrders = 0;
+            perDayRevenue = 0.0;
+            yesterdayOrders = 0;
+            yesterdayRevenue = 0.0;
+          }
+        });
       }
     } catch (e) {
       print("Error fetching data: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -251,8 +260,11 @@ class _VendorDashboardState extends State<VendorDashboard> {
         ),
       ),
       backgroundColor: Colors.white,
-      body: salesData.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+              color: Color(0xFFBF0000),
+            ))
           : SingleChildScrollView(
               padding: EdgeInsets.all(screenWidth * 0.04),
               child: Column(

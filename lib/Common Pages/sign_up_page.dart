@@ -61,8 +61,23 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   bool _termsAccepted = false;
   bool _showErrors = false;
 
+  bool _hasMinLength = false;
+  bool _hasLowercase = false;
+  bool _hasUppercase = false;
+  bool _hasNumber = false;
+  bool _hasSpecialChar = false;
+
+  final _nameKey = GlobalKey<FormFieldState<String>>();
+  final _phoneKey = GlobalKey<FormFieldState<String>>();
+  final _emailKey = GlobalKey<FormFieldState<String>>();
+  final _passwordKey = GlobalKey<FormFieldState<String>>();
+  final _confirmPasswordKey = GlobalKey<FormFieldState<String>>();
+
+  final _scrollController = ScrollController();
+
   @override
   void dispose() {
+    _passwordController.removeListener(_updatePasswordValidation);
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
@@ -99,21 +114,26 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) return 'Password is required.';
-    if (value.length < 8) return 'Password must be at least 8 characters.';
-    if (!RegExp(r'[a-z]').hasMatch(value)) {
-      return 'Password must include at least one lowercase letter.';
-    }
-    if (!RegExp(r'[A-Z]').hasMatch(value)) {
-      return 'Password must include at least one uppercase letter.';
-    }
-    if (!RegExp(r'[0-9]').hasMatch(value)) {
-      return 'Password must contain at least one number.';
-    }
+    if (value == null || value.isEmpty) return 'Password is required';
+    if (value.length < 8) return 'Password must be at least 8 characters';
+    if (!RegExp(r'[a-z]').hasMatch(value)) return 'Missing lowercase letter';
+    if (!RegExp(r'[A-Z]').hasMatch(value)) return 'Missing uppercase letter';
+    if (!RegExp(r'[0-9]').hasMatch(value)) return 'Missing number';
     if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-]').hasMatch(value)) {
-      return 'Password must include at least one special character.';
+      return 'Missing special character';
     }
     return null;
+  }
+
+  void _updatePasswordValidation() {
+    final value = _passwordController.text;
+    setState(() {
+      _hasMinLength = value.length >= 8;
+      _hasLowercase = RegExp(r'[a-z]').hasMatch(value);
+      _hasUppercase = RegExp(r'[A-Z]').hasMatch(value);
+      _hasNumber = RegExp(r'[0-9]').hasMatch(value);
+      _hasSpecialChar = RegExp(r'[!@#$%^&*(),.?":{}|<>_\-]').hasMatch(value);
+    });
   }
 
   String? _validateConfirmPassword(String? value) {
@@ -271,7 +291,32 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     setState(() {
       _showErrors = true;
     });
-    if (!_formKey.currentState!.validate()) return;
+
+    FocusScope.of(context).unfocus();
+
+    if (!_formKey.currentState!.validate()) {
+      final fieldKeys = [
+        _nameKey,
+        _phoneKey,
+        _emailKey,
+        _passwordKey,
+        _confirmPasswordKey,
+      ];
+
+      for (var key in fieldKeys) {
+        if (key.currentState?.hasError ?? false) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Scrollable.ensureVisible(
+              key.currentContext!,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOut,
+            );
+          });
+          break;
+        }
+      }
+      return;
+    }
 
     if (widget.role == 'vendor') {
       if (_validateCategories() != null ||
@@ -546,6 +591,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: sWidth * 0.05),
             child: Form(
@@ -581,27 +627,37 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   SizedBox(height: sHeight * 0.04),
                   _buildInputField(
-                      widget.role == 'vendor' ? 'Business Name' : 'Name',
-                      _nameController,
-                      false,
-                      _validateName,
-                      sWidth),
+                    widget.role == 'vendor' ? 'Business Name' : 'Name',
+                    _nameController,
+                    false,
+                    _validateName,
+                    sWidth,
+                    _nameKey,
+                  ),
+                  SizedBox(height: sHeight * 0.03),
+                  _buildInputField('Phone', _phoneController, false,
+                      _validatePhone, sWidth, _phoneKey),
+                  SizedBox(height: sHeight * 0.03),
+                  _buildInputField('Email', _emailController, false,
+                      _validateEmail, sWidth, _emailKey),
+                  SizedBox(height: sHeight * 0.03),
+                  _buildPasswordField(
+                    'Password',
+                    _passwordController,
+                    true,
+                    _validatePassword,
+                    sWidth,
+                    _passwordKey,
+                  ),
                   SizedBox(height: sHeight * 0.03),
                   _buildInputField(
-                      'Phone', _phoneController, false, _validatePhone, sWidth),
-                  SizedBox(height: sHeight * 0.03),
-                  _buildInputField(
-                      'Email', _emailController, false, _validateEmail, sWidth),
-                  SizedBox(height: sHeight * 0.03),
-                  _buildInputField('Password', _passwordController, true,
-                      _validatePassword, sWidth),
-                  SizedBox(height: sHeight * 0.03),
-                  _buildInputField(
-                      'Confirm Password',
-                      _confirmPasswordController,
-                      true,
-                      _validateConfirmPassword,
-                      sWidth),
+                    'Confirm Password',
+                    _confirmPasswordController,
+                    true,
+                    _validateConfirmPassword,
+                    sWidth,
+                    _confirmPasswordKey,
+                  ),
                   SizedBox(height: sHeight * 0.03),
                   if (widget.role == 'vendor') ...[
                     _buildVendorTypeDropdown(sWidth),
@@ -716,6 +772,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     bool isPassword,
     String? Function(String?) validator,
     double screenWidth,
+    GlobalKey<FormFieldState<String>> fieldKey,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,6 +794,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         SizedBox(height: screenWidth * 0.01),
         FormField<String>(
           validator: validator,
+          key: fieldKey,
           builder: (FormFieldState<String> field) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1531,6 +1589,132 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPasswordField(
+    String label,
+    TextEditingController controller,
+    bool isPassword,
+    String? Function(String?) validator,
+    double screenWidth,
+    GlobalKey<FormFieldState> key,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: '$label ',
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+            children: const [
+              TextSpan(text: '*', style: TextStyle(color: Colors.red))
+            ],
+          ),
+        ),
+        SizedBox(height: screenWidth * 0.01),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            color: Colors.grey[200],
+            border: Border.all(
+              color: Colors.transparent,
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: screenWidth * 0.03,
+                offset: Offset(screenWidth * 0.01, screenWidth * 0.01),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            key: key,
+            controller: controller,
+            obscureText: isPassword ? _obscurePassword : false,
+            decoration: InputDecoration(
+              hintText: 'Enter your password',
+              errorStyle: const TextStyle(fontSize: 0, height: 0),
+              hintStyle: TextStyle(
+                color: Colors.grey,
+                fontSize: screenWidth * 0.04,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                vertical: screenWidth * 0.03,
+                horizontal: screenWidth * 0.04,
+              ),
+              border: InputBorder.none,
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.grey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (value) => _updatePasswordValidation(),
+            validator: validator,
+          ),
+        ),
+        if (key.currentState?.hasError ?? false)
+          Padding(
+            padding: EdgeInsets.only(top: screenWidth * 0.01),
+            child: Text(
+              key.currentState?.errorText ?? '',
+              style: const TextStyle(
+                color: Color(0xFFBF0000),
+                fontSize: 12,
+              ),
+            ),
+          ),
+        SizedBox(height: screenWidth * 0.02),
+        Column(
+          children: [
+            _buildRequirementRow('At least 8 characters', _hasMinLength),
+            _buildRequirementRow(
+                'At least one lowercase letter', _hasLowercase),
+            _buildRequirementRow(
+                'At least one uppercase letter', _hasUppercase),
+            _buildRequirementRow('At least one number', _hasNumber),
+            _buildRequirementRow(
+                'At least one special character', _hasSpecialChar),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRequirementRow(String text, bool isValid) {
+    return Row(
+      children: [
+        Icon(
+          isValid ? Icons.check_circle : Icons.error,
+          color: isValid ? Colors.green : Colors.grey,
+          size: 16,
+        ),
+        SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            color: isValid ? Colors.green : Colors.grey,
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }

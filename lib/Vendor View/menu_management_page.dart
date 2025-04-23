@@ -249,15 +249,17 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(screenWidth * 0.04),
-                        ),
-                        child: _buildImage(
-                          item['image'],
-                          item['name'],
-                          screenWidth,
-                          screenHeight,
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(screenWidth * 0.04),
+                          ),
+                          child: _buildImage(
+                            item['image'],
+                            item['name'],
+                            screenWidth,
+                            screenHeight,
+                          ),
                         ),
                       ),
                       Padding(
@@ -278,49 +280,50 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                           horizontal: screenWidth * 0.02,
                           vertical: screenHeight * 0.01,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: _buildPriceDisplay(item, screenWidth),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  padding: EdgeInsets.only(left: 30),
-                                  icon: Icon(
-                                    Icons.edit,
-                                    size: screenWidth * 0.055,
-                                    color: const Color(0xFFBF0000),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => EditProductPage(
-                                          vendorId: widget.vendorId,
-                                          categoryId: item["categoryId"],
-                                          productId: item["id"],
+                            _buildPriceDisplay(item, screenWidth),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    padding: EdgeInsets.only(left: 30),
+                                    icon: Icon(
+                                      Icons.edit,
+                                      size: screenWidth * 0.055,
+                                      color: const Color(0xFFBF0000),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => EditProductPage(
+                                            vendorId: widget.vendorId,
+                                            categoryId: item["categoryId"],
+                                            productId: item["id"],
+                                          ),
                                         ),
-                                      ),
-                                    ).then((_) => _fetchCategories());
-                                  },
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.delete,
-                                    size: screenWidth * 0.055,
-                                    color: const Color(0xFFBF0000),
+                                      ).then((_) => _fetchCategories());
+                                    },
                                   ),
-                                  onPressed: () => showDeleteConfirmationDialog(
-                                    context,
-                                    item["categoryId"],
-                                    item["id"],
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete,
+                                      size: screenWidth * 0.055,
+                                      color: const Color(0xFFBF0000),
+                                    ),
+                                    onPressed: () =>
+                                        showDeleteConfirmationDialog(
+                                      context,
+                                      item["categoryId"],
+                                      item["id"],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -532,51 +535,56 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
   }
 
   Widget _buildPriceDisplay(Map<String, dynamic> item, double screenWidth) {
-    final DateTime now = DateTime.now();
-    final Timestamp? start = item["Discount_Start_Date"];
-    final Timestamp? end = item["Discount_End_Date"];
-    bool isDiscountActive = false;
+    final now = DateTime.now();
+    final startTs = item["Discount_Start_Date"] as Timestamp?;
+    final endTs = item["Discount_End_Date"] as Timestamp?;
+    final price = (item["price"] as num?)?.toDouble();
+    final discount = (item["Discount_Price"] as num?)?.toDouble();
 
-    if (start != null && end != null) {
-      final DateTime startDate = start.toDate();
-      final DateTime endDate = end.toDate();
-      isDiscountActive = now.isAfter(startDate) && now.isBefore(endDate);
-    }
+    final isDiscountActive = startTs != null &&
+        endTs != null &&
+        now.isAfter(startTs.toDate()) &&
+        now.isBefore(endTs.toDate());
 
-    final double? price = (item["price"] as num?)?.toDouble();
-    final double? discountPrice = (item["Discount_Price"] as num?)?.toDouble();
-
-    if (price == null) return const Text("N/A");
-
-    TextStyle defaultStyle = TextStyle(
+    final TextStyle normalStyle = TextStyle(
       fontSize: screenWidth * 0.035,
       color: const Color(0xFFBF0000),
       fontWeight: FontWeight.bold,
     );
 
-    if (isDiscountActive && discountPrice != null) {
+    if (price == null) return const Text("N/A");
+
+    Widget buildPriceRow(double val, TextStyle style) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(val.toStringAsFixed(3), style: style),
+          SizedBox(width: 4),
+          Text("BHD", style: style.copyWith(fontSize: style.fontSize! * 0.8)),
+        ],
+      );
+    }
+
+    if (isDiscountActive && discount != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "${price.toStringAsFixed(3)} BHD",
-            style: defaultStyle.copyWith(
+          buildPriceRow(
+            price,
+            normalStyle.copyWith(
               color: Colors.black54,
               decoration: TextDecoration.lineThrough,
+              fontSize: screenWidth * 0.025,
             ),
           ),
-          Text(
-            "${discountPrice.toStringAsFixed(3)} BHD",
-            style: defaultStyle,
-          ),
+          SizedBox(height: 4),
+          buildPriceRow(discount, normalStyle),
         ],
       );
-    } else {
-      return Text(
-        "${price.toStringAsFixed(3)} BHD",
-        style: defaultStyle,
-      );
     }
+
+    return buildPriceRow(price, normalStyle);
   }
 
   void showDeleteConfirmationDialog(

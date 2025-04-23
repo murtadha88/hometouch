@@ -89,7 +89,8 @@ class ChatListPage extends StatelessWidget {
             .snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(color: Color(0xFFBF0000)));
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {

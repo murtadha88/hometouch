@@ -90,8 +90,8 @@ class _SelectLocationPageState extends State<SelectLocationPage> {
           ),
           Positioned(
             bottom: 20,
-            left: 130,
-            right: 130,
+            left: 30,
+            right: 30,
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context, {

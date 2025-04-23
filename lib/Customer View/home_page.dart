@@ -912,21 +912,49 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
                     width: 1,
                   ),
                 ),
-                child: isFetching || images.isEmpty
-                    ? Text('No Promotions')
-                    : PageView.builder(
-                        controller: _pageController,
-                        itemCount: images.length,
-                        itemBuilder: (context, index) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(4)),
-                            child: Image.network(
-                              images[index],
-                              fit: BoxFit.cover,
+                child: isFetching
+                    ? const Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xFFBF0000)))
+                    : images.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_offer_outlined,
+                                    size: 35,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No Promotions Available',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          );
-                        },
-                      ),
+                          )
+                        : PageView.builder(
+                            controller: _pageController,
+                            itemCount: images.length,
+                            itemBuilder: (context, index) {
+                              return ClipRRect(
+                                borderRadius:
+                                    const BorderRadius.all(Radius.circular(8)),
+                                child: Image.network(
+                                  images[index],
+                                  fit: BoxFit.cover,
+                                ),
+                              );
+                            },
+                          ),
               ),
             ),
           ),

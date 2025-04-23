@@ -820,23 +820,6 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: screenHeight * 0.005),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.delivery_dining,
-                                      color: Color(0xFFBF0000),
-                                      size: 16,
-                                    ),
-                                    SizedBox(width: screenWidth * 0.01),
-                                    Text(
-                                      "BHD 0.600",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                )
                               ],
                             ),
                           ],
@@ -917,6 +900,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                       itemBuilder: (context, index) {
                         final category = categories[index];
                         final items = menuItems[category] ?? [];
+                        final itemsCount = items.length;
 
                         return Column(
                           key: _categoryKeys[category],
@@ -926,7 +910,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                               padding: EdgeInsets.symmetric(
                                   horizontal: screenWidth * 0.04),
                               child: Text(
-                                category,
+                                "$category ($itemsCount)",
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.05,
                                   fontWeight: FontWeight.bold,
@@ -1062,7 +1046,7 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                                       ),
                                     ),
                                   ),
-                            SizedBox(height: screenHeight * 0.08),
+                            SizedBox(height: screenHeight * 0.01),
                           ],
                         );
                       },

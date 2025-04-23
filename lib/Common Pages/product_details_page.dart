@@ -140,8 +140,24 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       return "${(widget.points * _quantity)} Points";
     } else {
       double basePrice = (productData?["Price"] ?? 0).toDouble();
-      double totalPrice =
-          (basePrice + _addOnsTotal) * (_quantity > 0 ? _quantity : 1);
+      double? discountPrice =
+          (productData?["Discount_Price"] as num?)?.toDouble();
+      Timestamp? startTs = productData?["Discount_Start_Date"];
+      Timestamp? endTs = productData?["Discount_End_Date"];
+      bool hasActiveDiscount = false;
+
+      if (startTs != null && endTs != null) {
+        final now = DateTime.now();
+        final start = startTs.toDate();
+        final end = endTs.toDate();
+        hasActiveDiscount = now.isAfter(start) && now.isBefore(end);
+      }
+
+      double unitPrice = (hasActiveDiscount && discountPrice != null)
+          ? discountPrice
+          : basePrice;
+
+      double totalPrice = (unitPrice + _addOnsTotal) * _quantity;
       return "${totalPrice.toStringAsFixed(3)} BHD";
     }
   }
@@ -277,9 +293,25 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   Future<void> _addToCart() async {
     if (productData == null) return;
-
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+
+    double basePrice = (productData?["Price"] ?? 0).toDouble();
+    double? discountPrice =
+        (productData?["Discount_Price"] as num?)?.toDouble();
+    Timestamp? startTs = productData?["Discount_Start_Date"];
+    Timestamp? endTs = productData?["Discount_End_Date"];
+    bool hasActiveDiscount = false;
+    if (startTs != null && endTs != null) {
+      final now = DateTime.now();
+      hasActiveDiscount =
+          now.isAfter(startTs.toDate()) && now.isBefore(endTs.toDate());
+    }
+    double unitPrice = (hasActiveDiscount && discountPrice != null)
+        ? discountPrice
+        : basePrice;
+
+    double totalWithAddOns = (unitPrice + _addOnsTotal) * _quantity;
 
     try {
       final cartRef = FirebaseFirestore.instance
@@ -288,22 +320,21 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           .collection('cart');
 
       List<Map<String, dynamic>> selectedAddOns =
-          addOns.where((addOn) => addOn["selected"] == true).toList();
+          addOns.where((a) => a["selected"] == true).toList();
 
       Map<String, dynamic> cartItem = {
         "productId": widget.productId,
         "name": productData?["Name"] ?? "Unknown",
-        "price": widget.isFromRewards ? 0 : (productData?["Price"]) ?? 0,
-        "points":
-            widget.isFromRewards ? (productData?["Points"] ?? 0).toInt() : 0,
+        "price": unitPrice,
         "quantity": _quantity,
         "addOns": selectedAddOns,
+        "total": totalWithAddOns,
         "vendorId": productData?["vendorId"],
         "image": productData?["Image"],
+        if (widget.isFromRewards) "points": widget.points,
       };
 
       await cartRef.add(cartItem);
-
       Navigator.pop(context);
     } catch (e) {
       print("Error adding to cart: $e");
@@ -313,7 +344,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading || productData == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+          body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFBF0000))));
     }
 
     double screenWidth = MediaQuery.of(context).size.width;

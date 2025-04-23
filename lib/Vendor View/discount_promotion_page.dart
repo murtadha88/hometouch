@@ -291,6 +291,7 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
         _discountEndDateController.clear();
         _discountStartDate = null;
         _discountEndDate = null;
+        _vendorProductsFuture = _getVendorProducts();
       });
     } catch (e) {
       print("Error applying discount: $e");
@@ -679,9 +680,9 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
                   child: _buildDiscountedProductsList(),
                 ),
                 Positioned(
-                  left: screenWidth * 0.04,
-                  right: screenWidth * 0.04,
-                  bottom: screenHeight * 0.02,
+                  left: screenWidth * 0.001,
+                  right: screenWidth * 0.001,
+                  bottom: screenHeight * 0.001,
                   child: _buildDiscountInput(),
                 ),
               ],
@@ -763,7 +764,6 @@ class _PromotionDiscountPageState extends State<PromotionDiscountPage>
 
     return Material(
       elevation: 6,
-      borderRadius: BorderRadius.circular(screenWidth * 0.1),
       child: Container(
         padding: EdgeInsets.all(screenWidth * 0.04),
         decoration: BoxDecoration(

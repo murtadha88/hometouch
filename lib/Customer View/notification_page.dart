@@ -110,7 +110,8 @@ class NotificationPage extends StatelessWidget {
         future: _getUserNotifications(_auth.currentUser?.uid ?? ''),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return Center(
+                child: CircularProgressIndicator(color: Color(0xFFBF0000)));
           }
 
           if (snapshot.hasError) {
