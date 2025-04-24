@@ -101,7 +101,19 @@ class _LoginPageState extends State<LoginPage> {
           return;
         }
         await prefs.setString('role', 'driver');
-      } else {
+      } else if (widget.role == 'customer') {
+        QuerySnapshot qs = await FirebaseFirestore.instance
+            .collection('Customer')
+            .where('Email', isEqualTo: user.email)
+            .get();
+        if (qs.docs.isEmpty) {
+          await _auth.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text("Your email is not registered as a customer")),
+          );
+          return;
+        }
         await prefs.setString('role', 'customer');
       }
 

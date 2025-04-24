@@ -276,9 +276,9 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
                         ),
                       ),
                       Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.02,
-                          vertical: screenHeight * 0.01,
+                        padding: EdgeInsets.only(
+                          left: screenWidth * 0.03,
+                          top: screenHeight * 0.01,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

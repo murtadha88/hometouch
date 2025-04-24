@@ -17,6 +17,11 @@ class AddProductPage extends StatefulWidget {
 class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
 
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _pointsController = TextEditingController();
+
   String _productName = '';
   double _productPrice = 0.0;
   String _productDescription = '';
@@ -54,12 +59,22 @@ class _AddProductPageState extends State<AddProductPage> {
   final List<TextEditingController> _removeControllers = [];
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    _descriptionController.dispose();
+    _pointsController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     _selectedCategoryId = _fixedCategories[0]['id'];
     _addOnNameControllers.add(TextEditingController());
     _addOnPriceControllers.add(TextEditingController());
     _removeControllers.add(TextEditingController());
+    _pointsController.text = '0';
   }
 
   Future<void> _pickImage() async {
@@ -146,6 +161,9 @@ class _AddProductPageState extends State<AddProductPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
+      final productName = _nameController.text;
+      final productPrice = double.tryParse(_priceController.text) ?? 0.0;
+
       if (_selectedCategoryId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select a category')),
@@ -168,8 +186,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
       try {
         final productDocRef = await categoryDocRef.collection('products').add({
-          'Name': _productName,
-          'Price': _productPrice,
+          'Name': productName,
+          'Price': productPrice,
           'Description': _productDescription,
           'Points': _points,
           'Image': _imageUrl ?? '',
@@ -268,6 +286,7 @@ class _AddProductPageState extends State<AddProductPage> {
               _buildImageCard(screenWidth, screenHeight),
               SizedBox(height: screenHeight * 0.025),
               _buildTextField(
+                controller: _nameController,
                 label: 'Product Name',
                 hint: 'Enter product name',
                 requiredField: true,
@@ -279,6 +298,7 @@ class _AddProductPageState extends State<AddProductPage> {
                 },
               ),
               _buildTextField(
+                controller: _priceController,
                 label: 'Product Price in BHD',
                 hint: 'Enter product price',
                 requiredField: true,
@@ -295,6 +315,7 @@ class _AddProductPageState extends State<AddProductPage> {
                 },
               ),
               _buildTextField(
+                controller: _descriptionController,
                 label: 'Product Description',
                 hint: 'Enter product description',
                 requiredField: true,
@@ -337,11 +358,11 @@ class _AddProductPageState extends State<AddProductPage> {
                 ),
               ),
               _buildTextField(
+                controller: _pointsController,
                 label: 'Points',
                 hint: 'Enter required points (default 0)',
                 requiredField: false,
                 keyboardType: TextInputType.number,
-                initialValue: '0',
                 onChanged: (value) {
                   setState(() {
                     _points = double.tryParse(value) ?? 0.0;
@@ -600,13 +621,13 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Widget _buildTextField({
+    TextEditingController? controller,
     required String label,
     required String hint,
     required bool requiredField,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
-    String? initialValue,
     required Function(String) onChanged,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -641,7 +662,7 @@ class _AddProductPageState extends State<AddProductPage> {
             width: screenWidth * 0.82,
             decoration: _textFieldBoxDecoration(),
             child: TextFormField(
-              initialValue: initialValue,
+              controller: controller,
               maxLines: maxLines,
               keyboardType: keyboardType,
               inputFormatters: inputFormatters,
