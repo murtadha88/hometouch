@@ -313,9 +313,43 @@ class _FoodMenuPageState extends State<FoodMenuPage> {
         newMenuItems[categoryName] = await _fetchProducts(doc.id);
       }
 
+      List<String> starters = [];
+      List<String> sides = [];
+      List<String> desserts = [];
+      List<String> drinks = [];
+      List<String> others = [];
+
+      for (String category in tempCategories) {
+        switch (category) {
+          case 'Starters':
+            starters.add(category);
+            break;
+          case 'Sides':
+            sides.add(category);
+            break;
+          case 'Desserts':
+            desserts.add(category);
+            break;
+          case 'Drinks':
+            drinks.add(category);
+            break;
+          default:
+            others.add(category);
+        }
+      }
+
+      others.sort((a, b) => a.compareTo(b));
+
+      List<String> sortedCategories = [];
+      sortedCategories.addAll(starters);
+      sortedCategories.addAll(others);
+      sortedCategories.addAll(sides);
+      sortedCategories.addAll(desserts);
+      sortedCategories.addAll(drinks);
+
       if (mounted) {
         setState(() {
-          categories = tempCategories;
+          categories = sortedCategories;
           menuItems = newMenuItems;
           if (categories.isNotEmpty) {
             selectedCategory = categories[0];

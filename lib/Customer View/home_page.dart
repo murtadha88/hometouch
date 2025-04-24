@@ -900,64 +900,38 @@ class _HomeTouchScreenState extends State<HomeTouchScreen> {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Center(
-              child: Container(
-                width: screenWidth * 0.95,
-                height: screenHeight * 0.2,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(4)),
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 1,
+          if (isFetching)
+            SliverToBoxAdapter(
+              child: Center(
+                child: CircularProgressIndicator(color: Color(0xFFBF0000)),
+              ),
+            )
+          else if (images.isEmpty)
+            SliverToBoxAdapter(child: const SizedBox.shrink())
+          else
+            SliverToBoxAdapter(
+              child: Center(
+                child: Container(
+                  width: screenWidth * 0.95,
+                  height: screenHeight * 0.2,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(4)),
+                    border: Border.all(color: Colors.white, width: 1),
+                  ),
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: images.length,
+                    itemBuilder: (context, index) => ClipRRect(
+                      borderRadius: const BorderRadius.all(Radius.circular(8)),
+                      child: Image.network(
+                        images[index],
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 ),
-                child: isFetching
-                    ? const Center(
-                        child:
-                            CircularProgressIndicator(color: Color(0xFFBF0000)))
-                    : images.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.local_offer_outlined,
-                                    size: 35,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No Promotions Available',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : PageView.builder(
-                            controller: _pageController,
-                            itemCount: images.length,
-                            itemBuilder: (context, index) {
-                              return ClipRRect(
-                                borderRadius:
-                                    const BorderRadius.all(Radius.circular(8)),
-                                child: Image.network(
-                                  images[index],
-                                  fit: BoxFit.cover,
-                                ),
-                              );
-                            },
-                          ),
               ),
             ),
-          ),
           SliverToBoxAdapter(
             child: SizedBox(height: screenHeight * 0.02),
           ),

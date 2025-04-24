@@ -48,6 +48,7 @@ class _AddProductPageState extends State<AddProductPage> {
     {'id': 'sides', 'name': 'Sides'},
     {'id': 'snacks', 'name': 'Snacks'},
     {'id': 'rice_dishes', 'name': 'Rice Dishes'},
+    {'id': 'kids_meal', 'name': 'Kids Meal'},
   ];
   String? _selectedCategoryId;
 
