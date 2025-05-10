@@ -40,7 +40,7 @@ class AboutUs extends StatelessWidget {
             children: [
               SizedBox(height: screenHeight * 0.02),
               contactRow(
-                  Icons.phone, '+973 3333 3333', screenWidth, screenHeight),
+                  Icons.phone, '+973 3838 9003', screenWidth, screenHeight),
               contactRow(Icons.email, 'hometouch.bahrain@gmail.com',
                   screenWidth, screenHeight),
             ],

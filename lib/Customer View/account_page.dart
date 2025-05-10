@@ -74,8 +74,27 @@ class _AccountPageState extends State<AccountPage> {
           .where('Customer_ID', isEqualTo: userRef)
           .get();
 
+      final currentDate = DateTime.now();
+      bool activeFound = false;
+
+      for (var doc in subscriptionSnapshot.docs) {
+        final data = doc.data();
+        final Timestamp? startTimestamp = data['Start_Date'];
+        final Timestamp? endTimestamp = data['End_Date'];
+
+        if (startTimestamp != null && endTimestamp != null) {
+          final startDate = startTimestamp.toDate();
+          final endDate = endTimestamp.toDate();
+
+          if (currentDate.isAfter(startDate) && currentDate.isBefore(endDate)) {
+            activeFound = true;
+            break;
+          }
+        }
+      }
+
       setState(() {
-        isSubscribed = subscriptionSnapshot.docs.isNotEmpty;
+        isSubscribed = activeFound;
       });
     }
   }
